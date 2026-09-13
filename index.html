@@ -680,7 +680,7 @@
   <div class="info-modal">
     <div class="info-head">
       <div>
-        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.5</div>
+        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.6</div>
         <div class="info-sub">Qué toma y cómo calcula cada métrica. Uso interno PTI.</div>
       </div>
       <button class="btn" onclick="cerrarInfo()">✕</button>
@@ -1056,6 +1056,8 @@ const _GLOSARIO = [
   ['Margen real final','Rentabilidad real ÷ lo recibido de ML sin IVA','Responde de cada peso que quedó de Mercado Libre, cuánto es ganancia. La base es lo recibido menos el IVA débito: esa parte está en la cuenta pero no es del vendedor, hay que girarla al fisco, así que dejarla en el denominador achicaría el margen artificialmente. El numerador tampoco la tiene, con lo que la razón queda en la misma base. Se descartó calcularlo sobre el revenue bruto, que era lo que hacía hasta septiembre de 2026 y mezclaba un numerador sin IVA con un denominador con IVA. También se descartó la venta neta: es correcta desde lo contable pero no representa plata que el vendedor vea. Medido en una cuenta real: 17,8% sobre bruto, 21,6% sobre venta neta y 37,1% sobre lo recibido sin IVA. El tooltip de la tarjeta muestra las tres para poder contrastar.'],
  ]],
  ['Inventario FULL', [
+  ['Stock compartido','Grupos por Número de producto','En Mercado Libre varias publicaciones comparten el mismo stock: las agrupa el "Número de producto" del reporte de Publicaciones. En LINE UP son 130 grupos de ~10 publicaciones, y un SKU puede tener varios (el 1130 tiene grupos de 27, 82 y 91 unidades). En vista # Publicación el forecast se calcula por grupo, sumando la demanda de todas sus publicaciones, y se muestra con la que más vende y la marca STOCK COMPARTIDO. En vista SKU el stock es la suma de sus grupos, pero la reposición también evalúa cada grupo: si uno quiebra antes que el SKU, se sugiere reponer ese grupo con la marca GRUPO DE STOCK y su stock ("27 de 200 del SKU"), porque al llegar a cero se pausan todas sus publicaciones. Hasta v51.5 la vista SKU tomaba el stock de la última publicación leída y la vista ML cruzaba el stock del grupo con las ventas de una sola publicación. La importación guarda las dos claves, así el snapshot sirve en ambas vistas.'],
+  ['Variantes en el forecast','Sólo las del reporte de Publicaciones','Con el reporte de Publicaciones cargado, el texto de la columna Variante del reporte de ventas se ignora salvo para las publicaciones con variantes reales. Hasta v51.5, en cuentas sin variantes ese texto partía el ID y el forecast perdía ventas: en LINE UP veía 107 de 159 unidades.'],
   ['Forecast siempre visible','Se recalcula solo si hay stock cargado','La pestaña Forecast se reconstruye cada vez que se redibuja el dashboard: al cambiar fechas, cargar COGS, pasar de SKU a # Publicación o abrir un snapshot. Hasta v51.4 eso borraba los resultados aunque el stock siguiera cargado, y parecía que el snapshot no guardaba el forecast. Ahora, si hay stock, se recalcula en silencio con el período vigente. Importar el reporte de Publicaciones también recalcula al terminar.'],
   ['Stock desde reporte ML','Botón del módulo Forecast','Importa el stock del reporte de Publicaciones de ML: cubre depósito propio/Flex y FULL, así que sirve también en cuentas que no usan fulfillment. Pisa lo cargado manualmente. Las claves quedan guardadas según el identificador activo al importar (SKU o # de publicación), por eso conviene no cambiar de vista entre importar y analizar.'],
   ['Stock disponible (ficha)','Depósito propio/Flex + FULL','Stock que la ficha lee de los inputs del Forecast. Se marca en rojo con 2 unidades o menos y muestra la señal ÚLTIMA UNIDAD o SIN STOCK.'],
@@ -3188,7 +3190,8 @@ function doExportSnapshot(accountName, sanitized) {
         mlasConVariantesReales: mlasConVariantesRealesSer,
         categoriasML: G.categoriasML || {},
         comboMap: G.comboMap || {},
-        liqCarritoV: G.liqCarritoV || 1
+        liqCarritoV: G.liqCarritoV || 1,
+        pubsImportadas: !!G.pubsImportadas
       },
       currency_code: CURRENCY_CODE,
       forecast_inputs: FORECAST_INPUTS || {},
@@ -3279,7 +3282,8 @@ function importSnapshotJSON(file) {
         categoriasML: snap.G.categoriasML || {},
         comboMap: snap.G.comboMap || {},
         // Sin sello = snapshot anterior a v51.1 (liquidez de carritos en bruto)
-        liqCarritoV: snap.G.liqCarritoV || 1
+        liqCarritoV: snap.G.liqCarritoV || 1,
+        pubsImportadas: !!snap.G.pubsImportadas
       };
       
       // Rehidratar variantes (Set)
@@ -3746,6 +3750,8 @@ function importPublicacionesXLSX(file) {
       const cFlex     = findCol('en mi depósito', 'en mi deposito', 'depósito', 'deposito');
       const cFull     = findCol('en full', 'bodega de ml');
       const cCategoria= findCol('categoría', 'categoria');
+      // Grupo de stock compartido entre publicaciones (v51.6)
+      const cProd     = findCol('número de producto', 'numero de producto');
 
       if (cMLA < 0) {
         showForecastAlert('error', 'No se encontró la columna "Número de publicación".');
@@ -3755,7 +3761,8 @@ function importPublicacionesXLSX(file) {
       const useML = !G._lastRender || G._lastRender.useML !== false;
       const skuMapRef = (G._lastRender && G._lastRender.skuMap) || {};
       
-      const stockData = {};       // {id: {flex, full}}
+      const stockData = {};       // {id: {flex, full, pool}} por publicación y {sku: {flex, full, pools}} por SKU
+      const stockPorSku = {};     // sku → Map(grupo → {flex, full}): cada grupo se suma una sola vez
       const titulosNuevos = {};
       const categoriasNuevas = {};
       let filasProcesadas = 0;
@@ -3823,24 +3830,20 @@ function importPublicacionesXLSX(file) {
           variantesIndividuales++;
         } else {
           // MLA sin variantes (no tiene hijas, ignorar texto en columna Variantes)
-          // Si la cuenta usa SKU y el toggle está en SKU, usar el SKU del reporte como ID
-          if (!useML && skuRow) {
-            id = skuRow;
-          } else {
-            id = mla;
-          }
+          id = mla;
           mlasSinVariantes++;
         }
 
-        // Si la cuenta usa SKU y el toggle está en SKU, intentar usar el SKU del reporte
-        // como ID alternativo cuando viene poblado (también para variantes)
-        if (!useML && skuRow && esFilaHija) {
-          // Mantener ambos: el SKU como id principal, pero también guardar bajo MLA__variante
-          // por compatibilidad. Si el sistema agrupa por SKU, usaremos el SKU.
-          stockData[skuRow] = { flex, full };
+        /* Se guardan SIEMPRE las dos claves, sin importar la vista activa (v51.6).
+           Antes sólo la de la vista: un snapshot importado en SKU quedaba sin
+           forecast en vista # Publicación. Además, en vista SKU cada fila pisaba
+           a la anterior del mismo SKU y quedaba el stock de la última leída. */
+        const prod = cProd >= 0 ? String(row[cProd] || '').trim() : '';
+        stockData[id] = { flex, full, pool: prod || null, sinSku: !skuRow };
+        if (skuRow) {
+          if (!stockPorSku[skuRow]) stockPorSku[skuRow] = new Map();
+          stockPorSku[skuRow].set(prod || id, { flex, full });
         }
-
-        stockData[id] = { flex, full };
         if (titulo) titulosNuevos[mla] = titulo;
         if (categoria) categoriasNuevas[mla] = categoria;
         filasProcesadas++;
@@ -3851,8 +3854,21 @@ function importPublicacionesXLSX(file) {
         return;
       }
 
-      // Validación post-parse: cuántos IDs matchean con el skuMap actual
-      const idsImportados = Object.keys(stockData);
+      // Stock por SKU = suma de sus grupos de stock compartido
+      for (const s of Object.keys(stockPorSku)) {
+        let f = null, u = null;
+        stockPorSku[s].forEach(p => {
+          if (p.flex != null) f = (f || 0) + p.flex;
+          if (p.full != null) u = (u || 0) + p.full;
+        });
+        stockData[s] = { flex: f, full: u, pools: stockPorSku[s].size };
+      }
+
+      // Validación post-parse: cuántos IDs de la VISTA ACTIVA matchean con el skuMap
+      const idsImportados = Object.keys(stockData).filter(k => useML
+        ? stockData[k].pools == null
+        : (stockData[k].pools != null || stockData[k].sinSku));
+      const _clavesVista = new Set(idsImportados);
       const idsMatcheados = idsImportados.filter(id => {
         if (skuMapRef[id]) return true;
         // Si es compuesto, probar el baseId también
@@ -3896,6 +3912,7 @@ function importPublicacionesXLSX(file) {
 
       const aplicar = (modo) => {
         let nuevos = 0, sobrescritos = 0, omitidos = 0;
+        if (G) G.pubsImportadas = true;   // el reporte de Publicaciones define qué es variante real
         
         // Enriquecer records de ventas con SKU faltante usando el reporte de publicaciones
         let recordsEnriquecidos = 0;
@@ -3918,18 +3935,19 @@ function importPublicacionesXLSX(file) {
           }
           const inp = FORECAST_INPUTS[id];
           const yaTeniaStock = (inp.stockFlex != null) || (inp.stockFull != null);
-          
+          if (data.pool) inp.pool = data.pool;
+          if (data.pools != null) inp.pools = data.pools;
+          const cuenta = _clavesVista.has(id);   // los contadores hablan de la vista activa
+
           if (modo === 'fill_empty' && yaTeniaStock) {
             let completos = 0;
             if (inp.stockFlex == null && data.flex != null) { inp.stockFlex = data.flex; completos++; }
             if (inp.stockFull == null && data.full != null) { inp.stockFull = data.full; completos++; }
-            if (completos === 0) omitidos++;
-            else sobrescritos++;
+            if (cuenta) { if (completos === 0) omitidos++; else sobrescritos++; }
           } else {
             if (data.flex != null) inp.stockFlex = data.flex;
             if (data.full != null) inp.stockFull = data.full;
-            if (yaTeniaStock) sobrescritos++;
-            else nuevos++;
+            if (cuenta) { if (yaTeniaStock) sobrescritos++; else nuevos++; }
           }
         }
 
@@ -5459,7 +5477,13 @@ function recalcularForecast(opts) {
       // FIX: si se cargó el reporte de Publicaciones, sabemos qué MLAs tienen variantes REALES
       // Para los demás (los que solo aparecen como "padre solo"), agrupamos como MLA puro
       // ignorando el texto en r.variante (ML mete medidas/atributos no-variantes ahí)
-      const tieneInfoVariantes = G && G.mlasConVariantesReales && G.mlasConVariantesReales.size > 0;
+      /* Con el reporte de Publicaciones importado se sabe qué es variante real,
+         aunque la cuenta no tenga ninguna. Hasta v51.5 un set vacío caía al modo
+         viejo y el texto libre de "Variante" del reporte de ventas partía el ID:
+         en LINE UP el forecast veía 107 de 159 unidades vendidas (v51.6). */
+      const tieneInfoVariantes = G && G.mlasConVariantesReales && (G.mlasConVariantesReales.size > 0
+        || G.pubsImportadas
+        || Object.values(FORECAST_INPUTS).some(i => i && (i.pool || i.pools != null)));
       
       for (const r of recordsSrc) {
         if (r.esCanceled) continue;
@@ -5496,6 +5520,10 @@ function recalcularForecast(opts) {
           }
         });
       });
+      // Vista SKU: todas las publicaciones del SKU apuntan a él, no sólo la primera
+      if (!useML && G._skuPubs) Object.keys(G._skuPubs).forEach(s => {
+        if (skuMap[s]) G._skuPubs[s].forEach(p => { if (!_idxAlias[p]) _idxAlias[p] = s; });
+      });
       const _resolver = k => {
         if (skuMap[k]) return k;
         const b = splitVariantId(k).baseId;
@@ -5503,37 +5531,71 @@ function recalcularForecast(opts) {
         return _idxAlias[k] || _idxAlias[b] || k;
       };
 
-      /* Varias claves de input pueden resolver al MISMO destino: por ejemplo 5
-         publicaciones de un mismo SKU cuando el dashboard está en vista SKU.
-         Hay que SUMAR sus stocks, no crear un item por cada una: si no, se
-         parea el stock de una sola publicación con la demanda de todo el SKU y
-         cualquier producto parece a punto de quebrar. */
+      /* Stock compartido (v51.6). En ML varias publicaciones comparten el MISMO
+         stock, agrupado por "Número de producto": en LINE UP son 130 grupos de
+         ~10 publicaciones con stock idéntico dentro del grupo, y un SKU puede
+         tener varios grupos (el 1130 tiene 27, 82 y 91). Hasta v51.5 la vista
+         SKU tomaba el stock de la última publicación leída y la vista ML cruzaba
+         el stock del grupo con las ventas de una sola publicación.
+         · Vista ML: se proyecta por grupo, con la demanda de todas sus
+           publicaciones, y se muestra con la que más vende.
+         · Vista SKU: stock = suma de sus grupos, calculada al importar. Sin
+           clave de SKU (datos viejos) se reconstruye sumando los grupos de sus
+           publicaciones; sin grupos, se toma el máximo como antes. */
       const _agrupado = new Map();
       skuConStock.forEach(k => {
-        const destino = _resolver(k);
         const inp = FORECAST_INPUTS[k] || {};
+        const esClavePub = /^ML[A-Z]/i.test(splitVariantId(k).baseId);
+        let destino;
+        if (useML) {
+          if (!esClavePub && !skuMap[k]) return;          // clave de SKU: no es una publicación
+          destino = inp.pool ? 'POOL::' + inp.pool : _resolver(k);
+        } else {
+          destino = _resolver(k);
+        }
         let a = _agrupado.get(destino);
-        if (!a) { a = { stockFlex:null, stockFull:null, cogs:null, leadTimeFlex:null, leadTimeFull:null, notes:'', _n:0 }; _agrupado.set(destino, a); }
+        if (!a) { a = { stockFlex:null, stockFull:null, cogs:null, leadTimeFlex:null, leadTimeFull:null, notes:'', _n:0,
+                        _pools:new Map(), _directo:false, miembros:new Set() }; _agrupado.set(destino, a); }
         a._n++;
-        /* Cuando varias publicaciones caen en el mismo SKU, casi siempre son
-           distintas condiciones de venta del MISMO stock físico, no inventarios
-           separados: sumarlas duplica el disponible y distorsiona el riesgo
-           entre la vista SKU y la vista # Publicación. Se toma el MÁXIMO, que
-           es el pool real. Las variantes genuinas de color o modelo llevan SKU
-           propio, así que no se ven afectadas. */
-        if (inp.stockFlex != null) a.stockFlex = Math.max(a.stockFlex || 0, inp.stockFlex);
-        if (inp.stockFull != null) a.stockFull = Math.max(a.stockFull || 0, inp.stockFull);
+        a.miembros.add(k);
+        if (!useML && k === destino) {
+          a._directo = true;                              // stock del SKU, ya sumado por grupos
+          a.stockFlex = inp.stockFlex; a.stockFull = inp.stockFull;
+        } else if (!useML && inp.pool) {
+          a._pools.set(inp.pool, { flex: inp.stockFlex, full: inp.stockFull });
+        } else if (!a._directo) {
+          if (inp.stockFlex != null) a.stockFlex = Math.max(a.stockFlex || 0, inp.stockFlex);
+          if (inp.stockFull != null) a.stockFull = Math.max(a.stockFull || 0, inp.stockFull);
+        }
         // COGS y lead time no se suman: se toma el primero declarado
         if (a.cogs == null && inp.cogs != null) a.cogs = inp.cogs;
         if (a.leadTimeFlex == null && inp.leadTimeFlex != null) a.leadTimeFlex = inp.leadTimeFlex;
         if (a.leadTimeFull == null && inp.leadTimeFull != null) a.leadTimeFull = inp.leadTimeFull;
         if (!a.notes && inp.notes) a.notes = inp.notes;
       });
+      // Vista SKU sin clave de SKU: suma de los grupos de sus publicaciones
+      _agrupado.forEach(a => {
+        if (a._directo || !a._pools.size) return;
+        let f = null, u = null;
+        a._pools.forEach(p => { if (p.flex != null) f = (f || 0) + p.flex; if (p.full != null) u = (u || 0) + p.full; });
+        a.stockFlex = f; a.stockFull = u;
+      });
 
       const items = [];
-      for (const sku of _agrupado.keys()) {
+      for (const clave of _agrupado.keys()) {
         // se registra si el lead time vino declarado o es el default del canal
-        const inputs = _agrupado.get(sku);
+        const inputs = _agrupado.get(clave);
+        let sku = clave, miembrosRec = [clave];
+        if (clave.startsWith('POOL::')) {
+          // Grupo de stock compartido: demanda de todas sus publicaciones, rotulado con la que más vende
+          const vendidas = m => ['PROPIO', 'FULL'].reduce((t, c) =>
+            t + (recordsBySkuCanal[m + '||' + c] || []).reduce((x, r) => x + (r.unidades || 0), 0), 0);
+          miembrosRec = [...inputs.miembros];
+          const conVenta = miembrosRec.filter(m => skuMap[m] || skuMap[splitVariantId(m).baseId]);
+          if (!conVenta.length) continue;
+          sku = conVenta.sort((x, y) => vendidas(y) - vendidas(x))[0];
+        }
+        const compartidas = clave.startsWith('POOL::') ? inputs.miembros.size : 0;
         const _split = splitVariantId(sku);
         const lookupId = _split.baseId;
         const variante = _split.variante;
@@ -5552,11 +5614,24 @@ function recalcularForecast(opts) {
         }
         const cogs = inputs.cogs;
 
+        /* Vista SKU con varios grupos de stock: el SKU puede tener stock de sobra
+           y aun así quebrar un grupo, que pausa todas sus publicaciones. Se
+           evalúa cada grupo con la demanda de sus propias publicaciones (v51.6). */
+        const gruposSku = new Map();
+        if (!useML && inputs._pools && inputs._pools.size > 1) {
+          inputs.miembros.forEach(m => {
+            const p = (FORECAST_INPUTS[m] || {}).pool;
+            if (!p || !inputs._pools.has(p)) return;
+            if (!gruposSku.has(p)) gruposSku.set(p, { pubs: new Set(), stock: inputs._pools.get(p) });
+            gruposSku.get(p).pubs.add(m);
+          });
+        }
+
         // Procesar 2 canales (PROPIO y FULL) si hay stock o ventas
         const canales = ['PROPIO', 'FULL'];
         for (const canal of canales) {
           const stockCanal = canal === 'FULL' ? inputs.stockFull : inputs.stockFlex;
-          const recs = recordsBySkuCanal[sku + '||' + canal] || [];
+          const recs = miembrosRec.flatMap(m => recordsBySkuCanal[m + '||' + canal] || []);
           
           // Si no hay ni stock ni ventas en este canal, saltar
           if ((stockCanal == null || stockCanal === 0) && recs.length === 0) continue;
@@ -5571,6 +5646,21 @@ function recalcularForecast(opts) {
           const stock = stockCanal != null ? stockCanal : 0;
           const doh = calcDOH(stock, baseline.daily);
           const reposicion = sugerirReposicion(stock, leadTimeCanal, proyeccion);
+          // Grupo de stock que quiebra antes que el SKU: manda su reposición
+          let repoFinal = reposicion, grupoQuiebre = null;
+          gruposSku.forEach((g, p) => {
+            const stG = canal === 'FULL' ? g.stock.full : g.stock.flex;
+            if (stG == null) return;
+            const recsG = recs.filter(r => g.pubs.has(r.id_pub));
+            if (!recsG.length) return;
+            const repoG = sugerirReposicion(stG, leadTimeCanal, forecastSKU(computeBaselineDaily(recsG), SEMANAS, pais, bucket));
+            if (repoG.necesita && (!repoFinal.necesita || repoG.fechaQuiebre < repoFinal.fechaQuiebre)) {
+              repoFinal = repoG;
+              grupoQuiebre = { grupo: p, stock: stG,
+                vendidas: recsG.reduce((a, r) => a + (r.unidades || 0), 0),
+                pubs: Object.values(FORECAST_INPUTS).filter(i => i && i.pool === p).length };
+            }
+          });
 
           // Revenue/unidades de este canal específico
           let revenue30dCanal = 0, ventas30dCanal = 0, precioProm = 0;
@@ -5593,7 +5683,7 @@ function recalcularForecast(opts) {
           const margenTotal = (margenUnit != null) ? margenUnit * totalProyectado : null;
 
           items.push({
-            sku, producto, bucket, canal,
+            sku, producto, bucket, canal, compartidas,
             categoryML,  // Categoría real de ML (vacía si no se cargó reporte de Publicaciones)
             stock, cogs, leadTime: leadTimeCanal,
             /* Se registra si el lead time vino cargado por el equipo o es el
@@ -5602,7 +5692,7 @@ function recalcularForecast(opts) {
             leadTimeDeclarado: !!(canal === 'FULL' ? inputs.leadTimeFull : inputs.leadTimeFlex),
             baseline, proyeccion, totalProyectado,
             revenueProyectado, precioProm,
-            margenUnit, margenTotal, doh, reposicion,
+            margenUnit, margenTotal, doh, reposicion: repoFinal, grupoQuiebre,
             ventas30d: ventas30dCanal,
             revenue30d: revenue30dCanal
           });
@@ -5621,6 +5711,9 @@ function recalcularForecast(opts) {
 
       FORECAST_DATA = {
         items,
+        aviso: (useML && !items.length && skuConStock.some(k => !/^ML[A-Z]/i.test(k)))
+          ? 'El stock cargado está guardado sólo por SKU: el reporte de Publicaciones se importó en vista SKU con una versión anterior a v51.6. Volvé a cargar el reporte de Publicaciones para ver el forecast por publicación.'
+          : null,
         lastCalc: new Date(),
         calculated: true,
         config: { semanas: SEMANAS, pais }
@@ -5674,10 +5767,10 @@ function renderForecastOutputs() {
           <div class="panel-header">
             <span class="panel-title">Forecast · Resultados</span>
           </div>
-          <div class="panel-body"><div class="empty">Sin proyecciones calculadas.</div></div>
+          <div class="panel-body"><div class="empty">${FORECAST_DATA.aviso || 'Sin proyecciones calculadas.'}</div></div>
         </div>`);
     } else {
-      placeholder.querySelector('.panel-body').innerHTML = '<div class="empty">Sin proyecciones calculadas.</div>';
+      placeholder.querySelector('.panel-body').innerHTML = '<div class="empty">' + (FORECAST_DATA.aviso || 'Sin proyecciones calculadas.') + '</div>';
     }
     return;
   }
@@ -5851,6 +5944,23 @@ function kpiCardForecast(label, value, sub, color, tip) {
 /* ─────────────────────────────────────────────────────────────────────────
    3. renderForecastReposicion() — Tabla de reposiciones priorizada
    ───────────────────────────────────────────────────────────────────────── */
+/* Marca de stock compartido para la vista # Publicación (v51.6) */
+function _chipCompartido(i) {
+  if (i && i.grupoQuiebre) {
+    const g = i.grupoQuiebre;
+    return ' <span title="Quiebra el grupo de stock ' + g.grupo + ': ' + g.stock + ' u compartidas por ' + g.pubs
+      + ' publicaciones, que vendieron ' + g.vendidas + ' u en el período. El SKU tiene ' + i.stock
+      + ' u en total, pero cuando ese grupo llegue a cero sus publicaciones se pausan. Reponé o reasigná stock a ese grupo."'
+      + ' style="background:rgba(251,146,60,.14);color:var(--warn);padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;cursor:help;white-space:nowrap">'
+      + 'GRUPO DE STOCK ×' + g.pubs + '</span>';
+  }
+  if (!i || !(i.compartidas > 1)) return '';
+  return ' <span title="Esta publicación comparte el stock con otras ' + (i.compartidas - 1)
+    + ' (mismo Número de producto). La demanda y la reposición se calculan para todo el grupo."'
+    + ' style="background:rgba(168,85,247,.12);color:var(--accent);padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;cursor:help;white-space:nowrap">'
+    + 'STOCK COMPARTIDO ×' + i.compartidas + '</span>';
+}
+
 function renderForecastReposicion() {
   const items = FORECAST_DATA.items.filter(i => i.reposicion.necesita);
   const useML = G._lastRender.useML;
@@ -5891,11 +6001,13 @@ function renderForecastReposicion() {
             ? '<br><span style="font-size:9px;color:var(--warn)">hace ' + Math.round((Date.now() - _uvR.getTime())/86400000) + 'd</span>' : ''))
       : '—';
     rows += `<tr style="border-bottom:1px solid var(--border);${urgentBg}">
-      <td style="padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--text);">${idWithTitle(i.sku)} ${urgenteBadge}</td>
+      <td style="padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--text);">${idWithTitle(i.sku)}${_chipCompartido(i)} ${urgenteBadge}</td>
       <td style="padding:8px 12px;text-align:center;">${canalBadge}</td>
       <td style="padding:8px 12px;font-size:11px;color:var(--muted);">${prodShort}</td>
       <td style="padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--accent2);">${catDisplayR}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text);">${i.stock}</td>
+      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text);">${i.grupoQuiebre
+        ? i.grupoQuiebre.stock + '<div style="font-size:9px;color:var(--muted)">de ' + i.stock + ' del SKU</div>'
+        : i.stock}</td>
       <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : 'var(--warn)'};">${r.diasHastaQuiebre}d</td>
       <td style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : 'var(--text)'};">${fmtFecha(r.fechaQuiebre)}</td>
       <td style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : 'var(--text)'};">${fmtFecha(r.fechaPedido)}</td>
@@ -6227,7 +6339,7 @@ function renderForecastTable() {
     const catDisplay = i.categoryML ? i.categoryML : i.bucket;
     
     rows += `<tr style="border-bottom:1px solid var(--border);">
-      <td style="${tdBase}color:var(--text);white-space:nowrap;">${idWithTitle(i.sku)}</td>
+      <td style="${tdBase}color:var(--text);white-space:nowrap;">${idWithTitle(i.sku)}${_chipCompartido(i)}</td>
       <td style="padding:10px 10px;text-align:center;">${canalBadgeT}</td>
       
       <td style="${tdBase}font-size:11px;text-align:center;color:${confColor};">${i.baseline.confidence}<br><span style="font-size:9px;color:var(--muted)">${i.baseline.ventanaDias}d</span></td>
