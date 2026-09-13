@@ -1043,7 +1043,9 @@ const _GLOSARIO = [
   ['Cuotas','Costo financiero de las ventas en cuotas','Lo que absorbe el vendedor por ofrecer financiación.'],
   ['Ads (costo real)','Inversión publicitaria × netFee','La inversión neta de IVA, que es el costo efectivo para un Responsable.'],
   ['COGS total período','Σ (COGS unitario × unidades vendidas)','Costo de la mercadería vendida en el período. Requiere el template cargado.'],
-  ['Rentabilidad real $ / Margen real final','Margen NEXUS − COGS','Resultado final del período con todos los costos: canal, fiscal, publicidad y producto. Es el único número que puede llamarse utilidad.'],
+  ['Rentabilidad real $','NEXUS − COGS','Resultado final del período con todos los costos: canal, fiscal, publicidad y producto. Es el único número que puede llamarse utilidad. Se calcula sólo sobre las publicaciones con costo cargado, porque del resto no hay dato.'],
+  ['Cascada del informe','Del precio de venta al resultado','El informe muestra el desglose como cascada y no como lista de costos, para que se vea dónde queda parada cada cifra y la cuenta cierre sola. El corte intermedio es lo recibido de Mercado Libre sin IVA, que es la base de todos los márgenes. Cierra en dos tramos: hasta antes de mercadería contra NEXUS de todo el catálogo, y el tramo de mercadería contra la rentabilidad real de la porción con costo cargado. Se separan porque el COGS rara vez cubre el 100% del catálogo y mezclarlos daría un resultado final que no coincide con la tarjeta.'],
+  ['Margen real final','Rentabilidad real ÷ lo recibido de ML sin IVA','Responde de cada peso que quedó de Mercado Libre, cuánto es ganancia. La base es lo recibido menos el IVA débito: esa parte está en la cuenta pero no es del vendedor, hay que girarla al fisco, así que dejarla en el denominador achicaría el margen artificialmente. El numerador tampoco la tiene, con lo que la razón queda en la misma base. Se descartó calcularlo sobre el revenue bruto, que era lo que hacía hasta septiembre de 2026 y mezclaba un numerador sin IVA con un denominador con IVA. También se descartó la venta neta: es correcta desde lo contable pero no representa plata que el vendedor vea. Medido en una cuenta real: 17,8% sobre bruto, 21,6% sobre venta neta y 37,1% sobre lo recibido sin IVA. El tooltip de la tarjeta muestra las tres para poder contrastar.'],
  ]],
  ['Inventario FULL', [
   ['Stock desde reporte ML','Botón del módulo Forecast','Importa el stock del reporte de Publicaciones de ML: cubre depósito propio/Flex y FULL, así que sirve también en cuentas que no usan fulfillment. Pisa lo cargado manualmente. Las claves quedan guardadas según el identificador activo al importar (SKU o # de publicación), por eso conviene no cambiar de vista entre importar y analizar.'],
@@ -1161,12 +1163,12 @@ const _GLOSARIO = [
   ['Cómo se genera','Vista propia + @media print','El botón abre un formulario de portada y después el diálogo de impresión del navegador: elegir "Guardar como PDF". No se usa html2pdf ni html2canvas porque rasterizan el texto: el PDF saldría borroso, pesado y no seleccionable. Con print CSS el texto queda vectorial y los saltos de página se controlan de verdad.'],
   ['Facturación del informe','Resultado después de todo','Con COGS cargado muestra dos cifras: el resultado final (NEXUS − COGS) y el resultado antes de mercadería, porque el COGS suele cubrir sólo parte del catálogo y quedarse con una sola engaña. Siempre indica el % de cobertura. Al pie de cada KPI va "Ingresos por productos", que es la cifra comparable contra la plataforma.'],
   ['Ventas','Órdenes concretadas','Órdenes, no unidades. Excluye canceladas y devueltas. Se llama "Ventas" y no "órdenes" porque es el término de uso en el mercado local.'],
-  ['Margen de contribución / Margen operativo','Nombres contables','Sin COGS se informa "margen de contribución sobre ventas netas", que es lo que EVO calcula: ventas netas menos costos variables del canal, antes de mercadería. Con COGS pasa a "margen operativo sobre ventas netas". No se usa "margen bruto" porque en términos contables ese es ventas menos costo de mercadería, y EVO además descuenta comisiones, envío e impuestos.'],
+  ['Nombres de los márgenes','Qué significa cada uno','Todos se miden sobre lo recibido de Mercado Libre sin IVA, que es la plata que efectivamente entró y de la que el vendedor dispone. Sin COGS cargado, el informe habla de margen antes de mercadería: ya descuenta comisiones, envío, retenciones, IIBB y publicidad. Con COGS pasa a margen final. No se usa "margen bruto" porque en términos contables ese es ventas menos costo de mercadería, y acá se descuenta bastante más.'],
   ['Fidelidad del PDF','print-color-adjust en todo el informe','Sin esa propiedad el navegador descarta los fondos al imprimir y el PDF pierde el punto de los títulos, el guión, los encabezados en degradado y los fondos suaves: el archivo sale mucho más pobre que lo que se ve en pantalla. Se aplica a todos los elementos del informe, no a una lista de selectores.'],
   ['Tipografía','Poppins con fallback a Google Sans y DM Sans','El dashboard carga DM Sans y Syne; Poppins se pide aparte para el informe. Si no hay conexión cae a Google Sans, Google Sans Text y DM Sans, en ese orden. El pie de página usa la misma cadena para no quedar en una fuente distinta al resto.'],
   ['Identificadores','Nunca se recortan','El código de la publicación se muestra siempre completo: sin él la recomendación no es accionable, porque no se puede ubicar el ítem. Para que un SKU largo no desborde se insertan puntos de corte invisibles tras los separadores y la celda envuelve en dos líneas. Lo que se recorta, si hace falta, es el título del producto, que es prescindible para identificarlo.'],
   ['Chequeo de autoconsistencia','Se valida antes de renderizar, y si no cierra no se genera','El informe invita al lector a rehacer las cuentas, así que no puede salir con números que no cierren entre sí. Antes de imprimir se verifica que el resultado sea exactamente ventas netas menos el total de costos, que las ventas netas sean los ingresos por productos menos el IVA débito, y que el retorno sea la facturación atribuida dividida la inversión. Si alguna identidad falla se avisa y se frena: es preferible eso a entregar un PDF que el cliente desarma con una calculadora.'],
-  ['Por qué el IVA no figura en la tabla de costos','La base ya está neta','La tabla se lee sobre ventas netas, que son los ingresos por productos menos el IVA débito. Listar el IVA como costo sería restarlo dos veces y la resta no cerraría contra el resultado. El IIBB y las retenciones sí figuran, porque la base no los contempla.'],
+  ['Por qué el IVA figura en la cascada','Arranca en el precio bruto','La cascada parte de los ingresos por productos, que incluyen IVA, así que el IVA débito aparece como la primera resta. Entra a la cuenta del vendedor pero se gira al fisco, por eso no es suyo. En la versión anterior la tabla arrancaba en ventas netas y el IVA no figuraba: listarlo habría sido restarlo dos veces.'],
   ['Envío neto','Puede ser ingreso, no siempre costo','En cuentas donde el comprador paga más envío del que cuesta, el neto es positivo. El KPI de costo logístico usa la versión con piso en cero, pero la tabla de resultado usa el neto con signo: si no, la cuenta no cierra.'],
   ['Capa narrativa','Una frase por hallazgo, con el número adentro','Cada riesgo se redacta con sus propias cifras en vez de una instrucción genérica. La diferencia entre "pausar la pauta" y "estas 5 publicaciones mueven el 8,5% de las unidades y aportan el 3,8% de la facturación, y encima reciben $25.935 de pauta" es lo que hace que la recomendación se ejecute. Se arma sobre los datos ya calculados: no inventa cifras ni depende de un servicio externo, así que el informe funciona sin conexión.'],
   ['Fechas del meta de Ads','Se devuelven siempre como Date','Al importar un snapshot, JSON.parse deja desde y hasta como texto. Cualquier llamada a getTime() sobre ellas lanza una excepción que corta el render a la mitad: el dashboard queda en la pantalla de carga y no vuelve. detectAdsWindow las convierte antes de devolverlas para que quien las consuma no tenga que acordarse. Es el mismo patrón que ya había aparecido con fechaHora en los registros de venta.'],
@@ -1193,7 +1195,7 @@ const _GLOSARIO = [
  ['Herramienta', [
   ['Resumen de carga','Ventas válidas · unidades · período ingerido','Se muestra sobre la fila del reporte de ventas apenas se carga. Es un control contra reportes truncados: si se descarga el export de ML antes de que termine de generarse, llega parcial, con el mismo período declarado pero una fracción de las ventas, y eso desplaza TODAS las métricas. Caso real medido: 82 unidades contra 362 del mismo período, con el TACOS de una publicación inflado de 2,5% a 19,5%. Si el número de ventas no coincide con lo esperado, volver a descargar el reporte.'],
   ['Rev Neto (hoja Rentabilidad)','Recibido de ML − IVA débito − IIBB','Es la MISMA definición que la columna Revenue neto del dashboard. Hasta agosto de 2026 el export tomaba en su lugar la columna Total del reporte —el depósito de ML, sin modelo fiscal— y sobre una cuenta MX real eso daba $138.167,61 en el Excel contra $106.511,48 en pantalla: 23% de diferencia bajo la misma etiqueta. Efecto lateral del arreglo: desaparecieron las filas con margen 100%, que eran componentes de carrito donde el depósito coincidía con el bruto.'],
-  ['Depósito ML','Columna Total del reporte, tal como la informa ML','Lo que la plataforma deposita, ya neto de comisión, envío y retenciones. Se muestra como columna aparte para no confundirlo con revenue: es el concepto que se compara con "Recibiste" del panel de Mercado Libre, NO con "Ventas brutas".'],
+['Depósito ML vs Recibido de ML','Dos cifras distintas, ninguna sobra','Depósito es la columna Total del reporte: la caja, tal como ML la liquida, e incluye compensaciones y ajustes que el reporte no desglosa. Recibido es la reconstrucción de EVO: precio bruto menos los cargos NETOS de su IVA menos retenciones. La diferencia principal es el IVA de los cargos, que para un Responsable Inscripto es crédito recuperable y por eso no se computa como costo. Verificado en filas reales: Total = ingresos + cargos, y como ingresos es el precio de lista con IVA, el depósito también lo contiene.'],
   ['Ingresos por productos (bruto)','Precio × unidades, con IVA','Se agregó al Resumen porque es la cifra comparable con "Ventas concretadas" del panel de ML. El KPI de facturación no sirve para ese contraste.'],
   ['Costos de canal % · cómo reproducirlo','(comisión + envío + cargo fijo + cuotas + Ads) ÷ venta neta','El denominador es la venta NETA, no el revenue bruto: dividir por bruto da un número bastante menor y no reproduce el KPI. La inversión de Ads que entra es la prorrateada al rango filtrado, que es la misma que informa el Resumen. Equivale algebraicamente a 1 − Σ Rev Neto ÷ Σ Venta neta.'],
   ['Comisión% en NEXUS','Comisión ÷ venta neta','Ojo al reconstruir importes desde ese porcentaje: la base es la venta neta, no el revenue bruto. Multiplicarlo por el bruto infla la comisión exactamente un 16% en México (o el IVA que corresponda) y hace parecer que hay dos comisiones distintas conviviendo. No las hay: EVO toma el cargo tal como lo informa el reporte.'],
@@ -1994,21 +1996,29 @@ function generarInforme(){
   /* Cada resultado va con su margen en la misma tarjeta: el nominal sin el
      porcentaje obliga a calcularlo a mano, y el porcentaje sin el nominal no
      dice cuánta plata es. */
-  const vnMatch = M.brutoMatch * (1 - M.fc.factorIva);
-  const margenFinal = vnMatch > 0 ? M.rentReal / vnMatch : 0;
-  const margenPre   = M.ventaNeta > 0 ? M.nexus / M.ventaNeta : 0;
+  /* Base de los márgenes: lo recibido de ML SIN IVA, igual que el KPI del
+     dashboard. Es la plata que entró y de la que el vendedor dispone; venta
+     neta es correcta contablemente pero no representa dinero que se vea. */
+  const _ivaDebTot = M.bruto * M.fc.factorIva;
+  const _cargosTot = M.comision + M.envioNeto + M.fijo + M.cuotas;
+  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot - (M.impuestos || 0);
+  const _ivaDebMatch = M.brutoMatch * M.fc.factorIva;
+  const _propMatch = M.bruto > 0 ? M.brutoMatch / M.bruto : 0;
+  const baseMatch = M.brutoMatch - _ivaDebMatch - _cargosTot * _propMatch - (M.impuestos || 0) * _propMatch;
+  const margenFinal = baseMatch > 0 ? M.rentReal / baseMatch : 0;
+  const margenPre   = baseRecSinIva > 0 ? M.nexus / baseRecSinIva : 0;
   if (conCogs){
     kpis += K('Resultado final', fmtCurrency(M.rentReal),
-      '<b>' + PCT(margenFinal) + '</b> de margen operativo sobre ventas netas<br>'
+      '<b>' + PCT(margenFinal) + '</b> de margen sobre lo recibido sin IVA<br>'
       + 'Después de canal, impuestos, publicidad y costo de mercadería<br>'
       + 'Cubre el ' + PCT(M.cobertura) + ' de la facturación · Ingresos por productos: ' + fmtCurrency(M.brutoMatch));
     kpis += K('Resultado antes de mercadería', fmtCurrency(M.nexus),
-      '<b>' + PCT(margenPre) + '</b> de margen de contribución sobre ventas netas<br>'
+      '<b>' + PCT(margenPre) + '</b> de margen sobre lo recibido sin IVA<br>'
       + 'Todo el catálogo, sin descontar costo de producto<br>'
       + 'Ingresos por productos: ' + fmtCurrency(M.bruto));
   } else {
     kpis += K('Resultado del período', fmtCurrency(M.nexus),
-      '<b>' + PCT(margenPre) + '</b> de margen de contribución sobre ventas netas<br>'
+      '<b>' + PCT(margenPre) + '</b> de margen sobre lo recibido sin IVA<br>'
       + 'Después de costos de canal, impuestos y publicidad<br>'
       + 'Ingresos por productos: ' + fmtCurrency(M.bruto));
   }
@@ -2016,45 +2026,68 @@ function generarInforme(){
   const margen = conCogs ? margenFinal : margenPre;
   kpis += K(conCogs?'Margen operativo':'Margen de contribución', PCT(margen),
     conCogs
-      ? 'Sobre las ventas netas de las publicaciones con costo cargado ('+PCT(M.cobertura)+' del total).<br>'
-        + 'El margen de contribución de todo el catálogo, antes de mercadería, es '+PCT(margenPre)+'.'
-      : 'Sobre ventas netas · antes de costo de mercadería');
-  kpis += K('Costos de canal', PCT(M.ventaNeta>0 ? M.costosCanal/M.ventaNeta : 0),
-    'Comisión, envío y publicidad sobre ventas netas');
+      ? 'Sobre lo recibido sin IVA de las publicaciones con costo cargado ('+PCT(M.cobertura)+' del total).<br>'
+        + 'El margen de todo el catálogo, antes de mercadería, es '+PCT(margenPre)+'.'
+      : 'Sobre lo recibido de Mercado Libre sin IVA · antes de costo de mercadería');
+  kpis += K('Costos de canal', PCT(M.bruto>0 ? M.costosCanal/M.bruto : 0),
+    'Comisión, envío y publicidad sobre el precio de venta');
   H.push('<div class="rp-kpis">'+kpis+'</div>');
 
-  /* ── Desglose de costos ── */
-  H.push(SEC('Estructura de costos del período'));
-  /* La tabla tiene que cerrar contra el resultado de arriba: ventas netas menos
-     el total de esta tabla debe dar exactamente el número de la tarjeta. Por eso
-     NO se lista el IVA débito: la base ya está neta de IVA y volver a restarlo
-     sería contarlo dos veces. Y el envío va NETO, porque en cuentas donde el
-     comprador paga más envío del que cuesta el neto es ingreso, no costo. */
-  const filasC = [['Comisión de la plataforma',M.comision]];
-  filasC.push([M.envioNeto>=0 ? 'Envío absorbido' : 'Envío (ingreso neto)', M.envioNeto]);
-  if (M.fijo>0) filasC.push(['Cargo fijo por venta',M.fijo]);
-  if (M.cuotas>0) filasC.push(['Costo financiero de cuotas',M.cuotas]);
-  if (M.ads>0) filasC.push(['Inversión publicitaria (publicaciones con ventas)',M.ads]);
-  if (M.impuestos>0) filasC.push(['Retenciones',M.impuestos]);
-  if (M.iibb>0) filasC.push(['Ingresos Brutos',M.iibb]);
-  if (conCogs) filasC.push(['Costo de mercadería vendida',M.cogsTot]);
-  const totC = filasC.reduce((a,x)=>a+x[1],0);
-  H.push('<table><colgroup><col style="width:52%"><col style="width:26%"><col style="width:22%"></colgroup>'
-    + '<thead><tr><th>Concepto</th><th class="num">Importe</th><th class="num">% de ventas netas</th></tr></thead><tbody>'
-    + filasC.map(([n,v])=>'<tr><td>'+n+'</td><td class="num">'+fmtCurrency(v)+'</td><td class="num">'
-      + PCT(M.ventaNeta>0?v/M.ventaNeta:0)+'</td></tr>').join('')
-    + '<tr style="background:#F4EFFC;font-weight:600"><td>Total de costos</td><td class="num">'+fmtCurrency(totC)
-    + '</td><td class="num">'+PCT(M.ventaNeta>0?totC/M.ventaNeta:0)+'</td></tr>'
-    + '<tr style="font-weight:600"><td>Ventas netas de IVA</td><td class="num">'+fmtCurrency(M.ventaNeta)
-    + '</td><td class="num">100,0%</td></tr>'
-    + '<tr style="background:#F4EFFC;font-weight:700;color:#4A00E0"><td>Resultado'
-    + (conCogs ? ' después de mercadería' : '') + ' (ventas netas − costos)</td>'
-    + '<td class="num">'+fmtCurrency(M.ventaNeta-totC)+'</td><td class="num">'
-    + PCT(M.ventaNeta>0?(M.ventaNeta-totC)/M.ventaNeta:0)+'</td></tr></tbody></table>');
-  H.push('<div class="rp-nota">Base: ventas netas de IVA ('+fmtCurrency(M.ventaNeta)+'), es decir los '
-    + fmtCurrency(M.bruto)+' de ingresos por productos menos '+fmtCurrency(M.ivaDebito)+' de IVA débito. '
-    + 'El IVA no figura en la tabla porque ya está descontado de la base: listarlo sería contarlo dos veces. '
-    + 'Los cargos de la plataforma se computan netos de su IVA cuando corresponde a la condición fiscal declarada.</div>');
+  /* ── Desglose de costos · cascada ──
+     Se muestra como cascada en vez de lista plana porque así se ve dónde queda
+     parada cada cifra y la cuenta cierra sola. El corte intermedio es lo
+     RECIBIDO DE ML SIN IVA, que es la base del margen final: la plata que
+     efectivamente entró y de la que el vendedor dispone. */
+  H.push(SEC('Del precio de venta al resultado'));
+  const _ivaDeb = M.ivaDebito || 0;
+  const _retn   = M.impuestos || 0;
+  const _cargos = M.comision + M.envioNeto + M.fijo + M.cuotas;
+  const _recSinIva = M.bruto - _ivaDeb - _cargos - _retn;
+  const _neg = v => -Math.abs(v);
+  const casc = [
+    ['Ingresos por productos', M.bruto, 'base', true],
+    ['IVA débito', _neg(_ivaDeb), 'resta', false],
+    ['Comisión de la plataforma', _neg(M.comision), 'resta', false],
+    [M.envioNeto >= 0 ? 'Envío absorbido' : 'Envío (ingreso neto)', _neg(M.envioNeto), 'resta', false]
+  ];
+  if (M.fijo > 0)   casc.push(['Cargo fijo por venta', _neg(M.fijo), 'resta', false]);
+  if (M.cuotas > 0) casc.push(['Costo financiero de cuotas', _neg(M.cuotas), 'resta', false]);
+  if (_retn > 0)    casc.push(['Retenciones', _neg(_retn), 'resta', false]);
+  casc.push(['Recibido de Mercado Libre, sin IVA', _recSinIva, 'subtotal', true]);
+  if (M.iibb > 0)   casc.push(['Ingresos Brutos', _neg(M.iibb), 'resta', false]);
+  if (M.ads > 0)    casc.push(['Inversión publicitaria', _neg(M.ads), 'resta', false]);
+  const _preCogs = _recSinIva - M.iibb - M.ads;
+  /* El COGS sólo cubre las publicaciones con costo cargado, así que la cascada
+     cierra en el resultado ANTES de mercadería —que es exacto sobre todo el
+     catálogo— y el tramo de mercadería se muestra aparte, sobre su propia
+     porción. Mezclarlos daría un resultado final que no coincide con el KPI. */
+  casc.push(['Resultado antes de mercadería', _preCogs, conCogs ? 'subtotal' : 'total', true]);
+  const _resFinal = conCogs ? M.rentReal : _preCogs;
+  if (conCogs) {
+    casc.push(['NEXUS de las publicaciones con costo cargado', M.nexusMatch, 'resta', false]);
+    casc.push(['Costo de mercadería vendida', _neg(M.cogsTot), 'resta', false]);
+    casc.push(['Resultado final (porción con costo cargado)', _resFinal, 'total', true]);
+  }
+
+  H.push('<table><colgroup><col style="width:50%"><col style="width:26%"><col style="width:24%"></colgroup>'
+    + '<thead><tr><th>Concepto</th><th class="num">Importe</th><th class="num">% sobre recibido sin IVA</th></tr></thead><tbody>'
+    + casc.map(([n,v,tipo,fuerte]) => {
+        const bg = tipo === 'subtotal' ? 'background:#F4EFFC;' : (tipo === 'total' ? 'background:#F4EFFC;color:#4A00E0;' : '');
+        const pw = fuerte ? 'font-weight:700;' : '';
+        const pct = (tipo === 'resta' || tipo === 'total')
+          ? (_recSinIva > 0 ? PCT(Math.abs(v) / _recSinIva) : '—') : '';
+        return '<tr style="' + bg + pw + '"><td>' + n + '</td><td class="num">' + fmtCurrency(v)
+             + '</td><td class="num">' + pct + '</td></tr>';
+      }).join('')
+    + '</tbody></table>');
+  H.push('<div class="rp-nota">La columna de porcentaje se mide sobre lo recibido sin IVA ('
+    + fmtCurrency(_recSinIva) + '), que es la plata que efectivamente entró y de la que se dispone. '
+    + 'El IVA débito figura como resta porque, si bien se cobra al comprador y entra a la cuenta, '
+    + 'se gira al fisco y no es del vendedor. Los cargos de la plataforma se computan netos de su IVA '
+    + 'cuando corresponde a la condición fiscal declarada.'
+    + (conCogs ? ' El tramo de mercadería se calcula aparte porque el costo sólo está cargado en el '
+        + PCT(M.cobertura) + ' de la facturación: sobre esa porción se resta el COGS de su propio NEXUS, '
+        + 'y por eso el resultado final no es el resultado antes de mercadería menos el COGS.' : '') + '</div>');
 
   /* ── Tendencia ── */
   const serie = _infSerie();
@@ -2313,7 +2346,7 @@ function generarInforme(){
   }
 
   H.push('</div><div class="rp-foot-note">Informe generado por EVO sobre los reportes oficiales de MercadoLibre del período indicado. '
-    + 'Todos los importes se expresan en '+(CURRENCY_CODE||'moneda local')+'. Los márgenes se calculan sobre ventas netas de IVA'
+    + 'Todos los importes se expresan en '+(CURRENCY_CODE||'moneda local')+'. Los márgenes se calculan sobre lo recibido de Mercado Libre, sin IVA'
     + (conCogs?'':' y no incluyen el costo de mercadería, por no estar cargado al momento del análisis')+'. '
     + 'Documento de uso interno del cliente.</div>');
   H.push('</div></div>');
@@ -2332,9 +2365,13 @@ function generarInforme(){
   /* El objetivo de la resta depende de si la tabla incluye la mercadería:
      con COGS cargado, el total de costos ya la descuenta, así que cierra contra
      el resultado post-COGS, no contra NEXUS que es previo. */
-  _chk('Resultado ≠ ventas netas − total de costos',
-       M.ventaNeta - totC, conCogs ? (M.nexus - M.cogsTot) : M.nexus);
-  _chk('Ventas netas ≠ ingresos por productos − IVA débito', M.bruto - M.ivaDebito, M.ventaNeta);
+  /* La cascada cierra en dos tramos: hasta antes de mercadería contra NEXUS de
+     todo el catálogo, y el tramo de mercadería contra la rentabilidad real de
+     la porción con costo cargado. */
+  _chk('El tramo previo a mercadería no cierra contra NEXUS', _preCogs, M.nexus);
+  if (conCogs) _chk('El resultado final no cierra contra NEXUS matcheado − COGS',
+                    _resFinal, M.nexusMatch - M.cogsTot);
+  _chk('Recibido sin IVA mal compuesto', M.bruto - _ivaDeb - _cargos - _retn, _recSinIva);
   if (typeof _roasCalc !== 'undefined' && _roasCalc.inv > 0) {
     const rr = _roasCalc.rev / _roasCalc.inv;
     if (Math.abs(rr - _roasCalc.mostrado) > 0.05)
@@ -8145,22 +8182,31 @@ function exportarExcel(){
 
   // Bloque de rentabilidad real con COGS (si hay template cargado)
   if (typeof COGS_DATA !== 'undefined' && COGS_DATA.loaded) {
-    let cogsTotal=0, nexusMatch=0, revMatch=0, nMatch=0, nTotal=0;
+    let cogsTotal=0, nexusMatch=0, revMatch=0, vnetaMatch=0, recibMatch=0, nMatch=0, nTotal=0;
     Object.values(skuMap).forEach(s=>{
       const n=calcNEXUS(s); if(!n) return; nTotal++;
       const cg=getCOGS(s);
-      if(cg){ nMatch++; cogsTotal+=cg.costo*(s.unidades||0); nexusMatch+=n.recibidoNEXUS||0; revMatch+=s.ingresos_brutos||0; }
+      if(cg){ nMatch++; cogsTotal+=cg.costo*(s.unidades||0); nexusMatch+=n.recibidoNEXUS||0;
+              revMatch+=s.ingresos_brutos||0; vnetaMatch+=n.ventaNeta||0; recibMatch+=n.recibidoML||0; }
     });
     const rentReal=nexusMatch-cogsTotal;
-    const margenReal=revMatch>0?rentReal/revMatch:0;
+    // Base: lo recibido de ML sin IVA, igual que en el dashboard
+    const _fcX=fiscalCfg();
+    const _ivaDebX=revMatch*_fcX.factorIva;
+    const _baseX=recibMatch-_ivaDebX;
+    const margenReal=_baseX>0?rentReal/_baseX:0;
     resumenRows.push([], ['Rentabilidad período (con COGS)','Valor']);
     _hdrRes.push(resumenRows.length - 1);
     resumenRows.push(['Publicaciones totales',nTotal]);
     resumenRows.push(['Publicaciones con COGS matcheado',nMatch]);
+    resumenRows.push(['Ingresos por productos de los matcheados',revMatch]);
+    resumenRows.push(['Recibido de ML de los matcheados',recibMatch]);
+    resumenRows.push(['  menos IVA débito',_ivaDebX]);
+    resumenRows.push(['Recibido sin IVA (base del margen)',_baseX]);
     resumenRows.push(['COGS total período',cogsTotal]);
     resumenRows.push(['NEXUS $ (solo matcheados)',nexusMatch]);
     resumenRows.push(['Rentabilidad real $ (NEXUS - COGS)',rentReal]);
-    resumenRows.push(['Margen real final %',margenReal]);
+    resumenRows.push(['Margen real final % (sobre recibido sin IVA)',margenReal]);
   }
   addSheet('Resumen',resumenRows,[42,26,15,15],{ titulo:true, etiquetaCol0:true, headerRows:_hdrRes });
 
@@ -10738,7 +10784,7 @@ function renderRentKPIs(skuMap) {
   // ═══ Cards COGS (solo con template cargado) ═══
   if (COGS_DATA.loaded) {
     // Calcular sobre productos CON COGS matcheado (como la hoja Resumen de referencia)
-    let cogsTotal = 0, nexusMatcheado = 0, revMatcheado = 0, nMatch = 0, nTotal = 0;
+    let cogsTotal = 0, nexusMatcheado = 0, revMatcheado = 0, vnetaMatch = 0, recibMatch = 0, nMatch = 0, nTotal = 0;
     Object.values(skuMap).forEach(s => {
       const n = calcNEXUS(s);
       if (!n) return;
@@ -10749,10 +10795,24 @@ function renderRentKPIs(skuMap) {
         cogsTotal += cg.costo * (s.unidades || 0);
         nexusMatcheado += n.recibidoNEXUS || 0;
         revMatcheado += s.ingresos_brutos || 0;
+        vnetaMatch += n.ventaNeta || 0;
+        recibMatch += n.recibidoML || 0;
       }
     });
     const rentReal = nexusMatcheado - cogsTotal;
-    const margenReal = revMatcheado > 0 ? rentReal / revMatcheado : 0;
+    /* Base: lo RECIBIDO DE ML, sin IVA.
+       El criterio es el del vendedor: la rentabilidad se mide contra la plata
+       que efectivamente entró y de la que dispone, no contra lo facturado. Se
+       le descuenta el IVA débito porque esa parte está en la cuenta pero no es
+       suya: hay que girarla al fisco. Así numerador y denominador quedan en la
+       misma base —ambos sin IVA— y el resultado responde a "de cada peso que me
+       quedó de Mercado Libre, cuánto es ganancia".
+       Verificado en el reporte: Total = ingresos + cargos, e ingresos es el
+       precio de lista con IVA, así que el depósito sí lo contiene. */
+    const _fcMR = fiscalCfg();
+    const ivaDebMatch = revMatcheado * _fcMR.factorIva;
+    const baseReal = recibMatch - ivaDebMatch;
+    const margenReal = baseReal > 0 ? rentReal / baseReal : 0;
     const rentClr = rentReal < 0 ? 'danger' : 'ok';
     const margenClr = margenReal < 0 ? 'danger' : margenReal < 0.10 ? 'warn' : 'ok';
     
@@ -10764,10 +10824,19 @@ function renderRentKPIs(skuMap) {
       <div class="kpi-label">Rentabilidad real $</div>
       <div class="kpi-value ${rentClr}">${fmtCurrency(rentReal)}</div>
       <div class="kpi-sub">NEXUS − COGS (solo matcheados)</div></div>`;
-    kpis += `<div class="kpi" style="border-color:var(--accent);">
+    const _tipMR = 'De cada peso que quedó de Mercado Libre, cuánto es ganancia.\n\n'
+      + 'Rentabilidad real ÷ lo recibido de ML sin IVA, sobre las publicaciones con COGS cargado.\n\n'
+      + 'Recibido de ML: ' + fmtCurrency(recibMatch) + '\n'
+      + 'menos IVA débito: ' + fmtCurrency(ivaDebMatch) + '  (está en la cuenta pero se gira al fisco)\n'
+      + '= base del margen: ' + fmtCurrency(baseReal) + '\n\n'
+      + 'Rentabilidad real = NEXUS − COGS, es decir lo recibido menos carga fiscal, publicidad y mercadería.\n\n'
+      + 'Se descuenta el IVA de ambos lados para que la razón quede en la misma base. Sobre ventas netas '
+      + 'el margen sería ' + (vnetaMatch > 0 ? (rentReal / vnetaMatch * 100).toFixed(1) : '0')
+      + '% y sobre el revenue bruto ' + (revMatcheado > 0 ? (rentReal / revMatcheado * 100).toFixed(1) : '0') + '%.';
+    kpis += `<div class="kpi" style="border-color:var(--accent);cursor:help" title="${_tipMR.replace(/"/g,'&quot;')}">
       <div class="kpi-label">Margen real final</div>
       <div class="kpi-value ${margenClr}">${(margenReal*100).toFixed(1)}%</div>
-      <div class="kpi-sub">sobre revenue de matcheados</div></div>`;
+      <div class="kpi-sub">sobre lo recibido sin IVA · ${nMatch} pubs con COGS</div></div>`;
   }
   
   kpiRow.innerHTML = kpis;
