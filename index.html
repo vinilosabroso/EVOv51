@@ -680,7 +680,7 @@
   <div class="info-modal">
     <div class="info-head">
       <div>
-        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.2</div>
+        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.3</div>
         <div class="info-sub">Qué toma y cómo calcula cada métrica. Uso interno PTI.</div>
       </div>
       <button class="btn" onclick="cerrarInfo()">✕</button>
@@ -973,8 +973,8 @@ const _GLOSARIO = [
   ['factorIVA','IVA ÷ (1 + IVA)','Proporción de IVA contenida en un precio con IVA. AR 21% → 17,36%. CL 19% → 15,97%. MX 16% → 13,79%. Sólo se aplica si la condición fiscal es Responsable.'],
   ['netFee','1 − factorIVA (o 1 en México)','Factor que convierte un cargo informado por la plataforma en su costo real. AR y CL informan los cargos CON IVA y para un Responsable ese IVA es crédito recuperable, por eso se netea. México informa los costos YA netos (verificado contra facturas), así que netFee = 1 y no se vuelve a netear.'],
   ['Revenue neto','Revenue bruto − IVA débito − cargos de ML + bonificaciones − IIBB','Lo que le queda al seller después de los cargos de la plataforma y de la carga fiscal. NO descuenta Ads ni COGS: es margen de contribución pre-Ads y pre-COGS.'],
-  ['Liquidez','Columna "Total" del reporte','Lo que ML deposita, ya neto de comisiones y envío. En carritos el Total viene en la fila del paquete y EVO lo reparte entre los ítems con la misma participación que usa para los cargos. EVO la usa para facturación y Pareto, no para medir márgenes ni TACOS.'],
-  ['IIBB','Venta neta × 5% (sólo Argentina)','Ingresos Brutos. En Chile y México no aplica.'],
+  ['Liquidez','Columna "Total" del reporte','Lo que ML deposita, ya neto de comisiones y envío. En carritos el Total viene en la fila del paquete y EVO lo reparte entre los ítems con la misma participación que usa para los cargos. Se muestra como Depósito de ML; desde v51.3 no se usa para facturación, Pareto, márgenes ni TACOS.'],
+  ['IIBB','Venta neta × 4% (sólo Argentina), con las retenciones a cuenta','Ingresos Brutos. Se toma 4%, la alícuota que paga la mayoría. Las retenciones que ML practica (columna Impuestos) se computan como pago a cuenta. En Chile y México no aplica y las retenciones se tratan como costo.'],
  ]],
  ['Costos del canal', [
   ['Comisión','|Cargo por venta e impuestos| × netFee','Retención de ML por la venta. El reporte la informa CON IVA incluido: en AR y CL se netea, en MX no. Tasas típicas verificadas en CL: 15% Clásica, 18% Premium.'],
@@ -1043,6 +1043,11 @@ const _GLOSARIO = [
   ['Cuotas','Costo financiero de las ventas en cuotas','Lo que absorbe el vendedor por ofrecer financiación.'],
   ['Ads (costo real)','Inversión publicitaria × netFee','La inversión neta de IVA, que es el costo efectivo para un Responsable.'],
   ['COGS total período','Σ (COGS unitario × unidades vendidas)','Costo de la mercadería vendida en el período. Requiere el template cargado.'],
+  ['Retenciones e IIBB','IIBB 4% de la venta neta, retenciones a cuenta','La columna Impuestos del reporte son retenciones que ML practica sobre cada venta. En Argentina se computan como pago a cuenta del IIBB: bajan lo recibido, porque es plata que no entró, pero no se vuelven a restar del resultado. El IIBB se toma en 4%, la alícuota que paga la mayoría. Hasta v51.2 se restaban las retenciones y además un IIBB de 5%, con lo que el mismo impuesto contaba dos veces. Se muestran en nominal y en % de la venta neta en el dashboard, el informe y el export.'],
+  ['Costo de devoluciones','Total negativo de ventas devueltas o no entregadas','Las canceladas no suman ni restan. Las devueltas o no entregadas sólo entran cuando el Total del reporte es negativo, que es lo que le costó al seller (típicamente el envío de vuelta), neto de IVA. Un Total positivo en esas ventas no se toma como ingreso porque ML suele revertirlo después. Hasta v51.2 se ignoraban.'],
+  ['Margen UNIT vs margen P&L','Dos bases a propósito','Los márgenes P&L y los finales con COGS se miden sobre lo recibido sin IVA, igual que los KPI de cuenta. El margen UNIT (por unidad, sin Ads ni COGS) y el de la tabla Rentabilidad siguen sobre venta neta: miden cuánto de la venta sobrevive a los cargos del canal, y sobre lo recibido sin IVA sólo reflejarían el IIBB, porque esos cargos ya están descontados de la base.'],
+  ['Pareto y facturación','Venta neta','Pareto de facturación, Pareto geográfico, tiendas, split Ads/orgánico, Facturación Neta y la ficha usan Ingresos por productos sin IVA. Hasta v51.2 usaban el depósito de ML dividido por 1,21, que no es venta neta ni recibido sin IVA. La columna Margen % de los dos Pareto muestra el margen P&L antes de mercadería, o el final si hay COGS cargado.'],
+  ['Envío absorbido','Venta por venta, en todos los módulos','El costo de envío que paga el seller se calcula en cada venta y recién después se suma, con su IVA neteado. Hasta v51.2 el dashboard lo hacía así, pero el informe, el export y la tabla Rentabilidad lo calculaban por publicación, donde el envío que cobra de más una venta tapaba el que absorbía otra.'],
   ['Período con reporte de Ads','Se alinea solo a la ventana del reporte','Al cargar ventas o Ads y al generar el dashboard, el filtro de fechas pasa a la ventana del reporte de Mercado Ads, recortada a las fechas que tienen ventas. Es el único rango con datos de pauta, y el COGS del template refleja costos vigentes, no los de meses atrás. Medido en una cuenta real con 6 meses de ventas y 30 días de Ads: el margen real final daba 37,1% sobre todo el período y 31,2% en la ventana. Después de generar, el filtro se puede mover a mano.'],
   ['Pauta sin ventas','Se resta aunque la publicación no haya vendido','La inversión en publicaciones que no vendieron en el período es gasto real, pero no tiene fila en el análisis por publicación y calcNEXUS no la ve. Se resta del resultado en el dashboard, el informe y el export; en el resultado con COGS se imputa en proporción a la facturación con costo cargado. Hasta v51.1 el dashboard la restaba y el informe no: $71.210 de diferencia en el resultado antes de mercadería sobre la misma cuenta.'],
   ['Descuentos y bonificaciones','Suman a lo recibido, netos de IVA','Lo que ML reintegra sobre sus propios cargos. Viene positivo en el reporte y forma parte de la columna Total, así que se suma a lo recibido con el mismo neteo de IVA que los cargos. En carritos se reparte entre los ítems igual que el resto de los importes del paquete. Hasta v51.1 no se computaba.'],
@@ -1185,7 +1190,7 @@ const _GLOSARIO = [
   ['Nombre del archivo','Análisis EVO Mercadolibre - Cliente-Fecha','El navegador propone como nombre el título del documento. Sin cambiarlo, todos los informes se descargaban igual y se pisaban entre sí. Se arma con el cliente y la fecha del formulario, y el título original se restaura al terminar de imprimir para no dejar el dashboard renombrado.'],
   ['Secciones condicionales','Sólo se imprime lo que tiene datos','FULL, Forecast, Ads y COGS pueden no estar cargados. Cada bloque se evalúa antes de renderizar y, si queda vacío, no se imprime ni su título. No hay cajas ni tablas huérfanas.'],
   ['Evolución de la facturación','GMV diario + media móvil de 7 días','Se reconstruye desde la fecha de cada venta, que EVO conserva en los registros. La media móvil existe porque el día a día tiene ruido extremo y la línea cruda se lee como sierra. Los días sin venta se rellenan con cero para que el promedio no mienta.'],
-  ['Umbrales de acción','Diagnóstico antes que alerta','Por debajo del 20% de margen con COGS, o del 45% sin COGS, cada publicación recibe un diagnóstico y su acción: margen negativo antes de Ads es problema de precio y pausar la pauta no lo corrige; TACOS que se come el margen es pauta; margen unitario ajustado es estructural; envío desalineado de su familia es configuración del paquete.'],
+  ['Umbrales de acción','Diagnóstico antes que alerta','Por debajo del 40% de margen final con COGS, o del 85% de margen P&L sin COGS, ambos sobre lo recibido sin IVA (equivalen al 20% y 45% sobre venta neta que se usaban hasta v51.2), cada publicación recibe un diagnóstico y su acción: margen negativo antes de Ads es problema de precio y pausar la pauta no lo corrige; TACOS que se come el margen es pauta; margen unitario ajustado es estructural; envío desalineado de su familia es configuración del paquete.'],
   ['Alertas cruzadas','Combinaciones que sólo se ven cruzando módulos','Falso héroe con pauta activa, quiebre dentro del Pareto 80%, costo de canal desviado de su familia y margen unitario negativo antes de Ads. Son las cuatro que más plata mueven y ninguna se detecta mirando un módulo aislado.'],
  ]],
  ['Alerta de reposición por mail', [
@@ -1528,7 +1533,7 @@ function _infMetricas(){
   const items = Object.values(skuMap);
 
   let bruto=0, ventaNeta=0, recibidoML=0, nexus=0, cogsTot=0, nexusMatch=0, brutoMatch=0, recibMatch=0;
-  let comision=0, envio=0, envioNeto=0, fijo=0, cuotas=0, bonif=0, impuestos=0, ads=0, nMatch=0;
+  let comision=0, envio=0, envioNeto=0, fijo=0, cuotas=0, bonif=0, devol=0, retACuenta=0, impuestos=0, ads=0, nMatch=0;
   const filas = [];
   items.forEach(s=>{
     const n = calcNEXUS(s); if(!n) return;
@@ -1536,7 +1541,7 @@ function _infMetricas(){
     bruto += b; ventaNeta += n.ventaNeta||0;
     recibidoML += n.recibidoML||0; nexus += n.recibidoNEXUS||0;
     comision += Math.abs((s.cargo_venta||0)*fc.netFee);
-    envio    += Math.max(0,-((s.costo_envio||0)+(s.ing_envio||0)))*fc.netFee;
+    envio    += n.envioAbsorbido||0;   // venta por venta, como el dashboard (v51.3)
     /* Envío NETO con signo: hay cuentas donde el comprador paga más envío del
        que cuesta y el neto es ingreso. La versión con piso en cero sirve para
        el KPI de costo logístico, pero no cierra una cuenta de resultado. */
@@ -1544,14 +1549,16 @@ function _infMetricas(){
     fijo     += Math.abs((s.costo_fijo||0)*fc.netFee);
     cuotas   += Math.abs((s.cuotas||0)*fc.netFee);
     bonif    += (s.descuentos||0)*fc.netFee;
+    devol    += -(n.devolucionesNeto||0);
+    retACuenta += n.retencionesACuenta||0;
     impuestos+= Math.abs(s.impuestos||0);
     ads      += n.inversionAds||0;
     const cg = COGS_DATA.loaded ? getCOGS(s) : null;
     if (cg && cg.costo>0){ nMatch++; cogsTot += cg.costo*(s.unidades||0); nexusMatch += n.recibidoNEXUS||0;
                            brutoMatch += b; recibMatch += n.recibidoML||0; }
-    filas.push({ s, n, cg, bruto:b, margenPL: n.ventaNeta>0 ? (n.recibidoNEXUS||0)/n.ventaNeta : 0 });
+    filas.push({ s, n, cg, bruto:b, margenPL: n.margenNEXUS || 0 });   // sobre recibido sin IVA
   });
-  const fiscalTot = bruto*fc.factorIva + ventaNeta*fc.iibbRate;
+  const fiscalTot = bruto*fc.factorIva + ventaNeta*fc.iibbRate - retACuenta;
   const cobertura = bruto>0 ? brutoMatch/bruto : 0;
   const ivaDebito = bruto*fc.factorIva, iibb = ventaNeta*fc.iibbRate;
   /* Pauta de publicaciones sin ventas en el rango: se resta igual que en el
@@ -1560,7 +1567,7 @@ function _infMetricas(){
   ads += adsSinVenta; nexus -= adsSinVenta;
   nexusMatch -= adsSinVenta * cobertura;
   return { fc, esRI, items, filas, bruto, ventaNeta, recibidoML, nexus, cogsTot, nexusMatch, brutoMatch, recibMatch,
-           nMatch, cobertura, comision, envio, envioNeto, fijo, cuotas, bonif, impuestos, ads, adsSinVenta, fiscalTot,
+           nMatch, cobertura, comision, envio, envioNeto, fijo, cuotas, bonif, devol, retACuenta, impuestos, ads, adsSinVenta, fiscalTot,
            ivaDebito, iibb,
            costosCanal: comision+envio+fijo+cuotas+ads,
            rentReal: nexusMatch - cogsTot,
@@ -1602,15 +1609,21 @@ function _infSerie(){
 /* ── Umbrales de acción ──
    Cada alerta lleva su acción, y la acción depende del diagnóstico: no es lo
    mismo un margen comido por la pauta que un problema estructural de precio. */
+/* Umbrales sobre recibido sin IVA. Equivalen a los anteriores 20% / 45% sobre
+   venta neta: en una cuenta AR real seleccionan 13 y 8 de 32 publicaciones,
+   contra 13 y 11 con la base vieja (v51.3). */
+const UMBRAL_ALERTA_COGS = 0.40, UMBRAL_ALERTA_SIN_COGS = 0.85;
 function _infAlertas(M){
   const out = [];
   const conCogs = COGS_DATA.loaded;
   const anomEnv = (typeof G._lastRender.anomEnvio !== 'undefined') ? G._lastRender.anomEnvio : null;
   M.filas.forEach(f=>{
     const s=f.s, n=f.n;
-    const umbral = conCogs && f.cg ? 0.20 : 0.45;
+    /* Márgenes sobre lo recibido sin IVA (v51.3). Umbrales recalibrados desde
+       20% / 45% sobre venta neta para conservar la misma selectividad. */
+    const umbral = conCogs && f.cg ? UMBRAL_ALERTA_COGS : UMBRAL_ALERTA_SIN_COGS;
     let margen = f.margenPL;
-    if (conCogs && f.cg && n.ventaNeta>0) margen = ((n.recibidoNEXUS||0) - f.cg.costo*(s.unidades||0)) / n.ventaNeta;
+    if (conCogs && f.cg && (n.recibidoSinIva||0)>0) margen = ((n.recibidoNEXUS||0) - f.cg.costo*(s.unidades||0)) / n.recibidoSinIva;
     if (margen >= umbral) return;
     // Diagnóstico y acción
     let causa, accion, prio;
@@ -2012,7 +2025,7 @@ function generarInforme(){
      neta es correcta contablemente pero no representa dinero que se vea. */
   const _ivaDebTot = M.bruto * M.fc.factorIva;
   const _cargosTot = M.comision + M.envioNeto + M.fijo + M.cuotas;
-  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot + M.bonif - (M.impuestos || 0);
+  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot + M.bonif - M.devol - (M.impuestos || 0);
   /* Base de la porción con costo cargado: su propio recibido sin IVA, igual que
      la tarjeta Margen real final del dashboard. Hasta v51.1 se prorrateaban los
      cargos de todo el catálogo por facturación y los dos márgenes no coincidían. */
@@ -2041,8 +2054,13 @@ function generarInforme(){
       ? 'Sobre lo recibido sin IVA de las publicaciones con costo cargado ('+PCT(M.cobertura)+' del total).<br>'
         + 'El margen de todo el catálogo, antes de mercadería, es '+PCT(margenPre)+'.'
       : 'Sobre lo recibido de Mercado Libre sin IVA · antes de costo de mercadería');
-  kpis += K('Costos de canal', PCT(M.bruto>0 ? M.costosCanal/M.bruto : 0),
-    'Comisión, envío y publicidad sobre el precio de venta');
+  /* Sobre venta neta, igual que el dashboard y el export: los costos van netos de
+     IVA y dividirlos por el bruto mezclaba bases (hasta v51.2). */
+  kpis += K('Costos de canal', PCT(M.ventaNeta>0 ? M.costosCanal/M.ventaNeta : 0),
+    'Comisión, envío, cargo fijo, cuotas y publicidad sobre la venta neta');
+  if (M.impuestos > 0) kpis += K('Retenciones', fmtCurrency(M.impuestos),
+    '<b>' + PCT(M.ventaNeta>0 ? M.impuestos/M.ventaNeta : 0) + '</b> de la venta neta'
+    + (M.fc.retencionesACuenta ? '<br>Se computan a cuenta de Ingresos Brutos (' + (M.fc.iibbRate*100).toFixed(0) + '%)' : ''));
   H.push('<div class="rp-kpis">'+kpis+'</div>');
 
   /* ── Desglose de costos · cascada ──
@@ -2054,7 +2072,7 @@ function generarInforme(){
   const _ivaDeb = M.ivaDebito || 0;
   const _retn   = M.impuestos || 0;
   const _cargos = M.comision + M.envioNeto + M.fijo + M.cuotas;
-  const _recSinIva = M.bruto - _ivaDeb - _cargos + M.bonif - _retn;
+  const _recSinIva = M.bruto - _ivaDeb - _cargos + M.bonif - M.devol - _retn;
   const _neg = v => -Math.abs(v);
   const casc = [
     ['Ingresos por productos', M.bruto, 'base', true],
@@ -2066,10 +2084,12 @@ function generarInforme(){
   if (M.cuotas > 0) casc.push(['Costo financiero de cuotas', _neg(M.cuotas), 'resta', false]);
   if (M.bonif > 0)  casc.push(['Descuentos y bonificaciones de ML', M.bonif, 'suma', false]);
   if (_retn > 0)    casc.push(['Retenciones', _neg(_retn), 'resta', false]);
+  if (M.devol > 0)  casc.push(['Costo de devoluciones', _neg(M.devol), 'resta', false]);
   casc.push(['Recibido de Mercado Libre, sin IVA', _recSinIva, 'subtotal', true]);
-  if (M.iibb > 0)   casc.push(['Ingresos Brutos', _neg(M.iibb), 'resta', false]);
+  if (M.iibb > 0)   casc.push(['Ingresos Brutos (' + (M.fc.iibbRate*100).toFixed(0) + '% de la venta neta)', _neg(M.iibb), 'resta', false]);
+  if (M.retACuenta > 0) casc.push(['Retenciones computadas a cuenta de IIBB', M.retACuenta, 'suma', false]);
   if (M.ads > 0)    casc.push(['Inversión publicitaria', _neg(M.ads), 'resta', false]);
-  const _preCogs = _recSinIva - M.iibb - M.ads;
+  const _preCogs = _recSinIva - M.iibb + M.retACuenta - M.ads;
   /* El COGS sólo cubre las publicaciones con costo cargado, así que la cascada
      cierra en el resultado ANTES de mercadería —que es exacto sobre todo el
      catálogo— y el tramo de mercadería se muestra aparte, sobre su propia
@@ -2098,6 +2118,8 @@ function generarInforme(){
     + 'El IVA débito figura como resta porque, si bien se cobra al comprador y entra a la cuenta, '
     + 'se gira al fisco y no es del vendedor. Los cargos de la plataforma se computan netos de su IVA '
     + 'cuando corresponde a la condición fiscal declarada.'
+    + (M.retACuenta > 0 ? ' Las retenciones bajan lo recibido porque es plata que no entró, pero se computan a cuenta de Ingresos Brutos y por eso vuelven a sumar después del impuesto: no se restan dos veces.' : '')
+    + (M.devol > 0 ? ' El costo de devoluciones es lo que dejaron en negativo las ventas devueltas o no entregadas; las canceladas no suman.' : '')
     + (M.adsSinVenta > 0 ? ' La inversión publicitaria incluye ' + fmtCurrency(M.adsSinVenta)
         + ' de publicaciones que no vendieron en el período: es gasto real aunque no tengan facturación.' : '')
     + (conCogs ? ' El tramo de mercadería se calcula aparte porque el costo sólo está cargado en el '
@@ -2149,7 +2171,9 @@ function generarInforme(){
     const vis=new Set();
     Object.keys(ADS_DATA||{}).forEach(k=>{ if(k==='__META__')return; const n=_mlNum(k);
       if(!n||vis.has(n)||cub.has(n))return; const a=ADS_DATA[k]; if(!a||!(a.inversion>0))return;
-      vis.add(n); sinVentas+=a.inversion; nSinVentas++; });
+      // Recortada al rango, igual que el resto de la pauta (v51.3)
+      const aR=(G._lastFilter&&G._lastFilter.from&&G._lastFilter.to&&a.rows)?(getAdsForRange(a,G._lastFilter.from,G._lastFilter.to)||a):a;
+      vis.add(n); sinVentas+=aR.inversion||0; nSinVentas++; });
     H.push(SEC('Inversión publicitaria y retorno'));
     /* Cuatro tarjetas que cierran la lectura de pauta: cuánto se invirtió, qué
        facturó, cuánto pesa sobre el negocio (TACOS) y cuánto quedó expuesto.
@@ -2387,7 +2411,8 @@ function generarInforme(){
   _chk('El tramo previo a mercadería no cierra contra NEXUS', _preCogs, M.nexus);
   if (conCogs) _chk('El resultado final no cierra contra NEXUS matcheado − COGS',
                     _resFinal, M.nexusMatch - M.cogsTot);
-  _chk('Recibido sin IVA mal compuesto', M.bruto - _ivaDeb - _cargos + M.bonif - _retn, _recSinIva);
+  _chk('Recibido sin IVA mal compuesto', M.bruto - _ivaDeb - _cargos + M.bonif - M.devol - _retn, _recSinIva);
+  _chk('Recibido sin IVA no cierra contra NEXUS', M.recibidoML - _ivaDeb, _recSinIva);
   if (typeof _roasCalc !== 'undefined' && _roasCalc.inv > 0) {
     const rr = _roasCalc.rev / _roasCalc.inv;
     if (Math.abs(rr - _roasCalc.mostrado) > 0.05)
@@ -2456,6 +2481,12 @@ function switchTab(view) {
    o no entrega. "Te dimos el dinero" sin ninguno de esos términos es venta válida. */
 const EXCLUIR_RE = /cancel|anulad|rechazada|devuelt|devoluci[oó]n|se devolvi[oó]|devolveremos|reembols|no entregado/i;
 const excluido = s => EXCLUIR_RE.test(String(s || ''));
+/* Dentro de las excluidas, las canceladas no mueven el resultado. Las devueltas
+   y no entregadas sí cuando el Total es negativo: es costo que pagó el seller.
+   Un Total positivo no se toma como ingreso porque ML suele revertirlo (v51.3). */
+const CANCEL_RE = /cancel|anulad|rechazada/i;
+const costoDevolucion = (estado, total) =>
+  (excluido(estado) && !CANCEL_RE.test(String(estado || ''))) ? Math.min(0, total || 0) : 0;
 const esCarritoHdr=s=>/^paquete de \d+ productos?/i.test((s||'').trim());
 
 function parseNum(v){
@@ -4136,12 +4167,13 @@ function renderForecastInputsTable() {
     return;
   }
 
-  const { skuMap, totLiq, useML } = G._lastRender;
+  const { skuMap, useML } = G._lastRender;
   const idLabel = useML ? '# Publicación' : 'SKU';
   const ARS = fmtCurrency;
 
-  // Calcular Pareto sobre el skuMap (mismo método que el dashboard)
-  const arrFact = calcPareto(skuMap, 'liquidez', totLiq);
+  // Calcular Pareto sobre el skuMap (mismo método y base que el dashboard)
+  const { totVN } = prepVentaNeta(G._lastRender);
+  const arrFact = calcPareto(skuMap, 'venta_neta', totVN);
 
   // Determinar scope
   const scopeRadio = document.querySelector('input[name="fc-scope"]:checked');
@@ -6615,6 +6647,7 @@ function parsearArchivo(raw,filename){
       const frac = carritoCtx._base > 0 ? (precio * unidadesRaw) / carritoCtx._base : 0;
       const bruto    = esCanceled ? 0 : precio*unidadesRaw;
       const liquidez = esCanceled ? 0 : carritoCtx._totalLiquidez * frac;
+      const costo_devolucion = costoDevolucion(estado, carritoCtx._totalLiquidez * frac);
       const cargo_venta = carritoCtx.cargo_venta * frac;
       const costo_fijo  = carritoCtx.costo_fijo  * frac;
       const cuotas      = carritoCtx.cuotas      * frac;
@@ -6663,7 +6696,7 @@ function parsearArchivo(raw,filename){
         liquidez, unidades, devoluciones_unidades, esPubli,
         precio_unit:precio, fecha:parseMLDate(carritoCtx.fecha), fechaHora:parseMLDateTime(carritoCtx.fecha),
         id_venta:get(row,'id_venta')||carritoCtx.id_venta, estado,
-        esCarrito:true, esCanceled,
+        esCarrito:true, esCanceled, costo_devolucion,
         forma_entrega: carritoCtx.forma_entrega,
         ingresos_brutos: bruto,
         cargo_venta, costo_fijo, cuotas,
@@ -6686,6 +6719,7 @@ function parsearArchivo(raw,filename){
     const esCanceled = excluido(estado);
     const unidadesRaw = parseFloat(get(row,'unidades'))||1;
     const liquidez = esCanceled ? 0 : parseNum(totalRaw);
+    const costo_devolucion = costoDevolucion(estado, parseNum(totalRaw));
     const unidades = esCanceled ? 0 : unidadesRaw;
     const devoluciones_unidades = esCanceled ? unidadesRaw : 0;
     
@@ -6735,7 +6769,7 @@ function parsearArchivo(raw,filename){
       variante: normalizeVariante(get(row,'variante')),
       tienda:get(row,'tienda')||get(row,'canal')||'Mercado Libre',
       canal:get(row,'canal')||'Mercado Libre',
-      prov,liquidez,unidades,devoluciones_unidades,esPubli,precio_unit,fecha,fechaHora,esCarrito:false,esCanceled,
+      prov,liquidez,unidades,devoluciones_unidades,esPubli,precio_unit,fecha,fechaHora,esCarrito:false,esCanceled,costo_devolucion,
       id_venta:get(row,'id_venta'), estado,
       forma_entrega,
       ingresos_brutos,cargo_venta,costo_fijo,cuotas,
@@ -6881,7 +6915,7 @@ function aplicarFiltros(){
     };
 
     let skuMap={},provMap={},tiendaMap={},logisticaMap={};
-    let totLiq=0,totUni=0,pubLiq=0,orgLiq=0,pubUni=0,orgUni=0;
+    let totLiq=0,totUni=0,pubLiq=0,orgLiq=0,pubUni=0,orgUni=0,pubBruto=0,orgBruto=0;
     let nVentas=0,nCarritos=0;
     const filteredRecords=[];
     
@@ -6908,10 +6942,10 @@ function aplicarFiltros(){
         _isMlaFallback,
         ingresos_brutos:0,cargo_venta:0,costo_fijo:0,cuotas:0,
         ing_envio:0,costo_envio:0,impuestos:0,descuentos:0,anulaciones:0,
-        precio_sum:0,precio_count:0, devoluciones_unidades:0};
+        precio_sum:0,precio_count:0, devoluciones_unidades:0, costo_devolucion:0, pubBruto:0, orgBruto:0};
       
-      if(!esCanceled && !tiendaMap[tienda]) tiendaMap[tienda]={id:tienda,liquidez:0,unidades:0};
-      if(!esCanceled && !provMap[prov]) provMap[prov]={id:prov,liquidez:0,unidades:0};
+      if(!esCanceled && !tiendaMap[tienda]) tiendaMap[tienda]={id:tienda,liquidez:0,unidades:0,ingresos_brutos:0};
+      if(!esCanceled && !provMap[prov]) provMap[prov]={id:prov,liquidez:0,unidades:0,ingresos_brutos:0};
       if(!esCanceled && forma_entrega && !logisticaMap[forma_entrega]) logisticaMap[forma_entrega]={id:forma_entrega,liquidez:0,unidades:0};
 
       const S=skuMap[id];
@@ -6926,6 +6960,7 @@ function aplicarFiltros(){
       }
       S.liquidez+=liquidez; S.unidades+=unidades;
       S.devoluciones_unidades += devoluciones_unidades;
+      S.costo_devolucion += r.costo_devolucion || 0;   // sólo devoluciones con costo (v51.3)
       
       S[esPubli?'pubLiq':'orgLiq']+=liquidez;
       if(!esCanceled) {
@@ -6936,8 +6971,11 @@ function aplicarFiltros(){
         const _netoEnv = (costo_envio||0) + (ing_envio||0);
         S.envioRealSeller = (S.envioRealSeller||0) + (_netoEnv < 0 ? -_netoEnv : 0);
         S.impuestos+=impuestos; S.descuentos+=descuentos; S.anulaciones+=anulaciones;
-        tiendaMap[tienda].liquidez+=liquidez; tiendaMap[tienda].unidades+=unidades;
-        provMap[prov].liquidez+=liquidez; provMap[prov].unidades+=unidades;
+        // Bruto por origen: base de venta neta para Pareto y split Ads/orgánico (v51.3)
+        S[esPubli?'pubBruto':'orgBruto']+=ingresos_brutos;
+        if(esPubli) pubBruto+=ingresos_brutos; else orgBruto+=ingresos_brutos;
+        tiendaMap[tienda].liquidez+=liquidez; tiendaMap[tienda].unidades+=unidades; tiendaMap[tienda].ingresos_brutos+=ingresos_brutos;
+        provMap[prov].liquidez+=liquidez; provMap[prov].unidades+=unidades; provMap[prov].ingresos_brutos+=ingresos_brutos;
         logisticaMap[forma_entrega].liquidez+=liquidez; logisticaMap[forma_entrega].unidades+=unidades;
         nVentas++;
         filteredRecords.push(r);
@@ -6953,7 +6991,7 @@ function aplicarFiltros(){
     if(G) G._lastFilter = {from, to};
     renderDashboard({skuMap,provMap,tiendaMap,logisticaMap,filteredRecords,
       skuToMLAs, mlaToSKUs,
-      totLiq,totUni,pubLiq,orgLiq,pubUni,orgUni,nVentas,nCarritos,useML});
+      totLiq,totUni,pubLiq,orgLiq,pubUni,orgUni,pubBruto,orgBruto,nVentas,nCarritos,useML});
   },30);
 }
 
@@ -6975,6 +7013,32 @@ function calcPareto(objMap,sortKey,totalVal){
     if(item.acumulado>=0.80) coreDone=true;
   });
   return arr;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EVO v51.2 → v51.3 · AUDITORÍA DE COSTOS Y RENTABILIDAD
+   ═══════════════════════════════════════════════════════════════════════════
+   · Retenciones a cuenta de IIBB (AR) e IIBB al 4%: antes contaban dos veces.
+   · Costo de devoluciones: Total negativo de ventas devueltas o no entregadas.
+   · Márgenes P&L y finales por publicación sobre recibido sin IVA, igual que
+     los de cuenta. El margen UNIT sigue sobre venta neta (ver glosario).
+   · Envío absorbido venta por venta en informe, export y tabla Rentabilidad.
+   · Costos de canal sobre venta neta también en el informe (iba sobre bruto).
+   · TACOS del export con inversión bruta (dividía neta por bruto).
+   · Pestaña Publicidad y pauta sin ventas recortadas al rango filtrado.
+   · Pareto, split Ads/orgánico, tiendas, provincias y ficha sobre venta neta:
+     antes era el depósito de ML ÷ 1,21, que no es ninguna base conocida.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Venta neta (Ingresos por productos sin IVA) en skuMap, provincias y tiendas.
+   Devuelve los totales para Pareto y el split Ads/orgánico. */
+function prepVentaNeta(R){
+  const f = 1 - fiscalCfg().factorIva;
+  [R.skuMap, R.provMap, R.tiendaMap].forEach(m => {
+    if (m) Object.values(m).forEach(o => { o.venta_neta = (o.ingresos_brutos || 0) * f; });
+  });
+  const totVN = Object.values(R.skuMap || {}).reduce((a, o) => a + (o.venta_neta || 0), 0);
+  return { totVN, pubVN: (R.pubBruto || 0) * f, orgVN: (R.orgBruto || 0) * f };
 }
 
 /* ═══════════ DORMIDOS ENGINE ═══════════ */
@@ -7152,10 +7216,11 @@ function renderDashboard(renderData){
     nVentas,nCarritos,useML}=renderData;
   const ARS=fmtCurrency;
 
-  const arrFact  =calcPareto(skuMap,'liquidez',totLiq);
+  const {totVN,pubVN,orgVN}=prepVentaNeta(renderData);
+  const arrFact  =calcPareto(skuMap,'venta_neta',totVN);
   const arrVol   =calcPareto(skuMap,'unidades',totUni);
-  const arrProv  =calcPareto(provMap,'liquidez',totLiq);
-  const arrTienda=Object.values(tiendaMap).map(o=>({...o})).sort((a,b)=>b.liquidez-a.liquidez);
+  const arrProv  =calcPareto(provMap,'venta_neta',totVN);
+  const arrTienda=Object.values(tiendaMap).map(o=>({...o})).sort((a,b)=>b.venta_neta-a.venta_neta);
 
   const coreFactIds=new Set(arrFact.filter(i=>i.esCore80).map(i=>i.id));
   const coreVolIds =new Set(arrVol.filter(i=>i.esCore80).map(i=>i.id));
@@ -7191,7 +7256,7 @@ function renderDashboard(renderData){
 
   const _esRIdash = (NEXUS_FISCAL === 'RI');
   const _factLabel = _esRIdash ? 'Facturación Neta (s/IVA)' : 'Facturación';
-  const _factValor = _esRIdash ? netIVA(totLiq) : totLiq;
+  const _factValor = totVN;   // venta neta; sin RI factorIva = 0 y queda el bruto
   document.getElementById('kpi-row').innerHTML=`
     <div class="kpi"><div class="kpi-label">${_factLabel}</div>
       <div class="kpi-value accent">${ARS(_factValor)}</div>
@@ -7215,13 +7280,13 @@ function renderDashboard(renderData){
   document.getElementById('pub-split').innerHTML=`
     <div class="pub-half">
       <div class="pub-half-title"><span class="pub-dot ads"></span>Venta por Publicidad</div>
-      <div class="pub-big ads">${PCT(totLiq>0?pubLiq/totLiq:0)}</div>
-      <div class="kpi-sub">${ARS(_esRIdash?netIVA(pubLiq):pubLiq)} · ${NUM(pubUni)} unidades</div>
+      <div class="pub-big ads">${PCT(totVN>0?pubVN/totVN:0)}</div>
+      <div class="kpi-sub">${ARS(pubVN)} · ${NUM(pubUni)} unidades</div>
     </div>
     <div class="pub-half">
       <div class="pub-half-title"><span class="pub-dot org"></span>Venta Orgánica</div>
-      <div class="pub-big org">${PCT(totLiq>0?orgLiq/totLiq:0)}</div>
-      <div class="kpi-sub">${ARS(_esRIdash?netIVA(orgLiq):orgLiq)} · ${NUM(orgUni)} unidades</div>
+      <div class="pub-big org">${PCT(totVN>0?orgVN/totVN:0)}</div>
+      <div class="kpi-sub">${ARS(orgVN)} · ${NUM(orgUni)} unidades</div>
     </div>
   `;
 
@@ -7257,26 +7322,52 @@ function renderDashboard(renderData){
       : `<td style="color:var(--muted);font-style:italic">—</td>`;
   };
 
+  /* Margen % para los dos Pareto (v51.3), sobre lo recibido sin IVA. Sin COGS:
+     margen P&L antes de mercadería. Con COGS: margen final del P&L; si la
+     publicación no tiene costo cargado se muestra el previo, atenuado. */
+  const _mgPareto = new Map();
+  const _mgHdr = COGS_DATA.loaded ? 'Margen final %' : 'Margen P&amp;L %';
+  const margenParetoCell = (o) => {
+    if (!_mgPareto.has(o.id)) {
+      const n = calcNEXUS(o);
+      let v = null, final = false;
+      if (n && n.recibidoSinIva > 0) {
+        const cg = COGS_DATA.loaded ? getCOGS(o) : null;
+        if (cg && cg.costo > 0) { v = (n.recibidoNEXUS - cg.costo * (o.unidades || 0)) / n.recibidoSinIva; final = true; }
+        else v = n.margenNEXUS;
+      }
+      _mgPareto.set(o.id, { v, final });
+    }
+    const m = _mgPareto.get(o.id);
+    if (m.v === null) return '<td class="num" style="color:var(--muted)">—</td>';
+    const sinCogs = COGS_DATA.loaded && !m.final;
+    const clr = sinCogs ? 'var(--muted)' : m.v < 0 ? 'var(--danger)' : m.v < 0.10 ? 'var(--warn)' : 'var(--ok)';
+    const ttl = sinCogs ? 'Sin COGS cargado para esta publicación: margen P&L antes de mercadería, sobre lo recibido sin IVA'
+      : m.final ? 'Margen final del P&L: NEXUS − COGS, sobre lo recibido sin IVA'
+      : 'Margen P&L antes de mercadería: NEXUS sobre lo recibido sin IVA';
+    return `<td class="num" style="color:${clr};cursor:help${sinCogs ? ';font-style:italic' : ''}" title="${ttl}">${PCT(m.v)}</td>`;
+  };
+
   {
-    let html=`<table><thead><tr><th>${idLabel}</th><th>Producto</th><th class="r">Revenue propio</th><th>Acumulado →80%</th><th>Cruce</th></tr></thead><tbody>`;
+    let html=`<table><thead><tr><th>${idLabel}</th><th>Producto</th><th class="r">Revenue propio</th><th class="r">${_mgHdr}</th><th>Acumulado →80%</th><th>Cruce</th></tr></thead><tbody>`;
     let div=false;
     arrFact.forEach(i=>{
-      if(!div&&!i.esCore80){html+=`<tr class="pareto-divider"><td colspan="5"><span class="pareto-divider-label">▲ 80% del revenue — ${arrFact.filter(x=>x.esCore80).length} ${idLabel}s</span></td></tr>`;div=true;}
+      if(!div&&!i.esCore80){html+=`<tr class="pareto-divider"><td colspan="6"><span class="pareto-divider-label">▲ 80% del revenue — ${arrFact.filter(x=>x.esCore80).length} ${idLabel}s</span></td></tr>`;div=true;}
       const inVol=coreVolIds.has(i.id);
       const tag=i.esCore80?(inVol?`<span class="tag tag-ok">REV+VOL</span>`:`<span class="tag tag-accent">TOP REV</span>`):(inVol?`<span class="tag tag-warn">FALSO HÉROE</span>`:'');
-      html+=`<tr class="${i.esCore80?'core-row':''}"><td>${idWithTitle(i.id)}${badgesFor(i)}${relationshipChip(i.id)}</td>${tituloCell(i.id)}<td class="num">${ARS(netIVA(i.liquidez))}</td><td>${pctBar(i.acumulado,i.esCore80)}</td><td>${tag}</td></tr>`;
+      html+=`<tr class="${i.esCore80?'core-row':''}"><td>${idWithTitle(i.id)}${badgesFor(i)}${relationshipChip(i.id)}</td>${tituloCell(i.id)}<td class="num">${ARS(i.venta_neta)}</td>${margenParetoCell(i)}<td>${pctBar(i.acumulado,i.esCore80)}</td><td>${tag}</td></tr>`;
     });
-    panel('grid-pareto','Pareto Facturación',`Top 80% Revenue${NEXUS_FISCAL==='RI'?' (neto IVA)':''} · acumulado por ${idLabel}`,html+'</tbody></table>',true);
+    panel('grid-pareto','Pareto Facturación',`Top 80% Revenue${NEXUS_FISCAL==='RI'?' (venta neta, sin IVA)':''} · acumulado por ${idLabel}`,html+'</tbody></table>',true);
   }
 
   {
-    let html=`<table><thead><tr><th>${idLabel}</th><th>Producto</th><th class="r">Unidades</th><th>Acumulado →80%</th><th>Alerta</th></tr></thead><tbody>`;
+    let html=`<table><thead><tr><th>${idLabel}</th><th>Producto</th><th class="r">Unidades</th><th class="r">${_mgHdr}</th><th>Acumulado →80%</th><th>Alerta</th></tr></thead><tbody>`;
     let div=false;
     arrVol.forEach(i=>{
-      if(!div&&!i.esCore80){html+=`<tr class="pareto-divider"><td colspan="5"><span class="pareto-divider-label">▲ 80% del volumen — ${arrVol.filter(x=>x.esCore80).length} ${idLabel}s</span></td></tr>`;div=true;}
+      if(!div&&!i.esCore80){html+=`<tr class="pareto-divider"><td colspan="6"><span class="pareto-divider-label">▲ 80% del volumen — ${arrVol.filter(x=>x.esCore80).length} ${idLabel}s</span></td></tr>`;div=true;}
       const inFact=coreFactIds.has(i.id);const isFH=i.esCore80&&!inFact;
       const tag=isFH?`<span class="tag tag-danger">FALSO HÉROE</span>`:(i.esCore80&&inFact)?`<span class="tag tag-ok">REV+VOL</span>`:'';
-      html+=`<tr class="${isFH?'fh-row':i.esCore80?'core-row':''}"><td>${idWithTitle(i.id)}${relationshipChip(i.id)}</td>${tituloCell(i.id)}<td class="num">${NUM(i.unidades)}</td><td>${pctBar(i.acumulado,i.esCore80)}</td><td>${tag}</td></tr>`;
+      html+=`<tr class="${isFH?'fh-row':i.esCore80?'core-row':''}"><td>${idWithTitle(i.id)}${relationshipChip(i.id)}</td>${tituloCell(i.id)}<td class="num">${NUM(i.unidades)}</td>${margenParetoCell(i)}<td>${pctBar(i.acumulado,i.esCore80)}</td><td>${tag}</td></tr>`;
     });
     panel('grid-pareto','Pareto Volumen',`Top 80% Despachos · acumulado por ${idLabel}`,html+'</tbody></table>',true);
   }
@@ -7361,14 +7452,14 @@ function renderDashboard(renderData){
   {
     let html=falsosHeroes.length===0?'<div class="empty">✓ Sin falsos héroes en este período</div>':
       `<table><thead><tr><th>${idLabel}</th><th class="r">Unidades</th><th class="r">Revenue</th><th class="r">Revenue/u</th></tr></thead><tbody>`+
-      falsosHeroes.map(i=>`<tr class="fh-row"><td>${idWithTitle(i.id)}</td><td class="num dim">${NUM(i.unidades)}</td><td class="num dim">${ARS(i.liquidez)}</td><td class="num dim">${ARS(i.liquidez/Math.max(i.unidades,1))}</td></tr>`).join('')+
+      falsosHeroes.map(i=>`<tr class="fh-row"><td>${idWithTitle(i.id)}</td><td class="num dim">${NUM(i.unidades)}</td><td class="num dim">${ARS(i.venta_neta)}</td><td class="num dim">${ARS(i.venta_neta/Math.max(i.unidades,1))}</td></tr>`).join('')+
       '</tbody></table>';
     panel('grid-pareto','⚠ Falsos Héroes',`${falsosHeroes.length} ${idLabel}s · Alta rotación, bajo revenue`,html);
   }
 
   {
     let html=`<table><thead><tr><th>Tienda / Canal</th><th class="r">Revenue</th><th class="r">Unidades</th><th class="r">Share</th></tr></thead><tbody>`+
-      arrTienda.map(i=>`<tr><td>${idWithTitle(i.id)}</td><td class="num">${ARS(netIVA(i.liquidez))}</td><td class="num">${NUM(i.unidades)}</td><td class="num">${PCT(totLiq>0?i.liquidez/totLiq:0)}</td></tr>`).join('')+
+      arrTienda.map(i=>`<tr><td>${idWithTitle(i.id)}</td><td class="num">${ARS(i.venta_neta)}</td><td class="num">${NUM(i.unidades)}</td><td class="num">${PCT(totVN>0?i.venta_neta/totVN:0)}</td></tr>`).join('')+
       '</tbody></table>';
     panel('grid-pareto','Tiendas / Canales','Revenue por origen de venta',html);
   }
@@ -7388,12 +7479,13 @@ function renderDashboard(renderData){
     const conAds = pubItems.filter(i=>i._adsInv > 0);
     // Ordenar: con reporte Ads → por inversión; sin reporte → por revenue atribuido a ads (flag ventas)
     if (conAds.length > 0) {
-      pubItems.sort((a,b)=> (b._adsInv - a._adsInv) || (b.liquidez - a.liquidez));
+      pubItems.sort((a,b)=> (b._adsInv - a._adsInv) || (b.venta_neta - a.venta_neta));
     } else {
-      pubItems.sort((a,b)=> ((b.pubLiq||0) - (a.pubLiq||0)) || (b.liquidez - a.liquidez));
+      pubItems.sort((a,b)=> ((b.pubBruto||0) - (a.pubBruto||0)) || (b.venta_neta - a.venta_neta));
     }
     // Sin reporte de Ads: mostrar los que tienen algo de venta por publicidad, o todos si ninguno
-    const conPubFlag = pubItems.filter(i=>(i.pubLiq||0) > 0);
+    const conPubFlag = pubItems.filter(i=>(i.pubBruto||0) > 0);
+    const _fVNpub = 1 - fiscalCfg().factorIva;
     const pubArr = (conAds.length > 0 ? conAds 
                    : conPubFlag.length > 0 ? conPubFlag 
                    : pubItems).slice(0, 50);
@@ -7411,18 +7503,17 @@ function renderDashboard(renderData){
         const roasClr = roas>=4 ? 'var(--ok)' : roas>=2 ? 'var(--warn)' : roas>0 ? 'var(--danger)' : 'var(--muted)';
         const invClr = i._adsInv>0 ? 'var(--warn)' : 'var(--muted)';
         // Peso publicitario: % del revenue de la publicación que vino de ads (flag de ventas)
-        const pesoAds = i.liquidez > 0 ? (i.pubLiq || 0) / i.liquidez : 0;
+        const pesoAds = i.ingresos_brutos > 0 ? (i.pubBruto || 0) / i.ingresos_brutos : 0;
         return`<tr><td>${idWithTitle(i.id)}${adStateChip(i.id)}${relationshipChip(i.id)}</td>`+
           `<td class="num" style="color:${invClr}">${i._adsInv>0?ARS(i._adsInv):'—'}</td>`+
           `<td class="num" style="color:var(--muted)">${i._adsIng>0?ARS(i._adsIng):'—'}</td>`+
           `<td class="num" style="color:${roasClr}">${roas>0?roas.toFixed(2)+'x':'—'}</td>`+
-          `<td class="num" style="color:var(--ok)">${i.pubLiq>0?ARS(netIVA(i.pubLiq)):'—'}</td>`+
-          `<td class="num" style="color:var(--text)">${ARS(netIVA(i.liquidez))}</td>`+
+          `<td class="num" style="color:var(--ok)">${i.pubBruto>0?ARS(i.pubBruto*_fVNpub):'—'}</td>`+
+          `<td class="num" style="color:var(--text)">${ARS(i.venta_neta||0)}</td>`+
           `<td>${pctBarColored(pesoAds,'#fb923c')}</td></tr>`;
       }).join('')+
       '</tbody></table>';
-    const totalPubLiq = pubItems.reduce((a,i)=>a+(i.pubLiq||0),0);
-    const pesoGlobal = totLiq > 0 ? totalPubLiq/totLiq : 0;
+    const pesoGlobal = totVN > 0 ? pubVN/totVN : 0;
     const subt = conAds.length>0 
       ? conAds.length+' publicaciones con inversión · Σ Inversión '+ARS(totalInvVisible)+' · Σ Ing. atribuidos '+ARS(totalIngAds)
       : conPubFlag.length+' publicaciones con venta por publicidad · Peso Ads global '+PCT(pesoGlobal)+' · (cargá reporte de Ads para inversión y ROAS)';
@@ -7435,7 +7526,7 @@ function renderDashboard(renderData){
     let div=false;
     arrProv.forEach(i=>{
       if(!div&&!i.esCore80){html+=`<tr class="pareto-divider"><td colspan="4"><span class="pareto-divider-label">▲ 80% del revenue — ${arrProv.filter(x=>x.esCore80).length} zonas</span></td></tr>`;div=true;}
-      html+=`<tr class="${i.esCore80?'core-row':''}"><td>${idWithTitle(i.id)}${relationshipChip(i.id)}</td><td class="num">${ARS(netIVA(i.liquidez))}</td><td class="num">${NUM(i.unidades)}</td><td>${pctBar(i.acumulado,i.esCore80)}</td></tr>`;
+      html+=`<tr class="${i.esCore80?'core-row':''}"><td>${idWithTitle(i.id)}${relationshipChip(i.id)}</td><td class="num">${ARS(i.venta_neta)}</td><td class="num">${NUM(i.unidades)}</td><td>${pctBar(i.acumulado,i.esCore80)}</td></tr>`;
     });
     panel('grid-pareto','Pareto Geográfico',`Distribución por Provincia / Estado${NEXUS_FISCAL==='RI'?' · neto IVA':''}`,html+'</tbody></table>',true);
   }
@@ -7463,16 +7554,17 @@ function renderDashboard(renderData){
     const ventaNeta = bruto * (1 - _factorIva);
     // Recibido ML con fees NETOS de IVA (costo real para RI)
     const recibidoML = bruto + ((s.cargo_venta||0) + (s.costo_envio||0) + (s.ing_envio||0) 
-                     + (s.costo_fijo||0) + (s.cuotas||0) + (s.descuentos||0)) * _netFee + (s.impuestos||0);
-    // Fiscal del seller: IVA débito sobre PVP + IIBB sobre venta neta
-    const fiscalSeller = bruto * _factorIva + ventaNeta * _iibbRate;
+                     + (s.costo_fijo||0) + (s.cuotas||0) + (s.descuentos||0) + (s.costo_devolucion||0)) * _netFee + (s.impuestos||0);
+    // Fiscal del seller: IVA débito sobre PVP + IIBB sobre venta neta, con retenciones a cuenta
+    const fiscalSeller = bruto * _factorIva + ventaNeta * _iibbRate - (_fc.retencionesACuenta ? -(s.impuestos||0) : 0);
     const neto = recibidoML - fiscalSeller;
     // Margen sobre venta neta (RI) o sobre bruto (MONO, factorIva=0 → ventaNeta=bruto)
     const margen = ventaNeta > 0 ? neto / ventaNeta : 0;
     
     // Envío real del seller (neto de IVA)
     const envioNetoCalc = (s.costo_envio || 0) + (s.ing_envio || 0);
-    const costoEnvioAbs = Math.max(0, -envioNetoCalc) * _netFee;
+    // Venta por venta, igual que el KPI de cuenta (v51.3)
+    const costoEnvioAbs = (s.envioRealSeller !== undefined ? s.envioRealSeller : Math.max(0, -envioNetoCalc)) * _netFee;
     const envioShare = ventaNeta > 0 ? costoEnvioAbs / ventaNeta : 0;
     const envioNeto = envioNetoCalc;
     
@@ -7502,7 +7594,7 @@ function renderDashboard(renderData){
        conservador y marcaba casi todo el catálogo sin aportar información. */
     const anomEnvio = detectarAnomaliasEnvio(
       rentArr,
-      s => (s.unidades > 0 ? Math.max(0, -(s.envioNeto || 0)) * _netFee / s.unidades : 0),
+      s => (s.unidades > 0 ? (s.envioRealSeller !== undefined ? s.envioRealSeller : Math.max(0, -(s.envioNeto || 0))) * _netFee / s.unidades : 0),
       s => (s.unidades > 0 ? (s.bruto || 0) / s.unidades : 0)
     );
     if (G && G._lastRender) G._lastRender.anomEnvio = anomEnvio;
@@ -7522,7 +7614,7 @@ function renderDashboard(renderData){
     rentArr.forEach(s => {
       const nP = (typeof calcNEXUS === 'function') ? calcNEXUS(s) : null;
       const comision = Math.abs((s.cargo_venta||0) * _netFee);
-      const envio    = Math.max(0, -((s.costo_envio||0)+(s.ing_envio||0))) * _netFee;
+      const envio    = nP ? (nP.envioAbsorbido || 0) : Math.max(0, -((s.costo_envio||0)+(s.ing_envio||0))) * _netFee;
       const fijo     = Math.abs((s.costo_fijo||0) * _netFee);
       const cuotas   = Math.abs((s.cuotas||0) * _netFee);
       const ads      = nP ? (nP.inversionAds || 0) : 0;
@@ -7948,10 +8040,13 @@ function exportarExcel(){
 
   const{skuMap,provMap,tiendaMap,totLiq,totUni,pubLiq,orgLiq,pubUni,orgUni,nVentas,useML}=G._lastRender;
   const ARS=fmtCurrency;
-  const arrFact=calcPareto(skuMap,'liquidez',totLiq);
+  // Misma base que el dashboard: venta neta (v51.3)
+  const{totVN,pubVN,orgVN}=prepVentaNeta(G._lastRender);
+  const _fVNx=1-fiscalCfg().factorIva;
+  const arrFact=calcPareto(skuMap,'venta_neta',totVN);
   const arrVol=calcPareto(skuMap,'unidades',totUni);
-  const arrProv=calcPareto(provMap,'liquidez',totLiq);
-  const arrTienda=Object.values(tiendaMap).map(o=>({...o})).sort((a,b)=>b.liquidez-a.liquidez);
+  const arrProv=calcPareto(provMap,'venta_neta',totVN);
+  const arrTienda=Object.values(tiendaMap).map(o=>({...o})).sort((a,b)=>b.venta_neta-a.venta_neta);
   const coreFactIds=new Set(arrFact.filter(i=>i.esCore80).map(i=>i.id));
   const coreVolIds=new Set(arrVol.filter(i=>i.esCore80).map(i=>i.id));
   const idLabel=useML?'# Publicación':'SKU';
@@ -8205,7 +8300,7 @@ function exportarExcel(){
        totLiq crudo y el dashboard el mismo número neteado de IVA, con 16% de
        diferencia bajo el mismo nombre. Se agrega el bruto, que es la cifra
        comparable con "Ventas concretadas" del panel de Mercado Libre. */
-    [(NEXUS_FISCAL==='RI'?'Facturación Neta (s/IVA)':'Facturación'), (NEXUS_FISCAL==='RI'?netIVA(totLiq):totLiq)],
+    [(NEXUS_FISCAL==='RI'?'Facturación Neta (s/IVA)':'Facturación'), totVN],
     ['Depósito de ML (columna Total)', totLiq],
     ['Ingresos por productos (bruto)', Object.values(skuMap).reduce((a,o)=>a+(o.ingresos_brutos||0),0)],
     ['Unidades',totUni],
@@ -8221,11 +8316,14 @@ function exportarExcel(){
      venta neta (sin fiscal). TACOS = inversión sobre revenue bruto. */
   try {
     const _fc = fiscalCfg();
-    let com=0, env=0, fijo=0, cuo=0, ads=0, ventaNetaTot=0, brutoTot=0;
+    let com=0, env=0, fijo=0, cuo=0, ads=0, ventaNetaTot=0, brutoTot=0, ret=0, devolX=0, iibbX=0;
     Object.values(skuMap).forEach(s => {
       const n = calcNEXUS(s); if (!n) return;
       com  += Math.abs((s.cargo_venta||0) * _fc.netFee);
-      env  += Math.max(0, -((s.costo_envio||0)+(s.ing_envio||0))) * _fc.netFee;
+      env  += n.envioAbsorbido || 0;   // venta por venta, como el dashboard
+      ret  += Math.abs(s.impuestos||0);
+      devolX += -(n.devolucionesNeto||0);
+      iibbX  += n.iibbTotal || 0;
       fijo += Math.abs((s.costo_fijo||0) * _fc.netFee);
       cuo  += Math.abs((s.cuotas||0) * _fc.netFee);
       ads  += n.inversionAds || 0;
@@ -8238,18 +8336,27 @@ function exportarExcel(){
        inversión prorrateada al rango filtrado. Antes el KPI mostraba el total
        del reporte de Ads sin prorratear y la razón usaba el prorrateado, así que
        el porcentaje no se podía reproducir con los números de la propia hoja. */
-    const adsBruto = ads;
+    /* TACOS con inversión BRUTA sobre revenue bruto, como el dashboard y el panel
+       de Mercado Ads. Hasta v51.2 dividía la inversión neta de IVA por el bruto. */
+    const adsBruto = ads / (_fc.netFee || 1);
     resumenRows.push([], ['Eficiencia','Valor']);
     _hdrRes.push(resumenRows.length - 1);
     resumenRows.push(['Costos de canal %', ventaNetaTot>0 ? canal/ventaNetaTot : 0]);
     resumenRows.push(['Comisión', com]);
-    resumenRows.push(['Envío', env]);
+    resumenRows.push(['Envío absorbido (neto IVA)', env]);
     if (fijo>0) resumenRows.push(['Costo fijo', fijo]);
     if (cuo>0)  resumenRows.push(['Cuotas', cuo]);
-    if (adsBruto>0) {
-      resumenRows.push(['Inversión Ads (prorrateada al período)', adsBruto]);
+    if (ads>0) {
+      resumenRows.push(['Inversión Ads neta de IVA (costo)', ads]);
+      resumenRows.push(['Inversión Ads bruta (como Mercado Ads)', adsBruto]);
       resumenRows.push(['TACOS %', brutoTot>0 ? adsBruto/brutoTot : 0]);
     }
+    resumenRows.push([], ['Carga fiscal y devoluciones','Valor']);
+    _hdrRes.push(resumenRows.length - 1);
+    if (iibbX>0) resumenRows.push(['IIBB (' + (_fc.iibbRate*100).toFixed(0) + '% de la venta neta)', iibbX]);
+    resumenRows.push(['Retenciones ML' + (_fc.retencionesACuenta ? ' (a cuenta de IIBB)' : ''), ret]);
+    resumenRows.push(['Retenciones % de venta neta', ventaNetaTot>0 ? ret/ventaNetaTot : 0]);
+    if (devolX>0) resumenRows.push(['Costo de devoluciones (neto IVA)', devolX]);
   } catch(e) { console.warn('[Export] eficiencia:', e.message); }
 
   /* Día y franja horaria de mayor facturación: es la lectura accionable del
@@ -8309,8 +8416,8 @@ function exportarExcel(){
 
   resumenRows.push([], ['Split Publicidad','Revenue','% total','Unidades']);
   _hdrRes.push(resumenRows.length - 1);
-  resumenRows.push(['ADS',pubLiq,pubLiq/totLiq,pubUni]);
-  resumenRows.push(['Orgánico',orgLiq,orgLiq/totLiq,orgUni]);
+  resumenRows.push(['ADS',pubVN,totVN>0?pubVN/totVN:0,pubUni]);
+  resumenRows.push(['Orgánico',orgVN,totVN>0?orgVN/totVN:0,orgUni]);
 
   // Bloque de rentabilidad real con COGS (si hay template cargado)
   if (typeof COGS_DATA !== 'undefined' && COGS_DATA.loaded) {
@@ -8347,8 +8454,8 @@ function exportarExcel(){
   }
   addSheet('Resumen',resumenRows,[42,26,15,15],{ titulo:true, etiquetaCol0:true, headerRows:_hdrRes });
 
-  const factRows=[[idLabel,'Producto','Revenue','% Revenue','Acumulado','Top 80% Rev','Top 80% Vol','Etiqueta']];
-  arrFact.forEach(i=>{const inVol=coreVolIds.has(i.id);factRows.push([i.id,titleFor(i.id)||'',i.liquidez,i.liquidez/totLiq,i.acumulado,i.esCore80?'Sí':'No',inVol?'Sí':'No',i.esCore80?(inVol?'REV+VOL':'TOP REV'):(inVol?'FALSO HÉROE':'')]);});
+  const factRows=[[idLabel,'Producto','Venta neta','% Venta neta','Acumulado','Top 80% Rev','Top 80% Vol','Etiqueta']];
+  arrFact.forEach(i=>{const inVol=coreVolIds.has(i.id);factRows.push([i.id,titleFor(i.id)||'',i.venta_neta,totVN>0?i.venta_neta/totVN:0,i.acumulado,i.esCore80?'Sí':'No',inVol?'Sí':'No',i.esCore80?(inVol?'REV+VOL':'TOP REV'):(inVol?'FALSO HÉROE':'')]);});
   addSheet('Pareto Revenue',factRows,[25,45,18,14,14,14,14,14]);
 
   const volRows=[[idLabel,'Producto','Unidades','% Unidades','Acumulado','Top 80% Vol','Top 80% Rev','Etiqueta']];
@@ -8368,8 +8475,8 @@ function exportarExcel(){
     const bruto = s.ingresos_brutos || 0;
     const ventaNeta = bruto * (1 - _fcR.factorIva);
     const recibidoML = bruto + ((s.cargo_venta||0)+(s.costo_envio||0)+(s.ing_envio||0)
-                     + (s.costo_fijo||0)+(s.cuotas||0)+(s.descuentos||0)) * _fcR.netFee + (s.impuestos||0);
-    const fiscal = bruto * _fcR.factorIva + ventaNeta * _fcR.iibbRate;
+                     + (s.costo_fijo||0)+(s.cuotas||0)+(s.descuentos||0)+(s.costo_devolucion||0)) * _fcR.netFee + (s.impuestos||0);
+    const fiscal = bruto * _fcR.factorIva + ventaNeta * _fcR.iibbRate - (_fcR.retencionesACuenta ? -(s.impuestos||0) : 0);
     const neto = recibidoML - fiscal;
     return { bruto, ventaNeta, neto, margen: ventaNeta > 0 ? neto / ventaNeta : 0 };
   };
@@ -8379,14 +8486,15 @@ function exportarExcel(){
     const envioNeto=(s.costo_envio||0)+(s.ing_envio||0);
     // Shares sobre venta neta, igual que el dashboard (antes iban sobre bruto)
     const base = c.ventaNeta > 0 ? c.ventaNeta : 1;
-    const envioShare=Math.max(0,-envioNeto)*_fcR.netFee/base;
+    const envAbs=(s.envioRealSeller!==undefined?s.envioRealSeller:Math.max(0,-envioNeto))*_fcR.netFee;
+    const envioShare=envAbs/base;
     const comShare=Math.abs((s.cargo_venta||0)*_fcR.netFee)/base;
     const fijoShare=Math.abs((s.costo_fijo||0)*_fcR.netFee)/base;
     const impShare=Math.abs(s.impuestos||0)/base;
     const cuotasShare=Math.abs((s.cuotas||0)*_fcR.netFee)/base;
     const nX = (typeof calcNEXUS==='function') ? calcNEXUS(s) : null;
     const adsX = nX ? (nX.inversionAds||0) : 0;
-    const canalShare = (Math.abs((s.cargo_venta||0)*_fcR.netFee) + Math.max(0,-envioNeto)*_fcR.netFee
+    const canalShare = (Math.abs((s.cargo_venta||0)*_fcR.netFee) + envAbs
                       + Math.abs((s.costo_fijo||0)*_fcR.netFee) + Math.abs((s.cuotas||0)*_fcR.netFee) + adsX) / base;
     const alerts=[];
     if(c.margen<0.10) alerts.push('BAJA RENT.');
@@ -8403,11 +8511,11 @@ function exportarExcel(){
   addSheet('SKUs Dormidos',dormRows,[25,16,18,14,20]);
 
   const tiendaRows=[['Tienda','Revenue','Unidades','% total']];
-  arrTienda.forEach(i=>tiendaRows.push([i.id,i.liquidez,i.unidades,totLiq>0?i.liquidez/totLiq:0]));
+  arrTienda.forEach(i=>tiendaRows.push([i.id,i.venta_neta,i.unidades,totVN>0?i.venta_neta/totVN:0]));
   addSheet('Tiendas',tiendaRows,[30,18,14,14]);
 
   const geoRows=[['Provincia','Revenue','Unidades','Acumulado','Top 80%']];
-  arrProv.forEach(i=>geoRows.push([i.id,i.liquidez,i.unidades,i.acumulado,i.esCore80?'Sí':'No']));
+  arrProv.forEach(i=>geoRows.push([i.id,i.venta_neta,i.unidades,i.acumulado,i.esCore80?'Sí':'No']));
   addSheet('Geográfico',geoRows,[30,18,14,14,12]);
 
   // Publicidad por SKU
@@ -8419,7 +8527,7 @@ function exportarExcel(){
     return {...s, _inv:inv, _ing:ing};
   }).sort((a,b)=>(b._inv-a._inv)||(b.liquidez-a.liquidez)).slice(0,150).forEach(s=>{
     const roas=s._inv>0?s._ing/s._inv:'';
-    pubRows.push([s.id, titleFor(s.id)||'', s._inv||'', s._ing||'', roas, s.pubLiq, s.liquidez, s.orgLiq, s.liquidez>0?s.pubLiq/s.liquidez:0]);
+    pubRows.push([s.id, titleFor(s.id)||'', s._inv||'', s._ing||'', roas, (s.pubBruto||0)*_fVNx, s.venta_neta||0, (s.orgBruto||0)*_fVNx, s.ingresos_brutos>0?(s.pubBruto||0)/s.ingresos_brutos:0]);
   });
   addSheet('Publicidad',pubRows,[25,45,16,20,10,18,16,16,12],
     { tipos:['general','general','money','money','general','money','money','money','percent'] });
@@ -8446,11 +8554,11 @@ function exportarExcel(){
 
   // NEXUS + TACOS (con columnas COGS si hay template)
   const cogsOn = typeof COGS_DATA !== 'undefined' && COGS_DATA.loaded;
-  const unitHdr = [idLabel,'Producto','Tipo','Precio Prom.','Comisión%','Envío/u','Recibido ML/u','NEXUS $/u (Break Even)','Margen Unit%'];
-  const plHdr = [idLabel,'Producto','Tipo','Unidades','Rev. Bruto','Comisión%','Envío $ total','Inversión Ads','TACOS%','Recibido ML','NEXUS $ Período','Margen P&L%'];
+  const unitHdr = [idLabel,'Producto','Tipo','Precio Prom.','Comisión%','Envío/u (neto IVA)','Recibido ML/u','NEXUS $/u (Break Even)','Margen Unit% (s/ venta neta)'];
+  const plHdr = [idLabel,'Producto','Tipo','Unidades','Rev. Bruto','Comisión%','Envío $ total (neto IVA)','Inversión Ads (neta IVA)','TACOS%','Recibido ML','NEXUS $ Período','Margen P&L% (s/ recibido sin IVA)'];
   if (cogsOn) {
-    unitHdr.push('COGS /u','Costo matcheado','Match','Margen Unit $ (post COGS)','Margen Unit % (post COGS)');
-    plHdr.push('COGS /u','COGS total período','Rentabilidad $ (NEXUS - COGS)','Margen final %');
+    unitHdr.push('COGS /u','Costo matcheado','Match','Margen Unit $ (post COGS)','Margen Unit % (post COGS, s/ recibido sin IVA)');
+    plHdr.push('COGS /u','COGS total período','Rentabilidad $ (NEXUS - COGS)','Margen final % (s/ recibido sin IVA)');
   }
   const nexusUnitRows=[unitHdr];
   const nexusPLRows=[plHdr];
@@ -8461,15 +8569,16 @@ function exportarExcel(){
     const mUnit = n.margenUnitario!==undefined?n.margenUnitario:n.margenNEXUS;
     const beUnit = n.breakEvenUnit!==undefined?n.breakEvenUnit:(n.recibidoNEXUSUnit||0);
     const unitRow = [s.id,titleFor(s.id)||'',n.desgloseTipo||'-',n.precioProm,n.comision,n.envioUnit,n.recibidoMLUnit||0,beUnit,mUnit];
-    const plRow = [s.id,titleFor(s.id)||'',n.desgloseTipo||'-',s.unidades||0,s.ingresos_brutos||0,n.comision,s.envioRealSeller||0,n.inversionAds>0?n.inversionAds:'Sin inversión',n.inversionAds>0?n.tacos:'',n.recibidoML||0,n.recibidoNEXUS||0,n.margenNEXUS];
+    const plRow = [s.id,titleFor(s.id)||'',n.desgloseTipo||'-',s.unidades||0,s.ingresos_brutos||0,n.comision,n.envioAbsorbido||0,n.inversionAds>0?n.inversionAds:'Sin inversión',n.inversionAds>0?n.tacos:'',n.recibidoML||0,n.recibidoNEXUS||0,n.margenNEXUS];
     if (cogsOn) {
       const cg = getCOGS(s);
       if (cg) {
         const margenPostU = beUnit - cg.costo;
-        const margenPostPct = n.precioProm > 0 ? margenPostU / n.precioProm : 0;
+        // Misma base que el dashboard: recibido sin IVA (antes precio y bruto, con IVA)
+        const margenPostPct = (n.recibidoSinIvaUnit||0) > 0 ? margenPostU / n.recibidoSinIvaUnit : 0;
         const cogsTotal = cg.costo * (s.unidades||0);
         const rentFinal = (n.recibidoNEXUS||0) - cogsTotal;
-        const margenFinal = s.ingresos_brutos > 0 ? rentFinal / s.ingresos_brutos : 0;
+        const margenFinal = (n.recibidoSinIva||0) > 0 ? rentFinal / n.recibidoSinIva : 0;
         unitRow.push(cg.costo, cg.titulo||'', cg.match||'EXACTO', margenPostU, margenPostPct);
         plRow.push(cg.costo, cogsTotal, rentFinal, margenFinal);
       } else {
@@ -9642,11 +9751,14 @@ function getEnrichment(skuEntry) {
         }
         inv += a.inversion || 0; ing += a.ingresos || 0; vpub += a.vpub || 0; cuenta++;
       }
-      if (cuenta > 1) {
+      /* También con UNA sola publicación pautada: si no es la primera del SKU
+         (id_pub_raw), el barrido de arriba no la encuentra y la pauta quedaba sin
+         atribuir. Medido: $4.368 de pauta fuera de su SKU en 30 días (v51.3). */
+      if (cuenta >= 1) {
         ads = Object.assign({}, ads || {}, {
           inversion: inv, ingresos: ing, vpub: vpub,
           roas: inv > 0 ? ing / inv : 0,
-          acos: ing > 0 ? inv / ing : 0,
+          acos: ing > 0 ? inv / ing * 100 : 0,   // en %, igual que parseAds
           _agregadoMLAs: cuenta
         });
       }
@@ -9712,7 +9824,8 @@ function calcNEXUS(s) {
   
   // FIX: NO retornar null si tiene inversión Ads (publicaciones críticas)
   // Solo retornar null si NO tiene precio Y NO tiene inversión (item irrelevante)
-  if (precioProm <= 0 && (!ads || !ads.inversion || ads.inversion <= 0)) return null;
+  // Una publicación que sólo tuvo devoluciones con costo también cuenta (v51.3)
+  if (precioProm <= 0 && (!ads || !ads.inversion || ads.inversion <= 0) && !((s.costo_devolucion || 0) < 0)) return null;
 
   // ═══════════════════════════════════════════════════════════
   // NEXUS v2 · cálculo HÍBRIDO con datos reales del reporte
@@ -9723,7 +9836,7 @@ function calcNEXUS(s) {
   // (todos los descuentos vienen como negativos en el reporte)
   // 
   // Costos fiscales del seller (NO están en el reporte, los aplica el seller al fisco):
-  //   - AR: IVA 21% + IIBB 5% sobre PVP
+  //   - AR: IVA 21% + IIBB 4% sobre venta neta, con las retenciones a cuenta
   //   - MX: IVA 16% sobre PVP
   //   - CL: IVA 19% sobre PVP
   // 
@@ -9777,16 +9890,22 @@ function calcNEXUS(s) {
   
   // IVA débito que el seller debe al fisco sobre el PVP
   const ivaDebito = ingresos * factorIva;
-  // IIBB sobre venta neta
+  // IIBB sobre venta neta. En AR las retenciones de ML se computan a cuenta
   const iibbTotal = ventaNeta * iibbRate;
-  const fiscalTotal = ivaDebito + iibbTotal;
+  const retencionesACuenta = _fcN.retencionesACuenta ? -impuestos : 0;
+  const fiscalTotal = ivaDebito + iibbTotal - retencionesACuenta;
   
   // Descuentos y bonificaciones: lo que ML reintegra sobre sus cargos. Viene
   // positivo y está dentro del Total, así que se netea como un cargo más (v51.2).
   const descuentosNeto = (s.descuentos || 0) * netFee;
+  // Devoluciones que le costaron al seller (Total negativo, típicamente el envío
+  // de vuelta). Las canceladas no suman (v51.3).
+  const devolucionesNeto = (s.costo_devolucion || 0) * netFee;
 
   // Recibido de ML NETO de IVA (costo real de los fees para RI)
-  const recibidoML = ingresos + cargoVentaNeto + costoEnvioNeto + ingEnvioNeto + impuestosNeto + costoFijoNeto + cuotasNeto + descuentosNeto;
+  const recibidoML = ingresos + cargoVentaNeto + costoEnvioNeto + ingEnvioNeto + impuestosNeto + costoFijoNeto + cuotasNeto + descuentosNeto + devolucionesNeto;
+  // Base de los márgenes P&L: lo recibido sin el IVA débito
+  const recibidoSinIva = recibidoML - ivaDebito;
 
   // TACOS prorrateado al rango filtrado · la inversión Ads también tiene IVA
   const adsInversionRaw = ads ? getAdsInversionProrrateada(ads, G._lastFilter && G._lastFilter.from, G._lastFilter && G._lastFilter.to) : 0;
@@ -9805,13 +9924,18 @@ function calcNEXUS(s) {
 
   // 2) P&L del PERÍODO (con Ads): resultado total, neto de IVA, sobre venta neta
   const recibidoNEXUS = recibidoML - fiscalTotal - adsInversionPror;
-  const margenNEXUS = ventaNeta > 0 ? recibidoNEXUS / ventaNeta : 0;
+  /* Margen P&L sobre lo recibido sin IVA, misma base que los KPI de cuenta y el
+     informe (v51.3; antes venta neta). El margen UNIT de arriba sigue sobre venta
+     neta: sin Ads ni COGS, sobre recibido sólo reflejaría el IIBB. */
+  const margenNEXUS = recibidoSinIva > 0 ? recibidoNEXUS / recibidoSinIva : (recibidoNEXUS < 0 ? -1 : 0);
 
   // === Métricas de presentación ===
   // Comisión: se muestra la EFECTIVA (neta de IVA para RI) sobre venta neta
   const comision = ventaNeta > 0 ? Math.abs(cargoVentaNeto) / ventaNeta : 0;
   const envioNetoCalc = costoEnvioNeto + ingEnvioNeto;
-  const envioUnit = s.unidades > 0 ? Math.abs(Math.min(0, envioNetoCalc)) / s.unidades : 0;
+  // Envío que absorbe el seller venta por venta, igual que el KPI de cuenta (v51.3)
+  const envioAbsorbido = s.envioRealSeller !== undefined ? s.envioRealSeller * netFee : Math.abs(Math.min(0, envioNetoCalc));
+  const envioUnit = s.unidades > 0 ? envioAbsorbido / s.unidades : 0;
 
   /* Costos por unidad que antes sólo vivían en la tabla "Desglose de Costos".
      Se exponen acá para consolidar todo en la tabla NEXUS y en $ (no en %).
@@ -9845,6 +9969,8 @@ function calcNEXUS(s) {
     
     // valores totales (sumando todas las unidades)
     recibidoML, recibidoNEXUS, fiscalTotal_total: fiscalTotal,
+    recibidoSinIva, recibidoSinIvaUnit: s.unidades > 0 ? recibidoSinIva / s.unidades : 0,
+    envioAbsorbido, devolucionesNeto, retencionesACuenta, iibbTotal,
     inversionAds: adsInversionPror,
     
     // ═══ Doble verificación ═══
@@ -9897,12 +10023,16 @@ function fiscalCfg() {
   const isMX = CURRENCY_CODE === 'MXN';
   const isCL = CURRENCY_CODE === 'CLP';
   const ivaRate    = isMX ? 0.16 : isCL ? 0.19 : 0.21;
-  const iibbRate   = (isMX || isCL) ? 0 : 0.05;
+  /* IIBB 4%: la alícuota que paga la mayoría (v51.3, antes 5%). En AR las
+     retenciones de ML son pago a cuenta de ese IIBB: se computan contra él y no
+     como un costo adicional. En MX/CL no hay IIBB y siguen siendo costo. */
+  const iibbRate   = (isMX || isCL) ? 0 : 0.04;
+  const retencionesACuenta = iibbRate > 0;
   const feesConIva = !isMX;                                     // MX ya viene neto
   const esRI       = (NEXUS_FISCAL === 'RI');
   const factorIva  = esRI ? (ivaRate / (1 + ivaRate)) : 0;       // débito sobre PVP
   const netFee     = (esRI && feesConIva) ? (1 - factorIva) : 1; // costo real del fee
-  return { isMX, isCL, esRI, ivaRate, iibbRate, feesConIva, factorIva, netFee };
+  return { isMX, isCL, esRI, ivaRate, iibbRate, retencionesACuenta, feesConIva, factorIva, netFee };
 }
 
 // Netea el IVA de un monto de VENTA (revenue). No aplica a cargos: para eso va netFee.
@@ -10710,7 +10840,7 @@ function renderRentKPIs(skuMap) {
   
   // Agregados sobre todo el skuMap
   let revBruto = 0, cargoVenta = 0, costoEnvio = 0, ingEnvio = 0, 
-      impuestos = 0, costoFijo = 0, cuotas = 0, descuentos = 0, recibidoML = 0;
+      impuestos = 0, costoFijo = 0, cuotas = 0, descuentos = 0, devol = 0, recibidoML = 0;
   
   Object.values(skuMap).forEach(s => {
     revBruto    += s.ingresos_brutos || 0;
@@ -10721,6 +10851,7 @@ function renderRentKPIs(skuMap) {
     costoFijo   += s.costo_fijo || 0;
     cuotas      += s.cuotas || 0;
     descuentos  += s.descuentos || 0;
+    devol       += s.costo_devolucion || 0;
   });
   
   // FIX: Calcular envío REAL recorriendo registros uno por uno (no agregado)
@@ -10764,12 +10895,14 @@ function renderRentKPIs(skuMap) {
   const ventaNetaTotal = revBruto * (1 - factorIva);
   
   // Recibido ML con fees NETOS de IVA (costo real para RI)
-  recibidoML = revBruto + (cargoVenta + costoEnvio + ingEnvio + costoFijo + cuotas + descuentos) * netFee + impuestos;
+  recibidoML = revBruto + (cargoVenta + costoEnvio + ingEnvio + costoFijo + cuotas + descuentos + devol) * netFee + impuestos;
   
   // Fiscal: IVA débito sobre PVP + IIBB sobre venta neta
   const ivaDebito = revBruto * factorIva;
   const iibbTotal = ventaNetaTotal * iibbRate;
-  const fiscalTotal = ivaDebito + iibbTotal;
+  // Retenciones de ML computadas a cuenta de IIBB (AR): no se restan dos veces
+  const retACuenta = _fcA.retencionesACuenta ? -impuestos : 0;
+  const fiscalTotal = ivaDebito + iibbTotal - retACuenta;
   
   // Inversión Ads del período (prorrateada) · bruta para mostrar, neta para el cálculo
   /* Todo el reporte de Ads recortado al rango, incluida la pauta de publicaciones
@@ -10791,7 +10924,11 @@ function renderRentKPIs(skuMap) {
   const costoEnvioAbs = envioRealSeller * netFee;
   const impuestosAbs = Math.abs(impuestos);
   const cuotasAbs = Math.abs(cuotas) * netFee;
-  const costosTotal = comisionAbs + costoFijoAbs + costoEnvioAbs + impuestosAbs + cuotasAbs + fiscalTotal + inversionAds;
+  /* Costos totales = Ingresos por productos − NEXUS, así la tarjeta cierra exacto
+     contra el resultado. Hasta v51.2 sumaba el envío con piso en cero y no
+     contemplaba bonificaciones, devoluciones ni retenciones a cuenta. */
+  const devolAbs = Math.abs(devol) * netFee;
+  const costosTotal = revBruto - rentabilidadNexus;
   
   // % de cada costo sobre venta neta (base del margen para RI)
   const baseM = ventaNetaTotal > 0 ? ventaNetaTotal : revBruto;
@@ -10853,9 +10990,9 @@ function renderRentKPIs(skuMap) {
       <div class="kpi-sub">${_liqCarritoViejo
         ? '<span style="color:var(--warn)">⚠ Snapshot previo a v51.1 · carritos en bruto, recargá el reporte de ventas</span>'
         : 'Columna Total del reporte'}</div></div>
-    <div class="kpi"><div class="kpi-label">Rentabilidad</div>
+    <div class="kpi" title="Ingresos por productos menos los cargos de ML netos de su IVA, más bonificaciones, menos retenciones y devoluciones. No es el depósito: el IVA de los cargos es crédito fiscal." style="cursor:help"><div class="kpi-label">Recibido de ML</div>
       <div class="kpi-value ok">${fmtCurrency(recibidoML)}</div>
-      <div class="kpi-sub">Lo que recibe el seller de ML</div></div>
+      <div class="kpi-sub">Cargos netos de IVA · no es el depósito</div></div>
     <div class="kpi"><div class="kpi-label">Rentabilidad NEXUS</div>
       <div class="kpi-value ${margenClr}">${fmtCurrency(rentabilidadNexus)}</div>
       <div class="kpi-sub">Después de impuestos${inversionAds > 0 ? ' y Ads' : ''}</div></div>
@@ -10866,7 +11003,7 @@ function renderRentKPIs(skuMap) {
       <div class="kpi-label">Costos de canal</div>
       <div class="kpi-value ${canalClr}">${(pctCanal*100).toFixed(1)}%</div>
       <div class="kpi-sub">Comisión + envío${inversionAds > 0 ? ' + Ads' : ''} · sin fiscal</div></div>
-    <div class="kpi"><div class="kpi-label">Costos totales</div>
+    <div class="kpi" title="Ingresos por productos − Rentabilidad NEXUS: cargos de ML, carga fiscal, devoluciones y Ads. Cierra exacto contra el resultado." style="cursor:help"><div class="kpi-label">Costos totales</div>
       <div class="kpi-value warn">${fmtCurrency(costosTotal)}</div>
       <div class="kpi-sub">ML + fiscal${inversionAds > 0 ? ' + Ads' : ''}</div></div>
   `;
@@ -10911,9 +11048,18 @@ function renderRentKPIs(skuMap) {
   }
   
   if (impuestosAbs > 0) {
-    kpis += `<div class="kpi"><div class="kpi-label">Impuestos</div>
-      <div class="kpi-value muted">${(pctImp*100).toFixed(1)}%</div>
-      <div class="kpi-sub">Retenciones ML</div></div>`;
+    const _retTtl = 'Columna Impuestos del reporte: lo que ML retiene en cada venta. '
+      + (_fcA.retencionesACuenta
+          ? 'Se computa como pago a cuenta de IIBB (' + (iibbRate*100).toFixed(0) + '% de la venta neta = ' + fmtCurrency(iibbTotal) + '): baja lo recibido pero no se resta dos veces del resultado.'
+          : 'Se resta como costo.');
+    kpis += `<div class="kpi" title="${_retTtl}" style="cursor:help"><div class="kpi-label">Retenciones</div>
+      <div class="kpi-value muted">${fmtCurrency(impuestosAbs)}</div>
+      <div class="kpi-sub">${(pctImp*100).toFixed(1)}% de venta neta${_fcA.retencionesACuenta ? ' · a cuenta de IIBB' : ''}</div></div>`;
+  }
+  if (devolAbs > 0) {
+    kpis += `<div class="kpi" title="Ventas devueltas o no entregadas con Total negativo en el reporte: lo que le costó al seller (envío de vuelta, cargos no reintegrados), neto de IVA. Las canceladas no suman." style="cursor:help"><div class="kpi-label">Costo de devoluciones</div>
+      <div class="kpi-value warn">${fmtCurrency(devolAbs)}</div>
+      <div class="kpi-sub">${(baseM > 0 ? devolAbs / baseM * 100 : 0).toFixed(1)}% de venta neta</div></div>`;
   }
   
   // ═══ Cards COGS (solo con template cargado) ═══
@@ -11043,18 +11189,11 @@ function renderPubKPIs(skuMap) {
       if (!entry || !_n || seenKeys.has(_n)) continue;
       seenKeys.add(_n);
       
-      if (typeof getAdsInversionProrrateada === 'function') {
-        const invPror = getAdsInversionProrrateada(entry, filterFrom, filterTo);
-        // Prorratear ingresos y ventas por la misma fracción
-        const frac = entry.inversion > 0 ? invPror / entry.inversion : 0;
-        invTotal += invPror;
-        revAdsTotal += (entry.ingresos || 0) * frac;
-        ventasAdsTotal += (entry.vpub || 0) * frac;
-      } else {
-        invTotal += entry.inversion || 0;
-        revAdsTotal += entry.ingresos || 0;
-        ventasAdsTotal += entry.vpub || 0;
-      }
+      // Recorte al rango filtrado, igual que adsInversionRango y el informe (v51.3)
+      const src = (filterFrom && filterTo && entry.rows) ? (getAdsForRange(entry, filterFrom, filterTo) || entry) : entry;
+      invTotal += src.inversion || 0;
+      revAdsTotal += src.ingresos || 0;
+      ventasAdsTotal += src.vpub || 0;
     }
   }
   
@@ -11125,7 +11264,8 @@ function renderPubKPIs(skuMap) {
       const a = ADS_DATA[k];
       if (!a || !(a.inversion > 0)) return;
       vistos.add(num);
-      invSinVentas += a.inversion; pubsSinVentas++;
+      const aR = (filterFrom && filterTo && a.rows) ? (getAdsForRange(a, filterFrom, filterTo) || a) : a;
+      invSinVentas += aR.inversion || 0; pubsSinVentas++;
     });
   }
   const sinVentasCard = invSinVentas > 0
@@ -11232,7 +11372,7 @@ function buildNexusTable(cache, mode) {
     if (!(total > 0)) return '<td class="num" style="color:var(--muted)">—</td>';
     const partes = [];
     if (fijo > 0) partes.push('Costo fijo ML: ' + ARS(fijo));
-    if (imp  > 0) partes.push('Impuestos y retenciones: ' + ARS(imp));
+    if (imp  > 0) partes.push('Retenciones (a cuenta de IIBB en AR): ' + ARS(imp));
     if (cuot > 0) partes.push('Costo financiero (cuotas): ' + ARS(cuot));
     if (otr  > 0) partes.push('Anulaciones: ' + ARS(otr));
     const ttl = partes.join(' · ') + ' — Total ' + ARS(total);
@@ -11250,10 +11390,10 @@ function buildNexusTable(cache, mode) {
       + (hasOtrosCostos ? '<th class="r">Otros costos/u' + tip('Costo fijo de ML + impuestos + cuotas + anulaciones, por unidad. Pasá el cursor sobre el monto de cada fila para ver el desglose.') + '</th>' : '')
       + '<th class="r">Recibido/u' + tip('Lo que ML transfiere al seller por unidad, después de comisión, envío, retenciones y cuotas') + '</th>'
       + '<th class="r">NEXUS $/u' + tip('Recibido por unidad después de impuestos, SIN Ads. Es tu Break Even: el COGS máximo que soporta el precio.') + '</th>'
-      + '<th>Margen' + tip('Margen unitario por venta, antes de Ads y COGS') + '</th>'
+      + '<th>Margen' + tip('Margen unitario por venta sobre venta neta, antes de Ads y COGS. Usa venta neta a propósito: sobre recibido sin IVA sólo reflejaría el IIBB, porque los cargos del canal ya están descontados de esa base.') + '</th>'
       + (COGS_DATA.loaded ? '<th class="r">COGS/u' + tip('Costo de reposición por unidad (del template cargado)') + '</th>' : '')
       + (COGS_DATA.loaded ? '<th class="r">Margen $ post-COGS' + tip('Recibido NEXUS/u menos COGS/u. Rentabilidad real por unidad.') + '</th>' : '')
-      + (COGS_DATA.loaded ? '<th>Margen % post-COGS' + tip('Margen final por unidad después de restar el costo de reposición') + '</th>' : '')
+      + (COGS_DATA.loaded ? '<th>Margen % post-COGS' + tip('Margen final por unidad después de restar el costo de reposición, sobre lo recibido sin IVA por unidad. Sin Ads.') + '</th>' : '')
       + '</tr></thead><tbody>';
     
     nexusArr.forEach(s => {
@@ -11267,9 +11407,9 @@ function buildNexusTable(cache, mode) {
         const cg = getCOGS(s);
         if (cg) {
           const margenPostU = beU - cg.costo;  // recibido NEXUS/u (neto IVA) - COGS/u
-          // Margen sobre venta neta unitaria (coherente con NEXUS v3 fiscal)
-          const ventaNetaUnit = n.factorIva !== undefined ? n.precioProm * (1 - n.factorIva) : n.precioProm;
-          const margenPostPct = ventaNetaUnit > 0 ? margenPostU / ventaNetaUnit : 0;
+          // Sobre lo recibido sin IVA por unidad, igual que el margen final de cuenta (v51.3)
+          const baseU = n.recibidoSinIvaUnit || 0;
+          const margenPostPct = baseU > 0 ? margenPostU / baseU : (margenPostU < 0 ? -1 : 0);
           const mpDot = margenPostPct < 0 ? 'danger' : margenPostPct < MARGIN_LOW ? 'danger' : margenPostPct < MARGIN_MED ? 'warn' : 'ok';
           const mpColor = margenPostU < 0 ? 'color:var(--danger)' : 'color:var(--ok)';
           cogsCells = '<td class="num" style="color:var(--muted)">' + ARS(cg.costo) + '</td>'
@@ -11300,15 +11440,15 @@ function buildNexusTable(cache, mode) {
       + '<th class="r">Unid.' + tip('Unidades vendidas en el rango filtrado') + '</th>'
       + '<th class="r">Rev. bruto' + tip('Revenue bruto total del item en el período') + '</th>'
       + '<th class="r">Comisión' + tip('% promedio de comisión ML') + '</th>'
-      + '<th class="r">Envío $' + tip('Suma de costos de envío reales del seller en el período (venta por venta, respeta prorrateo de carritos)') + '</th>'
+      + '<th class="r">Envío $' + tip('Suma de costos de envío reales del seller en el período, netos de IVA (venta por venta, respeta prorrateo de carritos)') + '</th>'
       + (hasOtrosCostos ? '<th class="r">Otros costos' + tip('Costo fijo de ML + impuestos + cuotas + anulaciones del período. Pasá el cursor sobre el monto de cada fila para ver el desglose.') + '</th>' : '')
-      + '<th class="r">Ads' + tip('Inversión publicitaria del rango filtrado (prorrateada). Si el item no tiene campañas: Sin inversión.') + '</th>'
+      + '<th class="r">Ads' + tip('Inversión publicitaria del rango filtrado, neta de IVA (costo real). Entre paréntesis el TACOS, en bruto como el panel de Mercado Ads. Si el item no tiene campañas: Sin inversión.') + '</th>'
       + '<th class="r">Recibido' + tip('Total que ML transfirió al seller en el período') + '</th>'
       + '<th class="r">NEXUS $' + tip('Resultado total del período: recibido - fisco - Ads. Antes de COGS.') + '</th>'
-      + '<th>Margen' + tip('NEXUS $ / Revenue bruto del período. Margen P&L antes de COGS.') + '</th>'
+      + '<th>Margen' + tip('NEXUS $ / recibido sin IVA del período. Margen P&L antes de COGS.') + '</th>'
       + (COGS_DATA.loaded ? '<th class="r">COGS total' + tip('COGS/u × unidades vendidas en el período') + '</th>' : '')
       + (COGS_DATA.loaded ? '<th class="r">Rentab. $ final' + tip('NEXUS $ del período menos el COGS total. Rentabilidad real del producto.') + '</th>' : '')
-      + (COGS_DATA.loaded ? '<th>Margen final %' + tip('Rentabilidad final / Revenue bruto del período') + '</th>' : '')
+      + (COGS_DATA.loaded ? '<th>Margen final %' + tip('Rentabilidad final / recibido sin IVA del período') + '</th>' : '')
       + '</tr></thead><tbody>';
     
     nexusArr.forEach(s => {
@@ -11316,7 +11456,7 @@ function buildNexusTable(cache, mode) {
       const mP = n.margenNEXUS;
       const mDot = mP < 0 ? 'danger' : mP < MARGIN_LOW ? 'danger' : mP < MARGIN_MED ? 'warn' : 'ok';
       const gainColor = n.recibidoNEXUS < 0 ? 'color:var(--danger)' : 'color:var(--ok)';
-      const envioTotal = s.envioRealSeller || 0;
+      const envioTotal = n.envioAbsorbido || 0;   // neto de IVA, como el resto de los cargos
       const adsCell = n.inversionAds > 0
         ? '<span style="color:' + (n.tacos > 0.15 ? 'var(--danger)' : n.tacos > 0.08 ? 'var(--warn)' : 'var(--text)') + '">' + ARS(n.inversionAds) + ' <span style="font-size:9px;color:var(--muted)">(' + PCT(n.tacos) + ')</span></span>'
         : '<span style="color:var(--muted);font-size:10px;font-style:italic;">Sin inversión</span>';
@@ -11326,9 +11466,9 @@ function buildNexusTable(cache, mode) {
         if (cg) {
           const cogsTotal = cg.costo * (s.unidades || 0);
           const rentFinal = n.recibidoNEXUS - cogsTotal;
-          // Margen final sobre venta neta del período (coherente con NEXUS v3 fiscal)
-          const ventaNetaTot = n.ventaNeta !== undefined ? n.ventaNeta : (s.ingresos_brutos || 0);
-          const margenFinal = ventaNetaTot > 0 ? rentFinal / ventaNetaTot : 0;
+          // Margen final sobre lo recibido sin IVA del período (v51.3)
+          const baseFin = n.recibidoSinIva || 0;
+          const margenFinal = baseFin > 0 ? rentFinal / baseFin : (rentFinal < 0 ? -1 : 0);
           const mfDot = margenFinal < 0 ? 'danger' : margenFinal < MARGIN_LOW ? 'danger' : margenFinal < MARGIN_MED ? 'warn' : 'ok';
           const rfColor = rentFinal < 0 ? 'color:var(--danger)' : 'color:var(--ok)';
           cogsCells = '<td class="num" style="color:var(--muted)">' + ARS(cogsTotal) + '</td>'
@@ -11923,7 +12063,7 @@ function resolverML(query) {
   out.candidatos = items.filter(s =>
     String(s.id).toLowerCase().includes(qLow) ||
     (titleFor(s.id) || '').toLowerCase().includes(qLow)
-  ).sort((a, b) => (b.liquidez || 0) - (a.liquidez || 0)).slice(0, 12);
+  ).sort((a, b) => (b.ingresos_brutos || 0) - (a.ingresos_brutos || 0)).slice(0, 12);
   return out;
 }
 
@@ -11954,7 +12094,7 @@ function buscarML() {
       `<div class="ficha-cand" onclick="document.getElementById('ml-search').value='${s.id}';buscarML();">
          <span class="ficha-cand-id">${s.id}</span>
          <span class="ficha-cand-tit">${titleFor(s.id) || '—'}</span>
-         <span class="ficha-cand-rev">${ARS(s.liquidez || 0)}</span>
+         <span class="ficha-cand-rev">${ARS((s.ingresos_brutos || 0) * (1 - fiscalCfg().factorIva))}</span>
        </div>`).join('');
     cont.innerHTML = `<div class="ficha-wrap">
       <div class="ficha-head"><span class="ficha-title">${candidatos.length} coincidencias para "${q}"</span>
@@ -12052,7 +12192,7 @@ function renderFichaML(s) {
      <div class="ficha-kpi-sub">${sub || ''}</div></div>`;
 
   const kpis = [];
-  kpis.push(KPI('Revenue período', ARS(netIVA(s.liquidez || 0)),
+  kpis.push(KPI('Revenue período', ARS((s.ingresos_brutos || 0) * (1 - fiscalCfg().factorIva)),
     (s.unidades || 0) + ' u' + (NEXUS_FISCAL === 'RI' ? ' · neto IVA' : '')));
   if (n) {
     kpis.push(KPI('Precio promedio', ARS(n.precioProm || 0), 'precio de lista'));
@@ -12062,16 +12202,17 @@ function renderFichaML(s) {
   }
   if (cogsU > 0 && margenUnitPostCogs !== null) {
     const c = margenUnitPostCogs < 0 ? 'var(--danger)' : 'var(--ok)';
-    const mgPct = ventaNetaUnit > 0 ? margenUnitPostCogs / ventaNetaUnit : 0;
+    const mgBaseU = n ? (n.recibidoSinIvaUnit || 0) : 0;
+    const mgPct = mgBaseU > 0 ? margenUnitPostCogs / mgBaseU : 0;
     kpis.push(KPI('COGS /u', ARS(cogsU), cogsRec.match === 'EXACTO' ? 'match exacto' : 'match por SKU'));
-    kpis.push(KPI('Margen UNIT post-COGS', ARS(margenUnitPostCogs), PCT(mgPct) + ' sobre venta neta · por unidad, sin Ads', c));
+    kpis.push(KPI('Margen UNIT post-COGS', ARS(margenUnitPostCogs), PCT(mgPct) + ' sobre recibido sin IVA · por unidad, sin Ads', c));
     /* P&L del período: misma fórmula que la vista P&L de Rentabilidad
        (NEXUS $ del rango, con Ads prorrateados, menos COGS/u × unidades). */
     if (n) {
       const rentFinalPL = (n.recibidoNEXUS || 0) - cogsU * (s.unidades || 0);
-      const mgPctPL = (n.ventaNeta || 0) > 0 ? rentFinalPL / n.ventaNeta : 0;
+      const mgPctPL = (n.recibidoSinIva || 0) > 0 ? rentFinalPL / n.recibidoSinIva : 0;
       const cPL = rentFinalPL < 0 ? 'var(--danger)' : 'var(--ok)';
-      kpis.push(KPI('Margen P&amp;L post-COGS', ARS(rentFinalPL), PCT(mgPctPL) + ' sobre venta neta · período, con Ads', cPL));
+      kpis.push(KPI('Margen P&amp;L post-COGS', ARS(rentFinalPL), PCT(mgPctPL) + ' sobre recibido sin IVA · período, con Ads', cPL));
     }
   }
   if (ads && (ads.inversion || 0) > 0) {
