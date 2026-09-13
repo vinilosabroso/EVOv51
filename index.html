@@ -11977,7 +11977,15 @@ function renderFichaML(s) {
     const c = margenUnitPostCogs < 0 ? 'var(--danger)' : 'var(--ok)';
     const mgPct = ventaNetaUnit > 0 ? margenUnitPostCogs / ventaNetaUnit : 0;
     kpis.push(KPI('COGS /u', ARS(cogsU), cogsRec.match === 'EXACTO' ? 'match exacto' : 'match por SKU'));
-    kpis.push(KPI('Margen post-COGS', ARS(margenUnitPostCogs), PCT(mgPct) + ' sobre venta neta', c));
+    kpis.push(KPI('Margen UNIT post-COGS', ARS(margenUnitPostCogs), PCT(mgPct) + ' sobre venta neta · por unidad, sin Ads', c));
+    /* P&L del período: misma fórmula que la vista P&L de Rentabilidad
+       (NEXUS $ del rango, con Ads prorrateados, menos COGS/u × unidades). */
+    if (n) {
+      const rentFinalPL = (n.recibidoNEXUS || 0) - cogsU * (s.unidades || 0);
+      const mgPctPL = (n.ventaNeta || 0) > 0 ? rentFinalPL / n.ventaNeta : 0;
+      const cPL = rentFinalPL < 0 ? 'var(--danger)' : 'var(--ok)';
+      kpis.push(KPI('Margen P&amp;L post-COGS', ARS(rentFinalPL), PCT(mgPctPL) + ' sobre venta neta · período, con Ads', cPL));
+    }
   }
   if (ads && (ads.inversion || 0) > 0) {
     const tacosPct = n && n.tacos ? n.tacos : 0;
