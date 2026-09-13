@@ -680,7 +680,7 @@
   <div class="info-modal">
     <div class="info-head">
       <div>
-        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.4</div>
+        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.5</div>
         <div class="info-sub">Qué toma y cómo calcula cada métrica. Uso interno PTI.</div>
       </div>
       <button class="btn" onclick="cerrarInfo()">✕</button>
@@ -1056,6 +1056,7 @@ const _GLOSARIO = [
   ['Margen real final','Rentabilidad real ÷ lo recibido de ML sin IVA','Responde de cada peso que quedó de Mercado Libre, cuánto es ganancia. La base es lo recibido menos el IVA débito: esa parte está en la cuenta pero no es del vendedor, hay que girarla al fisco, así que dejarla en el denominador achicaría el margen artificialmente. El numerador tampoco la tiene, con lo que la razón queda en la misma base. Se descartó calcularlo sobre el revenue bruto, que era lo que hacía hasta septiembre de 2026 y mezclaba un numerador sin IVA con un denominador con IVA. También se descartó la venta neta: es correcta desde lo contable pero no representa plata que el vendedor vea. Medido en una cuenta real: 17,8% sobre bruto, 21,6% sobre venta neta y 37,1% sobre lo recibido sin IVA. El tooltip de la tarjeta muestra las tres para poder contrastar.'],
  ]],
  ['Inventario FULL', [
+  ['Forecast siempre visible','Se recalcula solo si hay stock cargado','La pestaña Forecast se reconstruye cada vez que se redibuja el dashboard: al cambiar fechas, cargar COGS, pasar de SKU a # Publicación o abrir un snapshot. Hasta v51.4 eso borraba los resultados aunque el stock siguiera cargado, y parecía que el snapshot no guardaba el forecast. Ahora, si hay stock, se recalcula en silencio con el período vigente. Importar el reporte de Publicaciones también recalcula al terminar.'],
   ['Stock desde reporte ML','Botón del módulo Forecast','Importa el stock del reporte de Publicaciones de ML: cubre depósito propio/Flex y FULL, así que sirve también en cuentas que no usan fulfillment. Pisa lo cargado manualmente. Las claves quedan guardadas según el identificador activo al importar (SKU o # de publicación), por eso conviene no cambiar de vista entre importar y analizar.'],
   ['Stock disponible (ficha)','Depósito propio/Flex + FULL','Stock que la ficha lee de los inputs del Forecast. Se marca en rojo con 2 unidades o menos y muestra la señal ÚLTIMA UNIDAD o SIN STOCK.'],
   ['Días de cobertura','Stock disponible ÷ ritmo de venta del período','Cuántos días de venta cubre el stock actual. Se calcula en la ficha con el ritmo del período filtrado, sin depender del módulo Forecast (que requiere el reporte de Stock FULL). Rojo con 14 días o menos.'],
@@ -3445,15 +3446,8 @@ function importSnapshotJSON(file) {
          registros, y guardarlo duplicaría datos). Si el snapshot trae inputs de
          stock, se recalcula solo para que la pestaña quede lista sin que el
          consultor tenga que acordarse de apretar recalcular. */
-      try {
-        const conStock = Object.keys(FORECAST_INPUTS || {}).some(k => {
-          const i = FORECAST_INPUTS[k];
-          return i && (i.stockFlex != null || i.stockFull != null);
-        });
-        if (conStock && typeof recalcularForecast === 'function') {
-          setTimeout(() => { try { recalcularForecast(); } catch (e) {} }, 700);
-        }
-      } catch (e) {}
+      /* Desde v51.5 lo recalcula renderDashboard, que corre dentro de
+         aplicarFiltros: un segundo recálculo acá sólo sumaba otro modal. */
       
       // Mostrar mensaje de éxito
       setTimeout(() => {
@@ -3972,7 +3966,9 @@ function importPublicacionesXLSX(file) {
           extraMsg);
 
         if (typeof renderForecastInputsTable === 'function') renderForecastInputsTable();
-        
+        // El stock nuevo tiene que verse en los resultados sin apretar Recalcular (v51.5)
+        if (typeof recalcularForecast === 'function') recalcularForecast({ silencioso: true });
+
         // Si se enriquecieron records, refrescar el dashboard completo
         if (recordsEnriquecidos > 0 && typeof aplicarFiltros === 'function') {
           setTimeout(() => aplicarFiltros(), 100);
@@ -5425,9 +5421,13 @@ function hideForecastSpinner() {
   if (el) el.style.display = 'none';
 }
 
-function recalcularForecast() {
+/* opts.silencioso: sin spinner ni cartel de "Listo". Lo usan los recálculos
+   automáticos (redibujado del dashboard, importación de stock), que no deben
+   interrumpir al consultor con un modal cada vez que cambia un filtro. */
+function recalcularForecast(opts) {
+  const silencioso = !!(opts && opts.silencioso);
   if (!G || !G._lastRender) {
-    showForecastAlert('error', 'Cargá un reporte de ventas primero.');
+    if (!silencioso) showForecastAlert('error', 'Cargá un reporte de ventas primero.');
     return;
   }
 
@@ -5438,11 +5438,11 @@ function recalcularForecast() {
   });
 
   if (skuConStock.length === 0) {
-    showForecastAlert('warn', 'Cargá inputs de stock para al menos 1 SKU antes de recalcular.');
+    if (!silencioso) showForecastAlert('warn', 'Cargá inputs de stock para al menos 1 SKU antes de recalcular.');
     return;
   }
 
-  showForecastSpinner('Calculando forecast…');
+  if (!silencioso) showForecastSpinner('Calculando forecast…');
 
   // Pequeño delay para que se renderice el spinner
   setTimeout(() => {
@@ -5632,7 +5632,7 @@ function recalcularForecast() {
       }
 
       hideForecastSpinner();
-      showForecastAlert('ok',
+      if (!silencioso) showForecastAlert('ok',
         `Forecast calculado: ${items.length} SKUs proyectados a ${SEMANAS} semanas.\n\n` +
         `Reposición urgente: ${items.filter(i => i.reposicion.urgente).length}\n` +
         `Reposición programada: ${items.filter(i => i.reposicion.necesita && !i.reposicion.urgente).length}\n` +
@@ -5641,7 +5641,7 @@ function recalcularForecast() {
     } catch (err) {
       hideForecastSpinner();
       console.error('Error calculando forecast:', err);
-      showForecastAlert('error', 'Error al calcular: ' + err.message);
+      if (!silencioso) showForecastAlert('error', 'Error al calcular: ' + err.message);
     }
   }, 100);
 }
@@ -7868,6 +7868,13 @@ function renderDashboard(renderData){
   const tabFc = document.getElementById('tab-forecast');
   if (tabFc) tabFc.style.display = 'inline-block';
   if (typeof buildForecastInputsView === 'function') buildForecastInputsView();
+  /* buildForecastInputsView vacía la pestaña, así que cada redibujado (filtro de
+     fechas, COGS, vista SKU/ML, snapshot) borraba los resultados aunque el stock
+     siguiera cargado. Si hay stock, se recalcula con el período vigente (v51.5). */
+  if (typeof recalcularForecast === 'function' && Object.keys(FORECAST_INPUTS || {}).some(k => {
+        const i = FORECAST_INPUTS[k]; return i && (i.stockFlex != null || i.stockFull != null); })) {
+    recalcularForecast({ silencioso: true });
+  }
 
   // Activar tab SOV Modeler si hay reporte de campañas
   const tabSov = document.getElementById('tab-sov');
