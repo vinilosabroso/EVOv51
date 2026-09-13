@@ -680,7 +680,7 @@
   <div class="info-modal">
     <div class="info-head">
       <div>
-        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.3</div>
+        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.4</div>
         <div class="info-sub">Qué toma y cómo calcula cada métrica. Uso interno PTI.</div>
       </div>
       <button class="btn" onclick="cerrarInfo()">✕</button>
@@ -1211,7 +1211,7 @@ const _GLOSARIO = [
   ['Hoja Contribución por sesión (export)','Contribución por visita, publicación por publicación','Misma lógica que el panel del Dashboard General: ASP, cargos reales, contribución bruta y contribución por sesión. Requiere el reporte de Rendimiento cargado.'],
   ['Formato del export','Fila 1 y columna A vacías · identidad PTI','Todas las hojas dejan la primera fila y la primera columna libres para que las tablas no queden pegadas al borde. Headers en violeta PTI, etiquetas sobre lavanda en negrita, y los valores con formato de moneda o porcentaje según el concepto. En hojas de etiqueta/valor el formato lo define la etiqueta de la fila, no la columna.'],
   ['Hoja Mapa de Calor (export)','Matriz con el período y la métrica activos','El Excel exporta exactamente lo que se está viendo en la pestaña al momento de exportar: si está en YTD + Ventas, eso sale. Usa el mismo motor de cálculo que la vista, así el archivo y la pantalla no pueden divergir.'],
-  ['Snapshot','Exportación del estado completo en JSON','Guarda datos parseados, COGS, condición fiscal y filtros para retomar el análisis sin volver a cargar los reportes. Los snapshots anteriores al fix de decimales del COGS quedan marcados para recargar el template.'],
+  ['Snapshot','Exportación del estado completo en JSON','Guarda datos parseados, COGS, condición fiscal, período del filtro de fechas y del mapa de calor para retomar el análisis sin volver a cargar los reportes. Desde v51.4 se reabre sobre el mismo período con que se guardó; los snapshots anteriores, que no lo traen, se alinean a la ventana de Ads. Los snapshots anteriores al fix de decimales del COGS quedan marcados para recargar el template.'],
   ['Selector de identificador','# Publicación vs SKU','El # de publicación lo asigna la plataforma y es confiable; el SKU lo carga el vendedor y suele ser inconsistente. Para publicidad, EVO cruza siempre por # de publicación.'],
   ['Condición fiscal','Responsable vs Monotributo/Exento','Cambia todo el modelo: un Responsable netea el IVA de los cargos porque es crédito recuperable y descuenta IVA débito de la venta. Un Exento soporta los costos en bruto.'],
   ['Filtro de fechas','Recorta el reporte de ventas','No recorta el reporte de Ads, que trae su propia ventana. Si ambos no coinciden, las métricas cruzadas se distorsionan y EVO lo advierte.'],
@@ -3209,6 +3209,12 @@ function doExportSnapshot(accountName, sanitized) {
       apagadas: (function(){ try { const a = calcApagadas();
         return { n:a.n, tasaMes:a.tasaMes, diasProm:a.diasProm, vivasOtroML:a.vivasOtroML,
                  porSku:a.porSku, porTitulo:a.porTitulo }; } catch(e){ return null; } })(),
+      /* Filtro de fechas activo (v51.4): sin esto el snapshot se reabría sobre
+         todo el reporte de ventas aunque se hubiera guardado alineado a Ads. */
+      filtro_fechas: {
+        desde: (document.getElementById('date-from') || {}).value || null,
+        hasta: (document.getElementById('date-to') || {}).value || null
+      },
       heat_periodo: typeof HEAT_PERIODO !== 'undefined' ? HEAT_PERIODO : 'anual',
       heat_metrica: typeof HEAT_METRICA !== 'undefined' ? HEAT_METRICA : 'fact'
     };
@@ -3358,7 +3364,11 @@ function importSnapshotJSON(file) {
         const _t = document.getElementById('toggle-id');
         if (_t) _t.checked = !!snap.use_ml;
       }
-      if (typeof HEAT_PERIODO !== 'undefined' && snap.heat_periodo) HEAT_PERIODO = snap.heat_periodo;
+      if (typeof HEAT_PERIODO !== 'undefined' && snap.heat_periodo) {
+        HEAT_PERIODO = snap.heat_periodo;
+        // El botón marcado tiene que coincidir con el período restaurado (v51.4)
+        document.querySelectorAll('.heat-btn[data-periodo]').forEach(b => b.classList.toggle('active', b.dataset.periodo === HEAT_PERIODO));
+      }
       if (typeof HEAT_METRICA !== 'undefined' && snap.heat_metrica) HEAT_METRICA = snap.heat_metrica;
       
       // Restaurar COGS_DATA (no tiene fechas, restauración directa)
@@ -3393,6 +3403,15 @@ function importSnapshotJSON(file) {
         const dateToEl = document.getElementById('date-to');
         if (dateFromEl) dateFromEl.value = toISO(dates[0]);
         if (dateToEl) dateToEl.value = toISO(dates[dates.length - 1]);
+      }
+      /* Se reabre sobre el mismo período con que se guardó. Los snapshots previos
+         a v51.4 no lo traen: se alinean a la ventana de Ads, como una carga nueva. */
+      const _ff = snap.filtro_fechas;
+      if (_ff && _ff.desde && _ff.hasta) {
+        document.getElementById('date-from').value = _ff.desde;
+        document.getElementById('date-to').value = _ff.hasta;
+      } else if (typeof alinearFiltroAAds === 'function') {
+        alinearFiltroAAds();
       }
       
       // Mostrar el dashboard antes de aplicar filtros (necesita que los elementos existan)
