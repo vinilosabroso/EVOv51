@@ -680,7 +680,7 @@
   <div class="info-modal">
     <div class="info-head">
       <div>
-        <div class="info-title">Documentación interna · EVO X Silver Edition</div>
+        <div class="info-title">Documentación interna · EVO X Silver Edition · v51.1</div>
         <div class="info-sub">Qué toma y cómo calcula cada métrica. Uso interno PTI.</div>
       </div>
       <button class="btn" onclick="cerrarInfo()">✕</button>
@@ -973,7 +973,7 @@ const _GLOSARIO = [
   ['factorIVA','IVA ÷ (1 + IVA)','Proporción de IVA contenida en un precio con IVA. AR 21% → 17,36%. CL 19% → 15,97%. MX 16% → 13,79%. Sólo se aplica si la condición fiscal es Responsable.'],
   ['netFee','1 − factorIVA (o 1 en México)','Factor que convierte un cargo informado por la plataforma en su costo real. AR y CL informan los cargos CON IVA y para un Responsable ese IVA es crédito recuperable, por eso se netea. México informa los costos YA netos (verificado contra facturas), así que netFee = 1 y no se vuelve a netear.'],
   ['Revenue neto','Revenue bruto − IVA débito − cargos de ML − IIBB','Lo que le queda al seller después de los cargos de la plataforma y de la carga fiscal. NO descuenta Ads ni COGS: es margen de contribución pre-Ads y pre-COGS.'],
-  ['Liquidez','Columna "Total" del reporte','Lo que ML deposita, ya neto de comisiones y envío. EVO la usa para facturación y Pareto, no para medir márgenes ni TACOS.'],
+  ['Liquidez','Columna "Total" del reporte','Lo que ML deposita, ya neto de comisiones y envío. En carritos el Total viene en la fila del paquete y EVO lo reparte entre los ítems con la misma participación que usa para los cargos. EVO la usa para facturación y Pareto, no para medir márgenes ni TACOS.'],
   ['IIBB','Venta neta × 5% (sólo Argentina)','Ingresos Brutos. En Chile y México no aplica.'],
  ]],
  ['Costos del canal', [
@@ -1023,7 +1023,7 @@ const _GLOSARIO = [
   ['Costo de envío gratis','Envío ÷ venta neta, sólo en ventas donde el seller paga el envío','El % general de envío se diluye con las ventas que no lo pagan. Esta métrica aísla el peso real, que es el número a contemplar antes de sumar un producto con envío gratis.'],
  ]],
  ['Lectura de reportes', [
-  ['Carritos','Paquete de N productos','El header del paquete lleva ingresos y cargos del conjunto; los ítems llevan precio sin total. EVO prorratea los cargos del header entre los ítems según su participación.'],
+  ['Carritos','Paquete de N productos','El header del paquete lleva ingresos, cargos y Total del conjunto; los ítems llevan precio sin total. EVO reparte los cargos y el Total del header entre los ítems según su participación en precio × unidades. Si el header no trae ingresos, la base es la suma de precio × unidades de los ítems.'],
   ['Reparación de rangos','!ref recalculado desde las celdas reales','Algunos reportes de ML declaran un rango que deja celdas afuera (caso detectado: el reporte de Anuncios de Chile omitía la fila de encabezados). EVO recalcula el rango para no perder datos.'],
   ['Convención decimal del COGS','Inferida a nivel columna','"1.234" puede ser 1234 o 1,234 según la región. EVO analiza toda la columna antes de parsear, en vez de decidir celda por celda.'],
   ['Variantes','Columna Variante del reporte','Una publicación con variantes se marca con ◆ y el tooltip las lista. Importante porque dos MLA pueden compartir título (por ejemplo una publicación tradicional y una de catálogo).'],
@@ -1196,6 +1196,7 @@ const _GLOSARIO = [
   ['Resumen de carga','Ventas válidas · unidades · período ingerido','Se muestra sobre la fila del reporte de ventas apenas se carga. Es un control contra reportes truncados: si se descarga el export de ML antes de que termine de generarse, llega parcial, con el mismo período declarado pero una fracción de las ventas, y eso desplaza TODAS las métricas. Caso real medido: 82 unidades contra 362 del mismo período, con el TACOS de una publicación inflado de 2,5% a 19,5%. Si el número de ventas no coincide con lo esperado, volver a descargar el reporte.'],
   ['Rev Neto (hoja Rentabilidad)','Recibido de ML − IVA débito − IIBB','Es la MISMA definición que la columna Revenue neto del dashboard. Hasta agosto de 2026 el export tomaba en su lugar la columna Total del reporte —el depósito de ML, sin modelo fiscal— y sobre una cuenta MX real eso daba $138.167,61 en el Excel contra $106.511,48 en pantalla: 23% de diferencia bajo la misma etiqueta. Efecto lateral del arreglo: desaparecieron las filas con margen 100%, que eran componentes de carrito donde el depósito coincidía con el bruto.'],
 ['Depósito ML vs Recibido de ML','Dos cifras distintas, ninguna sobra','Depósito es la columna Total del reporte: la caja, tal como ML la liquida, e incluye compensaciones y ajustes que el reporte no desglosa. Recibido es la reconstrucción de EVO: precio bruto menos los cargos NETOS de su IVA menos retenciones. La diferencia principal es el IVA de los cargos, que para un Responsable Inscripto es crédito recuperable y por eso no se computa como costo. Verificado en filas reales: Total = ingresos + cargos, y como ingresos es el precio de lista con IVA, el depósito también lo contiene.'],
+  ['Depósito de carritos (v51.1)','Total del paquete repartido entre sus ítems','Hasta v51 cada ítem de carrito tomaba como depósito su precio × unidades, sin ningún cargo descontado, mientras las ventas simples usaban la columna Total. Medido sobre un reporte AR real con 86 carritos válidos: el KPI Depósito de ML daba $12,75 M contra $10,78 M reales (+18%), el Pareto de facturación favorecía a los productos que se venden en carrito y el TACOS de cabecera del bloque de Ads dividía por esa base mixta en vez del bruto. Los márgenes no estaban afectados porque se arman desde los componentes. Los snapshots exportados antes de v51.1 conservan el valor viejo y el KPI Depósito lo avisa: hay que volver a cargar el reporte de ventas.'],
   ['Ingresos por productos (bruto)','Precio × unidades, con IVA','Se agregó al Resumen porque es la cifra comparable con "Ventas concretadas" del panel de ML. El KPI de facturación no sirve para ese contraste.'],
   ['Costos de canal % · cómo reproducirlo','(comisión + envío + cargo fijo + cuotas + Ads) ÷ venta neta','El denominador es la venta NETA, no el revenue bruto: dividir por bruto da un número bastante menor y no reproduce el KPI. La inversión de Ads que entra es la prorrateada al rango filtrado, que es la misma que informa el Resumen. Equivale algebraicamente a 1 − Σ Rev Neto ÷ Σ Venta neta.'],
   ['Comisión% en NEXUS','Comisión ÷ venta neta','Ojo al reconstruir importes desde ese porcentaje: la base es la venta neta, no el revenue bruto. Multiplicarlo por el bruto infla la comisión exactamente un 16% en México (o el IVA que corresponda) y hace parecer que hay dos comisiones distintas conviviendo. No las hay: EVO toma el cargo tal como lo informa el reporte.'],
@@ -3139,7 +3140,8 @@ function doExportSnapshot(accountName, sanitized) {
         variantes: variantesSer,
         mlasConVariantesReales: mlasConVariantesRealesSer,
         categoriasML: G.categoriasML || {},
-        comboMap: G.comboMap || {}
+        comboMap: G.comboMap || {},
+        liqCarritoV: G.liqCarritoV || 1
       },
       currency_code: CURRENCY_CODE,
       forecast_inputs: FORECAST_INPUTS || {},
@@ -3222,7 +3224,9 @@ function importSnapshotJSON(file) {
         variantes: {},
         mlasConVariantesReales: new Set(snap.G.mlasConVariantesReales || []),
         categoriasML: snap.G.categoriasML || {},
-        comboMap: snap.G.comboMap || {}
+        comboMap: snap.G.comboMap || {},
+        // Sin sello = snapshot anterior a v51.1 (liquidez de carritos en bruto)
+        liqCarritoV: snap.G.liqCarritoV || 1
       };
       
       // Rehidratar variantes (Set)
@@ -6287,6 +6291,32 @@ function handleFile(file){
   else reader.readAsArrayBuffer(file);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   EVO v51 → v51.1 · DEPÓSITO DE CARRITOS
+   ═══════════════════════════════════════════════════════════════════════════
+
+   En un carrito ML informa ingresos, cargos y Total en la fila del paquete;
+   los ítems traen precio y unidades pero no Total. El parser repartía los
+   cargos entre los ítems pero NO el Total: la liquidez de cada ítem quedaba
+   en precio × unidades, igual al bruto. Todo lo que lee liquidez mezclaba
+   depósito neto (ventas simples) con bruto (carritos).
+
+   Medido sobre un reporte AR real (515 ventas válidas, 86 carritos válidos):
+   Depósito de ML $12,75 M contra $10,78 M reales (+18,3%).
+
+   Fix 1: la liquidez del ítem es el Total del paquete × su participación en
+          precio × unidades, la misma que ya se usaba para los cargos.
+   Fix 2: si el paquete no trae ingresos, la base del reparto es la suma de
+          precio × unidades de sus ítems (antes caía a 1).
+   Fix 3: TACOS del bloque de Ads y reparto de Ads por variante sobre
+          Ingresos por productos, no sobre liquidez.
+   Fix 4: G.liqCarritoV marca los datos parseados con el fix; un snapshot
+          previo avisa en el KPI Depósito que hay que recargar ventas.
+
+   Los márgenes (NEXUS, cascada del informe) no cambian: se arman desde los
+   componentes, no desde el Total.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 /* ═══════════ PARSE VENTAS ═══════════ */
 function parsearArchivo(raw,filename){
   const strip=s=>String(s||'').trim().replace(/^'+/,'').trim();
@@ -6468,8 +6498,21 @@ function parsearArchivo(raw,filename){
         ingresos_brutos_hdr: parseNum(get(row,'ingresos_brutos')),
         _items: [],
         _pubIds: [],
-        _totalLiquidez: parseNum(get(row,'total_ars')) 
+        _totalLiquidez: parseNum(get(row,'total_ars'))
       };
+      /* Base del prorrateo: los ingresos del paquete. Si el header viene sin
+         "Ingresos por productos" se usa la suma de precio × unidades de sus
+         ítems. Antes caía a 1 y cada ítem recibía los cargos del paquete
+         multiplicados por su precio. */
+      let _basePU = 0;
+      for (let j = i + 1; j < rows.length; j++) {
+        const rj = rows[j];
+        if (rj.every(c => String(c).trim() === '')) continue;
+        if (get(rj,'total_ars') !== '') break;
+        if (!skuClean(get(rj,'sku')) && !get(rj,'id_pub')) continue;
+        _basePU += parseNum(get(rj,'precio_unit')) * (parseFloat(get(rj,'unidades')) || 1);
+      }
+      carritoCtx._base = carritoCtx.ingresos_brutos_hdr > 0 ? carritoCtx.ingresos_brutos_hdr : _basePU;
       continue;
     }
 
@@ -6477,7 +6520,6 @@ function parsearArchivo(raw,filename){
       const esCanceled = excluido(estado);
       const unidadesRaw = parseFloat(get(row,'unidades'))||1;
       const precio = parseNum(get(row,'precio_unit'));
-      const liquidez = esCanceled ? 0 : precio*unidadesRaw;
       const unidades = esCanceled ? 0 : unidadesRaw;
       const devoluciones_unidades = esCanceled ? unidadesRaw : 0;
 
@@ -6486,8 +6528,13 @@ function parsearArchivo(raw,filename){
                     : itemPubVal==='no' ? false
                     : carritoCtx.publicidad.toLowerCase()==='sí';
 
-      const hdrBase = carritoCtx.ingresos_brutos_hdr || 1;
-      const frac = hdrBase !== 0 ? (precio * unidadesRaw) / hdrBase : 0;
+      /* Participación del ítem en el paquete. Reparte TODO lo que ML informa a
+         nivel orden: los cargos y también el Total (v51.1). Antes la liquidez
+         del ítem era precio × unidades, o sea el bruto sin ningún costo
+         descontado, mientras las ventas simples usaban la columna Total. */
+      const frac = carritoCtx._base > 0 ? (precio * unidadesRaw) / carritoCtx._base : 0;
+      const bruto    = esCanceled ? 0 : precio*unidadesRaw;
+      const liquidez = esCanceled ? 0 : carritoCtx._totalLiquidez * frac;
       const cargo_venta = carritoCtx.cargo_venta * frac;
       const costo_fijo  = carritoCtx.costo_fijo  * frac;
       const cuotas      = carritoCtx.cuotas      * frac;
@@ -6538,7 +6585,7 @@ function parsearArchivo(raw,filename){
         id_venta:get(row,'id_venta')||carritoCtx.id_venta, estado,
         esCarrito:true, esCanceled,
         forma_entrega: carritoCtx.forma_entrega,
-        ingresos_brutos: liquidez,
+        ingresos_brutos: bruto,
         cargo_venta, costo_fijo, cuotas,
         ing_envio, costo_envio, impuestos,
         descuentos:0, anulaciones:0
@@ -6622,6 +6669,7 @@ function parsearArchivo(raw,filename){
   G.filename = filename;
   G.country = country;
   G.currency = CURRENCY_CODE;
+  G.liqCarritoV = 2;   // v51.1: liquidez de carritos = Total del paquete prorrateado
 
   if(dates.length>0){
     const toISO=d=>d.toISOString().slice(0,10);
@@ -9531,7 +9579,9 @@ function getEnrichment(skuEntry) {
       if (r.esCanceled) continue;
       const rid = useML ? r.id_pub : r.sku;
       if (rid === baseSKU || rid === basePub) {
-        revenuePadre += (r.liquidez || 0);
+        // Misma base que revenueVariante (bruto): con liquidez la participación
+        // de la variante salía distorsionada por comisiones y envío.
+        revenuePadre += (r.ingresos_brutos || 0);
       }
     }
     
@@ -10703,6 +10753,9 @@ function renderRentKPIs(skuMap) {
   const brutoTotalKPI = Object.values(skuMap).reduce((a,o)=>a+(o.ingresos_brutos||0),0);
   const ventaNetaKPI  = brutoTotalKPI * (1 - _fcKPI.factorIva);
   const depositoKPI   = Object.values(skuMap).reduce((a,o)=>a+(o.liquidez||0),0);
+  /* Snapshot anterior a v51.1: los ítems de carrito guardaron el bruto como
+     liquidez y no se puede reconstruir sin el Total del paquete. */
+  const _liqCarritoViejo = G && (G.liqCarritoV || 1) < 2 && (G.records || []).some(r => r.esCarrito);
 
   // Construir KPIs base (siempre visibles)
   let kpis = `
@@ -10717,7 +10770,9 @@ function renderRentKPIs(skuMap) {
     <div class="kpi" title="Suma de la columna Total del reporte: lo que la plataforma deposita, ya neto de comisión, envío y retenciones. Se compara con Recibiste del panel de Mercado Libre, no con Ventas brutas." style="cursor:help">
       <div class="kpi-label">Depósito de ML</div>
       <div class="kpi-value">${fmtCurrency(depositoKPI)}</div>
-      <div class="kpi-sub">Columna Total del reporte</div></div>
+      <div class="kpi-sub">${_liqCarritoViejo
+        ? '<span style="color:var(--warn)">⚠ Snapshot previo a v51.1 · carritos en bruto, recargá el reporte de ventas</span>'
+        : 'Columna Total del reporte'}</div></div>
     <div class="kpi"><div class="kpi-label">Rentabilidad</div>
       <div class="kpi-value ok">${fmtCurrency(recibidoML)}</div>
       <div class="kpi-sub">Lo que recibe el seller de ML</div></div>
@@ -10916,8 +10971,11 @@ function renderPubKPIs(skuMap) {
     }
   }
   
-  // Revenue Bruto del rango (para TACOS)
-  const revenueBruto = Object.values(skuMap).reduce((sum, s) => sum + (s.liquidez || 0), 0);
+  /* Revenue bruto del rango (para TACOS): Ingresos por productos, igual que el
+     TACOS por publicación. Antes sumaba liquidez, que es el depósito neto en
+     ventas simples y era el bruto en carritos: la base no era ninguna de las
+     dos y el TACOS de cabecera no coincidía con el de la tabla. */
+  const revenueBruto = Object.values(skuMap).reduce((sum, s) => sum + (s.ingresos_brutos || 0), 0);
   
   const acos = revAdsTotal > 0 ? (invTotal / revAdsTotal) : 0;
   const tacos = revenueBruto > 0 ? (invTotal / revenueBruto) : 0;
