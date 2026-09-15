@@ -1014,7 +1014,8 @@ const _GLOSARIO = [
  ['Detección de anomalías', [
   ['Familia de productos','Primeros 2 términos significativos del título','Se normaliza el título (sin acentos, sin conectores, colores, medidas ni plurales) para agrupar productos comparables. Requiere al menos 3 miembros para ser válida.'],
   ['Anomalía de envío','Envío/u ≥ 40% sobre la mediana de su familia','Compara sólo contra productos similares, porque un umbral fijo mezclaría un mantel con un mueble. Además exige que el excedente pese ≥5% del precio del propio producto.'],
-  ['Anomalía de costo de canal','Exceso sobre la mediana de su familia, ≥4pp amarillo y ≥8pp rojo','Umbrales calibrados sobre 522 publicaciones de 3 cuentas en 2 países: el desvío típico dentro de una familia es 1,6pp y el p90 es 7,7pp. En familias dispersas el umbral se ensancha vía MAD. Se mide sólo sobre costos ESTRUCTURALES: Ads queda afuera por discrecional (incluirlo multiplica por 6 la dispersión).'],
+  ['Anomalía de costo de canal','Exceso sobre la mediana de su familia, ≥4pp amarillo y ≥8pp rojo','Umbrales calibrados sobre 1.003 publicaciones de 6 cuentas en 3 países: el desvío típico dentro de una familia es 1,3pp y el p90 es 8,1pp. En familias dispersas el umbral se ensancha vía MAD. Se mide sólo sobre costos ESTRUCTURALES (comisión, envío y cargo fijo) y sobre el precio sin recargo de cuotas: Ads queda afuera por discrecional (incluirlo multiplica por 6 la dispersión) y el costo de cuotas también, porque el vendedor lo traslada al PVP. El rojo exige al menos 5 unidades vendidas.'],
+  ['Condición de venta','"Tiene cuotas agregadas" (AR) o "Tipo de publicación" (MX, CL)','Cambia lo que cobra ML: en AR el costo por ofrecer cuotas va del 5% al 21,6% según el plan; en MX y CL Premium paga unos 3 a 4,5 puntos más de comisión que Clásica. Cuando ese costo no se puede separar del cargo (Clásica/Premium, o reportes con "Cargo por venta e impuestos"), la anomalía de canal compara cada publicación contra las de su misma condición; sin 3 pares, contra la familia con tope amarillo si su condición no es la de la mayoría.'],
   ['MAD','Mediana de las desviaciones absolutas','Medida de dispersión robusta. Se usa en vez del desvío estándar porque no se contamina con el outlier que se quiere detectar.'],
  ]],
  ['Inventario y forecast', [
@@ -1286,7 +1287,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v51.9';
+const EVO_VERSION = 'v52';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1576,6 +1577,7 @@ function _leemeIA() {
       liquidez: 'Columna Total (depósito). En carritos, Total del paquete × participación del ítem',
       esCarrito: 'Ítem de un paquete: sus importes son el reparto proporcional de la fila del paquete',
       esCanceled: 'Venta excluida por estado; unidades queda en 0 y devoluciones_unidades guarda las originales',
+      condicion: 'Condición de venta (v52): "Con cuotas" / "Sin cuotas" en AR, "Clásica" / "Premium" en MX y CL. Vacía si el reporte no la trae. La anomalía de costo de canal compara sin el costo de cuotas, sobre el precio sin recargo y, si el costo de la condición no se puede separar, contra publicaciones de la misma condición',
       fecha: 'Fecha de venta (ISO)'
     },
     cifras_control: m.control.map(([concepto, valor, como, esPct]) => ({
@@ -2019,7 +2021,7 @@ function _infAlertasCruzadas(M){
     R.anomCanal.forEach((a,id)=>{ if(a.nivel==='crit') l.push({ id, titulo:titleFor(id)||'', exceso:a.exceso, fam:a.familia }); });
     if (l.length) out.push({ tipo:'oportunidad', titulo:'Costos de canal desviados respecto de su familia',
       detalle: _narrar('canalDesviado',{ n:l.length, excesoMax: Math.max.apply(null,l.map(x=>x.exceso)) }),
-      accion:'Revisar dimensiones, peso declarado y tipo de publicación.', items:l.slice(0,6), total:l.length });
+      accion:'Revisar dimensiones y peso declarado del paquete.', items:l.slice(0,6), total:l.length });
   }
   // 4) Margen unitario negativo antes de Ads
   const neg = M.filas.filter(f=>(f.n.margenUnitario||0)<0)
@@ -2126,8 +2128,8 @@ function _narrar(tipo, d){
         + 'la venta se va a otro vendedor y la publicación pierde posición. Es la única urgencia que va antes del margen.';
     case 'canalDesviado':
       return d.n + ' publicaciones pagan hasta ' + Math.round(d.excesoMax*100) + ' puntos más de costo de canal '
-        + 'que productos comparables del propio catálogo. Cuando el desvío es contra la misma familia, '
-        + 'casi nunca es el precio: son medidas o peso mal declarados, y se corrige sin tocar la estrategia comercial.';
+        + 'que productos comparables del propio catálogo, ya descontado el costo de ofrecer cuotas y contra publicaciones de la misma condición de venta. '
+        + 'Con esa comparación el desvío casi nunca es el precio: son medidas o peso mal declarados, y se corrige sin tocar la estrategia comercial.';
     case 'margenNegativo':
       return 'Estas ' + d.n + ' publicaciones facturaron ' + $(d.rev) + ' y perdieron plata en cada unidad, '
         + 'antes siquiera de publicidad. Vender más las hunde más. '
@@ -6961,6 +6963,8 @@ function parsearArchivo(raw,filename){
   idx.precio_unit = headersN.findIndex(h => h.includes('precio unitario'));
   if (idx.precio_unit === -1) idx.precio_unit = headersN.findIndex(h => h === 'precio' || h.includes('precio unit'));
   if (idx.precio_unit === -1) idx.precio_unit = headersN.findIndex(h => h.includes('precio') && !h.includes('total') && !h.includes('lista') && !h.includes('descuento'));
+  // Condición de venta (v52): AR informa si la publicación tiene cuotas; MX y CL, el tipo de publicación
+  idx.condicion = headersN.findIndex(h => h === 'tiene cuotas agregadas' || h === 'tipo de publicación' || h === 'tipo de publicacion');
   
   idx.estado = headersN.findIndex(h => h === 'estado');
   idx.provincia = headersN.findIndex((h, i) => i !== idx.estado && (h === 'estado' || h.includes('provincia')));
@@ -7159,6 +7163,7 @@ function parsearArchivo(raw,filename){
         id_venta:get(row,'id_venta')||carritoCtx.id_venta, estado,
         esCarrito:true, esCanceled, costo_devolucion,
         forma_entrega: carritoCtx.forma_entrega,
+        condicion: _condVenta(get(row,'condicion')),
         ingresos_brutos: bruto,
         cargo_venta, costo_fijo, cuotas,
         ing_envio, costo_envio, impuestos,
@@ -7233,6 +7238,7 @@ function parsearArchivo(raw,filename){
       prov,liquidez,unidades,devoluciones_unidades,esPubli,precio_unit,fecha,fechaHora,esCarrito:false,esCanceled,costo_devolucion,
       id_venta:get(row,'id_venta'), estado,
       forma_entrega,
+      condicion: _condVenta(get(row,'condicion')),
       ingresos_brutos,cargo_venta,costo_fijo,cuotas,
       ing_envio,costo_envio,impuestos,descuentos,anulaciones
     });
@@ -7403,7 +7409,7 @@ function aplicarFiltros(){
         _isMlaFallback,
         ingresos_brutos:0,cargo_venta:0,costo_fijo:0,cuotas:0,
         ing_envio:0,costo_envio:0,impuestos:0,descuentos:0,anulaciones:0,
-        precio_sum:0,precio_count:0, devoluciones_unidades:0, costo_devolucion:0, pubBruto:0, orgBruto:0};
+        precio_sum:0,precio_count:0, devoluciones_unidades:0, costo_devolucion:0, pubBruto:0, orgBruto:0, condIng:{}};
       
       if(!esCanceled && !tiendaMap[tienda]) tiendaMap[tienda]={id:tienda,liquidez:0,unidades:0,ingresos_brutos:0};
       if(!esCanceled && !provMap[prov]) provMap[prov]={id:prov,liquidez:0,unidades:0,ingresos_brutos:0};
@@ -7434,6 +7440,9 @@ function aplicarFiltros(){
         S.impuestos+=impuestos; S.descuentos+=descuentos; S.anulaciones+=anulaciones;
         // Bruto por origen: base de venta neta para Pareto y split Ads/orgánico (v51.3)
         S[esPubli?'pubBruto':'orgBruto']+=ingresos_brutos;
+        /* Condición de venta ponderada por facturación (v52): en vista SKU un
+           mismo SKU puede juntar publicaciones con y sin cuotas. */
+        if (r.condicion) { S.condIng = S.condIng || {}; S.condIng[r.condicion] = (S.condIng[r.condicion] || 0) + ingresos_brutos; }
         if(esPubli) pubBruto+=ingresos_brutos; else orgBruto+=ingresos_brutos;
         tiendaMap[tienda].liquidez+=liquidez; tiendaMap[tienda].unidades+=unidades; tiendaMap[tienda].ingresos_brutos+=ingresos_brutos;
         provMap[prov].liquidez+=liquidez; provMap[prov].unidades+=unidades; provMap[prov].ingresos_brutos+=ingresos_brutos;
@@ -8089,9 +8098,17 @@ function renderDashboard(renderData){
                                 decisión comercial y no una anomalía de costos. La eficiencia de la
                                 pauta se evalúa por TACOS en la tab de Publicidad. */
                              pctEstructural: s.ventaNeta > 0 ? (comision + envio + fijo + cuotas) / s.ventaNeta : 0,
+                             /* Costo COMPARABLE contra la familia (v52): sin el costo de ofrecer
+                                cuotas y medido sobre el precio sin su recargo. Las cuotas son una
+                                decisión comercial, como Ads, y el vendedor suele trasladarlas al
+                                PVP (mismo SKU con cuotas: ×1,11 en mediana en reportes AR). Sin
+                                esto la publicación con cuotas paga 5-22pp más que su gemela y
+                                además sube la mediana, lo que tapa desvíos reales en las demás. */
+                             pctComparable: (s.ventaNeta - cuotas) > 0 ? (comision + envio + fijo) / (s.ventaNeta - cuotas) : 0,
+                             cond: _condDominante(s), unidades: s.unidades || 0,
                              comision, envio, fijo, cuotas, ads });
     });
-    const anomCanal = detectarAnomaliasCanal(rentArr, s => (canalPorId.get(s.id) || {}).pctEstructural || 0);
+    const anomCanal = detectarAnomaliasCanal(rentArr, s => canalPorId.get(s.id) || null);
     // Se exponen para que el informe PDF pueda cruzarlas sin recalcular
     if (G && G._lastRender) { G._lastRender.anomCanal = anomCanal; G._lastRender.canalPorId = canalPorId; }
 
@@ -8104,7 +8121,7 @@ function renderDashboard(renderData){
       ${th('Producto','Título de la publicación tal como figura en el reporte de ventas.')}
       ${th('Revenue bruto','Columna "Ingresos por productos" del reporte: PVP × unidades, CON IVA y antes de cualquier descuento de ML. No incluye lo que el comprador paga de envío.','class="r"')}
       ${th('Venta neta','Revenue bruto menos el IVA débito. '+baseIvaTxt+' Es la base sobre la que se mide el margen.','class="r"')}
-      ${th('Costos de canal','Lo que cuesta operar en la plataforma, sobre la venta neta: comisión + envío que absorbe el seller + cargo fijo + cuotas + Ads. Los cargos van netos de su IVA (crédito fiscal recuperable para un Responsable). No incluye carga fiscal ni retenciones. EL COLOR no usa un umbral fijo: compara cada publicación contra la mediana de su propia familia, y sólo sobre los costos ESTRUCTURALES (comisión, envío, cargo fijo y cuotas), dejando Ads afuera por ser discrecional. Amarillo a partir de +4pp y rojo a partir de +8pp sobre esa mediana. Umbrales calibrados sobre 522 publicaciones de 3 cuentas en 2 países: el desvío típico dentro de una familia es de 1,6pp y el p90 es 7,7pp. En familias naturalmente dispersas el umbral se agranda solo. Sin al menos 3 productos similares no se colorea. Pasá el cursor sobre cada valor para ver el desglose en $ y la comparación.','class="r"')}
+      ${th('Costos de canal','Lo que cuesta operar en la plataforma, sobre la venta neta: comisión + envío que absorbe el seller + cargo fijo + cuotas + Ads. Los cargos van netos de su IVA (crédito fiscal recuperable para un Responsable). No incluye carga fiscal ni retenciones. EL COLOR no usa un umbral fijo: compara cada publicación contra la mediana de su propia familia, y sólo sobre los costos ESTRUCTURALES (comisión, envío y cargo fijo). Ads y el costo de ofrecer cuotas quedan afuera por ser decisiones comerciales, y el porcentaje se mide sobre el precio sin el recargo de cuotas, porque el vendedor suele trasladarlo al PVP. Si la familia mezcla condiciones de venta cuyo costo no se puede separar (Clásica y Premium, o cuotas en reportes con cargos consolidados), cada publicación se compara contra las de su misma condición. Amarillo a partir de +4pp y rojo a partir de +8pp sobre esa mediana; el rojo exige al menos 5 unidades vendidas. Umbrales calibrados sobre 1.003 publicaciones de 6 cuentas en 3 países: el desvío típico dentro de una familia es de 1,3pp y el p90 es 8,1pp. En familias naturalmente dispersas el umbral se agranda solo. Sin al menos 3 productos similares no se colorea. Pasá el cursor sobre cada valor para ver el desglose en $ y la comparación.','class="r"')}
       ${th('Revenue neto','Lo que le queda al seller después de los cargos de ML y de la carga fiscal (IVA débito e IIBB). NO descuenta Ads ni COGS: es margen de contribución pre-Ads y pre-COGS.','class="r"')}
       ${th('Margen','Revenue neto ÷ Venta neta. Qué proporción de la venta (sin IVA) sobrevive a los cargos del canal y del fisco. Verde >25%, amarillo 10-25%, rojo <10%.')}
       ${th('Alertas','Señales automáticas: baja rentabilidad y envío desalineado respecto de productos de la misma familia.')}
@@ -8142,12 +8159,18 @@ function renderDashboard(renderData){
         + ' · sobre una venta neta de ' + ARS(s.ventaNeta);
       if (an2) {
         const dif = (an2.exceso * 100);
-        canalTtl += ' || Comparación con su familia "' + an2.familia + '" (' + an2.nFam + ' publicaciones), sobre costos estructurales (sin Ads): '
+        const condTxt = Object.keys(an2.condFam || {}).map(c => an2.condFam[c] + ' ' + c.toLowerCase()).join(', ');
+        const contra = an2.modo === 'condicion'
+          ? 'contra las ' + an2.nBase + ' publicaciones de su familia "' + an2.familia + '" con su misma condición de venta (' + an2.cond + ')'
+          : 'contra su familia "' + an2.familia + '" (' + an2.nFam + ' publicaciones' + (condTxt ? ': ' + condTxt : '') + ')';
+        canalTtl += ' || Comparación ' + contra + ', sobre costos estructurales sin Ads ni costo de cuotas, medidos sobre el precio sin recargo: '
           + PCT(an2.pct) + ' contra una mediana de ' + PCT(an2.mediana) + ' · '
           + (dif >= 0 ? '+' : '') + dif.toFixed(1) + 'pp '
           + (dif >= 0 ? 'por encima' : 'por debajo')
-          + (an2.nivel === 'crit' ? '. Desvío alto: revisar dimensiones, peso declarado, tipo de publicación o modalidad de envío.'
+          + (an2.nivel === 'crit' ? '. Desvío alto: revisar dimensiones, peso declarado o modalidad de envío.'
              : an2.nivel === 'warn' ? '. Desvío moderado.' : '. Dentro de lo normal para su familia.');
+        if (an2.topeCond) canalTtl += ' Tope amarillo: su condición (' + an2.cond + ') no es la de la mayoría de la familia y no hay ' + 3 + ' publicaciones con la suya para compararla, así que parte del desvío puede ser la comisión de esa condición.';
+        if (an2.topeUni) canalTtl += ' Tope amarillo: vendió ' + NUM(an2.unidades) + ' unidades en el período y el rojo exige ' + CANAL_MIN_UNI_ROJO + '.';
         if (cp.ads > 0) canalTtl += ' Ads no entra en la comparación por ser un costo discrecional; su eficiencia se evalúa por TACOS en la tab de Publicidad.';
       } else {
         canalTtl += ' || Sin familia comparable (se necesitan al menos 3 productos similares), por eso no se colorea.';
@@ -12410,18 +12433,61 @@ function mediana(arr) {
    ticket. Una cuenta con productos chicos y grandes mezclados tendría medio
    catálogo en rojo sin que eso signifique nada.
 
-   Umbrales calibrados sobre datos reales (dos cuentas, dos países, dos rubros:
-   135 publicaciones CL y 203 AR). Desvío absoluto de cada publicación contra la
-   mediana de SU familia:
-       p50 ≈ 1,2-1,9pp   p75 ≈ 4pp   p90 ≈ 8pp   p95 ≈ 10-11pp
+   Umbrales calibrados sobre datos reales (v52: 1.003 publicaciones en 9
+   reportes de 6 cuentas, AR, MX y CL). Desvío absoluto de cada publicación
+   contra la mediana de SU base de comparación:
+       p50 ≈ 1,3pp   p75 ≈ 4pp   p90 ≈ 8pp   p95 ≈ 12pp
    Es decir: dentro de una familia el costo de canal es MUY estable. Por eso los
    umbrales son chicos en puntos porcentuales y sólo miran el exceso (pagar
    menos que la familia no es un problema a señalar).
 
    Además se adaptan a cada familia vía MAD (desvío absoluto mediano): en una
    familia naturalmente dispersa hace falta un exceso mayor para marcar. El piso
-   fijo evita que una familia demasiado homogénea dispare por ruido de 1pp. */
-function detectarAnomaliasCanal(arr, getPct) {
+   fijo evita que una familia demasiado homogénea dispare por ruido de 1pp.
+
+   CONDICIÓN DE VENTA (v52). ML cobra distinto según la publicación ofrezca
+   cuotas (AR: 5% a 21,6% según el plan) o sea Premium (MX y CL: unos 3 a 4,5
+   puntos más de comisión), y el vendedor suele trasladarlo al PVP. Medido
+   sobre los reportes, las publicaciones con cuotas o Premium eran el 24% del
+   catálogo evaluado y el 58% de las alertas. Por eso:
+     · Se compara el costo COMPARABLE: sin el costo de cuotas y sobre el precio
+       sin su recargo (ver canalPorId). Con eso, en un reporte AR con cargos
+       detallados las publicaciones con y sin cuotas vuelven a ser comparables.
+     · Si la familia mezcla condiciones cuyo costo NO se puede separar (Clásica
+       y Premium, o cuotas dentro de "Cargo por venta e impuestos"), cada
+       publicación se compara contra las de su misma condición. Sin 3 pares, se
+       compara contra la familia y, si su condición no es la de la mayoría,
+       queda con tope amarillo.
+   Reportes o snapshots sin la columna se comportan como antes.
+
+   MÍNIMO DE UNIDADES. Con 1 a 4 ventas un solo envío caro decide el
+   porcentaje: el rojo exige CANAL_MIN_UNI_ROJO unidades, debajo queda amarillo. */
+const CANAL_MIN_UNI_ROJO = 5;
+
+/* Condición de venta tal como la informa el reporte: AR "Tiene cuotas
+   agregadas" (Sí/No), MX y CL "Tipo de publicación" (Clásica/Premium). */
+function _condVenta(v) {
+  const t = String(v == null ? '' : v).trim().toLowerCase();
+  if (t === 'sí' || t === 'si') return 'Con cuotas';
+  if (t === 'no') return 'Sin cuotas';
+  if (t.includes('premium')) return 'Premium';
+  if (t.includes('clásica') || t.includes('clasica')) return 'Clásica';
+  return '';
+}
+
+/* Condición que domina la facturación de un id. Si ninguna llega al 70% (un
+   SKU que junta publicaciones con y sin cuotas) se rotula Mixta. */
+function _condDominante(s) {
+  const m = (s && s.condIng) || {};
+  const ks = Object.keys(m).filter(k => k && m[k] > 0);
+  if (!ks.length) return '';
+  const tot = ks.reduce((a, k) => a + m[k], 0);
+  const dom = ks.reduce((a, k) => m[k] > m[a] ? k : a, ks[0]);
+  return m[dom] / tot >= 0.7 ? dom : 'Mixta';
+}
+
+/* getInfo(s) → { pctComparable, cond, cuotas, unidades } (ver canalPorId) */
+function detectarAnomaliasCanal(arr, getInfo) {
   const PISO_WARN = 0.04;   // 4pp  ≈ p75 medido
   const PISO_CRIT = 0.08;   // 8pp  ≈ p90 medido
   const K_WARN = 3, K_CRIT = 5;   // múltiplos de MAD para familias dispersas
@@ -12430,27 +12496,53 @@ function detectarAnomaliasCanal(arr, getPct) {
   const fams = {};
   arr.forEach(s => {
     const k = familiaKey(titleFor(s.id));
-    const p = getPct(s);
+    const inf = getInfo(s);
+    const p = inf ? inf.pctComparable : 0;
     if (!k || !(p > 0)) return;
-    (fams[k] = fams[k] || []).push({ s, p });
+    const cond = inf.cond || '';
+    /* El costo de la condición ya quedó afuera del porcentaje sólo si el
+       reporte lo informa aparte: sin cuotas, o con cuotas y su cargo separado. */
+    const separable = !cond || cond === 'Sin cuotas'
+      || ((cond === 'Con cuotas' || cond === 'Mixta') && (inf.cuotas || 0) > 0);
+    (fams[k] = fams[k] || []).push({ s, p, cond, separable, uni: inf.unidades || 0 });
   });
+
+  const estad = grupo => {
+    const vals = grupo.map(g => g.p);
+    const med = mediana(vals);
+    return { med, mad: mediana(vals.map(v => Math.abs(v - med))), n: grupo.length };
+  };
 
   const out = new Map();
   let evaluadas = 0, familias = 0;
   Object.keys(fams).forEach(k => {
     const grupo = fams[k];
     if (grupo.length < MIN_FAMILIA) return;
-    const vals = grupo.map(g => g.p);
-    const med = mediana(vals);
-    if (!(med > 0)) return;
-    const mad = mediana(vals.map(v => Math.abs(v - med)));
-    const uWarn = Math.max(PISO_WARN, K_WARN * mad);
-    const uCrit = Math.max(PISO_CRIT, K_CRIT * mad);
+    const eFam = estad(grupo);
+    if (!(eFam.med > 0)) return;
+    const condFam = {};
+    grupo.forEach(g => { if (g.cond) condFam[g.cond] = (condFam[g.cond] || 0) + 1; });
+    const conds = Object.keys(condFam);
+    const dominante = conds.reduce((a, c) => !a || condFam[c] > condFam[a] ? c : a, '');
+    const segmentar = conds.length > 1 && !grupo.every(g => g.separable);
+    const porCond = {};
+    grupo.forEach(g => (porCond[g.cond] = porCond[g.cond] || []).push(g));
     familias++; evaluadas += grupo.length;
-    grupo.forEach(({ s, p }) => {
-      const exceso = p - med;                       // sólo interesa pagar de MÁS
-      const nivel = exceso >= uCrit ? 'crit' : exceso >= uWarn ? 'warn' : 'ok';
-      out.set(s.id, { pct: p, mediana: med, mad, exceso, nivel, nFam: grupo.length, familia: k, uWarn, uCrit });
+    grupo.forEach(g => {
+      let base = eFam, modo = 'familia', topeCond = false;
+      if (segmentar) {
+        if (porCond[g.cond].length >= MIN_FAMILIA) { base = estad(porCond[g.cond]); modo = 'condicion'; }
+        else topeCond = g.cond !== dominante;
+      }
+      const uWarn = Math.max(PISO_WARN, K_WARN * base.mad);
+      const uCrit = Math.max(PISO_CRIT, K_CRIT * base.mad);
+      const exceso = g.p - base.med;                // sólo interesa pagar de MÁS
+      let nivel = exceso >= uCrit ? 'crit' : exceso >= uWarn ? 'warn' : 'ok';
+      const topeUni = nivel === 'crit' && g.uni < CANAL_MIN_UNI_ROJO;
+      if (nivel === 'crit' && (topeCond || topeUni)) nivel = 'warn';
+      out.set(g.s.id, { pct: g.p, mediana: base.med, mad: base.mad, exceso, nivel, nFam: grupo.length, nBase: base.n,
+                        familia: k, uWarn, uCrit, cond: g.cond, condFam, modo,
+                        topeCond: topeCond && exceso >= uCrit, topeUni, unidades: g.uni });
     });
   });
   out.cobertura = { evaluadas, familias };
