@@ -739,7 +739,27 @@
         </label>
         <span class="switch-label" id="lbl-iva-no">Exento</span>
       </div>
-      <span class="nexus-tip" title="Responsable de IVA (AR: Responsable Inscripto · MX: con IVA acreditable · CL: contribuyente de IVA): los cargos de la plataforma incluyen IVA que se recupera como crédito, y la facturación/márgenes se miden netos de IVA. Exento / Régimen simplificado (AR: Monotributo): absorbe el IVA, trabaja en bruto." style="cursor:help;color:var(--muted);font-size:11px;margin-right:8px;">?</span>
+      <span class="nexus-tip" title="Responsable de IVA (AR: Responsable Inscripto · MX: con RFC · CL: contribuyente de IVA): los cargos de la plataforma incluyen IVA que se recupera como crédito, y la facturación y los márgenes se miden netos de IVA. En México además el IVA retenido por ML se acredita contra el débito y el ISR retenido es pago provisional.&#10;&#10;Exento / Régimen simplificado (AR: Monotributo · MX: sin RFC): absorbe el IVA y trabaja en bruto. En México las retenciones son costo." style="cursor:help;color:var(--muted);font-size:11px;margin-right:8px;">?</span>
+      <!-- Parámetros fiscales ajustables (v52.1): se muestran sólo los del país del reporte -->
+      <span id="fp-ar" style="display:none;align-items:center;gap:6px;">
+        <span class="filter-label">IIBB</span>
+        <input type="number" id="fp-iibb" class="filter-input" style="width:70px" min="0" max="15" step="0.25" value="4" onchange="setParamFiscal()"
+               title="Alícuota de Ingresos Brutos sobre la venta neta. Por defecto 4%, la que paga la mayoría. Si tu actividad o jurisdicción tiene otra (o vendés en Convenio Multilateral con una alícuota efectiva distinta), cargala acá: mueve el IIBB de todo el dashboard, el informe y el export. Las retenciones de ML se siguen tomando a cuenta.">
+        <span class="filter-label">%</span>
+        <select id="fp-iva-ar" class="filter-input" onchange="setParamFiscal()"
+                title="Alícuota de IVA de tus PRODUCTOS. Cambia el IVA débito de la venta y por lo tanto la venta neta. Los cargos de Mercado Libre (comisión, envío, cuotas, cargo fijo, Ads) se facturan siempre al 21%, así que su crédito fiscal no cambia.">
+          <option value="0.21">IVA productos 21%</option>
+          <option value="0.105">IVA productos 10,5%</option>
+        </select>
+      </span>
+      <span id="fp-mx" style="display:none;align-items:center;gap:6px;">
+        <span class="filter-label">ISR retenido</span>
+        <select id="fp-isr-mx" class="filter-input" onchange="setParamFiscal()"
+                title="ML retiene 2,5% de ISR sobre la base sin IVA cuando tenés RFC.&#10;&#10;A cuenta: pago provisional acreditable en tu declaración (régimen general o RESICO con deducciones). No es costo.&#10;&#10;Costo: pago definitivo del Régimen de Plataformas (típico en personas físicas con ingresos bajos que no presentan declaración). Se resta del resultado.&#10;&#10;El IVA retenido (8%) siempre se acredita contra el IVA débito con RFC.">
+          <option value="0">A cuenta</option>
+          <option value="1">Costo (definitivo)</option>
+        </select>
+      </span>
     </div>
     <div class="filter-group">
       <span class="filter-label">Identificador</span>
@@ -970,14 +990,22 @@ const _GLOSARIO = [
  ['Bases de cálculo y fiscalidad', [
   ['Revenue bruto','Columna "Ingresos por productos" del reporte de ventas','Precio × unidades, CON IVA, antes de cualquier descuento de ML. No incluye el envío que paga el comprador ni los intereses de cuotas. Es la base que usa el panel de Mercado Ads.'],
   ['Venta neta','Revenue bruto × (1 − factorIVA)','Revenue bruto menos el IVA débito. Para un Responsable el IVA no es ingreso propio sino del fisco. Es la base sobre la que se mide TODO margen en EVO. Para Monotributo/Exento, factorIVA = 0 y venta neta = revenue bruto.'],
-  ['factorIVA','IVA ÷ (1 + IVA)','Proporción de IVA contenida en un precio con IVA. AR 21% → 17,36%. CL 19% → 15,97%. MX 16% → 13,79%. Sólo se aplica si la condición fiscal es Responsable.'],
-  ['netFee','1 − factorIVA (o 1 en México)','Factor que convierte un cargo informado por la plataforma en su costo real. AR y CL informan los cargos CON IVA y para un Responsable ese IVA es crédito recuperable, por eso se netea. México informa los costos YA netos (verificado contra facturas), así que netFee = 1 y no se vuelve a netear.'],
+  ['factorIVA','IVA del producto ÷ (1 + IVA del producto)','Proporción de IVA contenida en un precio con IVA. AR 21% → 17,36% (10,5% → 9,50%). CL 19% → 15,97%. MX 16% → 13,79%. Sólo se aplica si la condición fiscal es Responsable. En México no se aplica a las ventas exentas o tasa 0%, así que el factor efectivo de una publicación puede ser menor.'],
+  ['netFee','1 ÷ (1 + IVA de los cargos)','Factor que convierte un cargo informado por la plataforma en su costo real. Los tres países informan los cargos CON IVA y para un Responsable ese IVA es crédito recuperable, por eso se netea. Usa la alícuota general del país (AR 21%, CL 19%, MX 16%) aunque el producto lleve otra: ML factura sus cargos siempre a la general. Hasta v52 México usaba netFee = 1 (ver IVA de los cargos por país).'],
+  ['IVA de los cargos por país','Incluido en AR, CL y MX','AR: la nota oficial de ML para Responsables Inscriptos dice que la comisión incluye IVA y se computa como crédito fiscal; la facturación coincide con el reporte de ventas componente por componente. CL: hay ventas cobradas al 12,605% exacto = 15% ÷ 1,19, que sólo tiene sentido si el 15% trae el IVA adentro; la facturación de agosto 2026 coincide con el reporte en 175 de 189 ventas (el resto son cargos anulados). MX: hasta v52 se tomaban netos. En v52.1 se cruzó la facturación de junio 2026 de una cuenta real contra su reporte de ventas: lo facturado es exactamente lo descontado en cada venta (51 de 52 al centavo) y ningún reporte de facturación trae una línea de IVA aparte, así que no hay otro lugar donde se cobre un IVA encima; además el reporte de Mercado Pago del mismo mes informa el cargo de Point (3,5% + IVA) como 4,06% del cobro. El cruce "15% × precio = cargo" con que se había validado no distinguía un caso del otro.'],
+  ['Retenciones de plataforma (MX)','Se separan de "Cargo por venta e impuestos"','El reporte de México trae juntas la comisión y las retenciones que ML practica ante el SAT. EVO las separa venta por venta con las tasas de 2026, sobre Ingresos por productos (el envío que paga el comprador no es base) y redondeando cada una a centavos. Con RFC: IVA 8% e ISR 2,5% de precio ÷ 1,16. Sin RFC: IVA 16% e ISR 20% de la misma base. Producto exento o tasa 0%: sin IVA e ISR sobre el precio completo. El régimen de cada venta se detecta porque la comisión que queda es un % redondo del precio; las ventas con costo fijo por unidad o repartidas en carritos toman el de su publicación o el más frecuente de la cuenta. Validado contra la facturación de junio 2026: la comisión resultante coincide al centavo con la facturada en 51 de 52 ventas, 11 de ellas con envío pagado por el comprador. Tratamiento: con RFC el IVA retenido se acredita contra el IVA débito (que se descuenta completo, una sola vez) y el ISR es pago provisional, salvo que se marque como pago definitivo en la barra; sin RFC ambos son costo y no hay IVA débito aparte. Hasta v52 toda la columna era comisión: el IVA retenido contaba dos veces y el ISR acreditable era costo (10,5 puntos de margen sobre venta neta en una cuenta real).'],
+  ['Ventas exentas o tasa 0% (MX)','Sin IVA débito','Las ventas en las que ML no retuvo IVA (sólo ISR sobre el precio completo) son de productos exentos o tasa 0%, como agua natural o alimentos básicos. No llevan IVA débito, así que su venta neta es el bruto. En una cuenta de agua, 120 de 131 ventas siguen ese patrón. El IVA de los cargos de ML se sigue neteando: es acreditable en tasa 0%, que es el caso habitual; en una actividad exenta no lo sería.'],
+  ['Base de márgenes en México','Recibido sin IVA + retenciones a cuenta','Los márgenes de cuenta, P&L y final se miden sobre lo recibido de ML sin IVA. En México con RFC, las retenciones de IVA e ISR a cuenta ya salieron de lo recibido pero vuelven al resultado, así que también vuelven a la base: el IVA retenido es parte del IVA débito que la base ya resta, y el ISR es pago provisional. Sin ese ajuste, en una cuenta real el margen antes de mercadería daba 117% (resultado MXN 751.719 sobre una base de MXN 641.112). En Argentina no cambia: el IIBB se descuenta completo y la base sigue siendo recibido − IVA débito.'],
+  ['Parámetros fiscales ajustables','Barra superior, junto a IVA','AR: alícuota de IIBB (4% por defecto) y alícuota de IVA de los productos (21% o 10,5%; los cargos de ML siguen al 21%). MX: si el ISR retenido es pago provisional (acreditable) o definitivo (costo). Se guardan en el snapshot. Hasta v52 eran constantes del código.'],
+  ['Saldo a favor de IIBB (AR)','Retenciones mayores que el IIBB estimado','EVO toma todas las retenciones de la columna Impuestos como pago a cuenta del IIBB. Si superan el IIBB del período de forma sostenida, el excedente queda como saldo a favor que en la práctica muchas veces no se recupera. La tarjeta Retenciones lo avisa con el importe; EVO no lo resta porque depende de si se compensa.'],
+  ['Percepciones de la factura mensual (AR)','No están en el reporte de ventas','La factura mensual de ML suma percepciones de IVA (RG 5319, régimen general) e IIBB de cada provincia sobre los cargos. No figuran en el reporte de ventas, así que EVO no las ve. Para un Responsable Inscripto son pago a cuenta y no cambian el resultado. Para un Monotributista la percepción de IVA no se recupera: es un costo real que hay que sumar aparte.'],
+  ['Chile · Ley 21.713','Plataformas como agentes del IVA','Desde 2026 las plataformas de intermediación son agentes del IVA en ciertas operaciones y el SII autorizó a Mercado Libre a retener IVA en algunos casos. Para un contribuyente afecto al día no cambia el cálculo: la retención se imputa contra el débito. Para uno no afecto sería un costo, pero no aparece en los reportes analizados.'],
   ['Revenue neto','Revenue bruto − IVA débito − cargos de ML + bonificaciones − IIBB','Lo que le queda al seller después de los cargos de la plataforma y de la carga fiscal. NO descuenta Ads ni COGS: es margen de contribución pre-Ads y pre-COGS.'],
   ['Liquidez','Columna "Total" del reporte','Lo que ML deposita, ya neto de comisiones y envío. En carritos el Total viene en la fila del paquete y EVO lo reparte entre los ítems con la misma participación que usa para los cargos. Se muestra como Depósito de ML; desde v51.3 no se usa para facturación, Pareto, márgenes ni TACOS.'],
-  ['IIBB','Venta neta × 4% (sólo Argentina), con las retenciones a cuenta','Ingresos Brutos. Se toma 4%, la alícuota que paga la mayoría. Las retenciones que ML practica (columna Impuestos) se computan como pago a cuenta. En Chile y México no aplica y las retenciones se tratan como costo.'],
+  ['IIBB','Venta neta × alícuota (sólo Argentina), con las retenciones a cuenta','Ingresos Brutos. Por defecto 4%, la alícuota que paga la mayoría; se ajusta en "IIBB" de la barra superior. Las retenciones que ML practica (columna Impuestos) se computan como pago a cuenta. En Chile y México no hay IIBB; en México las retenciones de IVA e ISR tienen su propio tratamiento (ver Retenciones de plataforma).'],
  ]],
  ['Costos del canal', [
-  ['Comisión','|Cargo por venta e impuestos| × netFee','Retención de ML por la venta. El reporte la informa CON IVA incluido: en AR y CL se netea, en MX no. Tasas típicas verificadas en CL: 15% Clásica, 18% Premium.'],
+  ['Comisión','|Cargo por venta| × netFee (MX: sin las retenciones)','Cargo de ML por la venta. El reporte la informa CON IVA incluido en los tres países y para un Responsable se netea. En México la columna "Cargo por venta e impuestos" trae además las retenciones de IVA e ISR, que EVO separa antes de calcular. Tasas verificadas: CL 13% a 16% Clásica y 18% a 19% Premium; MX 15%, 16%, 18% y 19,5% según categoría (11% en agua).'],
   ['Envío','max(0, −(Costos de envío + Ingresos por envío)) × netFee','Costo logístico que absorbe el seller. Sólo cuenta cuando es negativo neto, es decir cuando el vendedor lo paga.'],
   ['Costos de canal','Comisión + envío + cargo fijo + cuotas + Ads, sobre venta neta','Lo que cuesta operar en la plataforma. NO incluye carga fiscal (IVA/IIBB) ni retenciones, que no son costo del canal sino del negocio.'],
   ['Costos totales','ML + fiscal + Ads','Suma de todos los costos del período, incluida la carga fiscal. Se muestra en $ en la tab de Rentabilidad.'],
@@ -991,8 +1019,9 @@ const _GLOSARIO = [
   ['Margen NEXUS (P&L)','(Recibido − Ads) ÷ Venta neta','Resultado del período CON la pauta prorrateada. Si Unit es positivo y P&L negativo, el problema es sobreinversión publicitaria, no el precio.'],
   ['Margen post-COGS','Break Even/u − COGS/u','Margen unitario real, ya con el costo de producto. Requiere el template de COGS cargado.'],
   ['COGS','Columna "Costo del producto (S/ IVA)" del template','Costo de reposición NETO de IVA, coherente con el break-even que también es neto. Se matchea por # de publicación y, si no hay match, por SKU.'],
-  ['Precio break-even','(COGS + envío) × (1 + IVA) ÷ (1 − comisión)','Precio mínimo para no perder plata en la unidad.'],
-  ['Precio a margen objetivo','(COGS + envío) × (1 + IVA) ÷ (1 − comisión − margen objetivo)','Precio necesario para alcanzar un margen dado sobre venta neta.'],
+  ['Precio break-even','(COGS + fijos netos) ÷ (1 − factorIVA − IIBB × (1 − factorIVA) − fees × netFee)','Precio cobrado mínimo para no perder plata en la unidad. Fijos netos = costos propios + (envío + cargo fijo − bonificación Flex) × netFee; fees = comisión + cuotas + Ads, más los buffers de devolución y costo financiero. Es la misma fórmula que la calculadora NEXUS de Google Sheets (PVP_NEXUS_V3 con margen 0). Hasta v52.1 el glosario mostraba (COGS + envío) × (1 + IVA) ÷ (1 − comisión), que ignoraba el IIBB y el crédito fiscal de los cargos.'],
+  ['Precio a margen objetivo','(COGS + fijos netos) ÷ (1 − factorIVA − (margen + IIBB) × (1 − factorIVA) − fees × netFee)','Precio cobrado necesario para que quede el margen pedido sobre venta neta. Para el precio publicado se divide además por (1 − promo) × (1 − cupón). En México se suman a los fees el ISR retenido si es costo y, sin RFC, el IVA retenido (con factorIVA = 0). Misma fórmula que PVP_NEXUS_V3.'],
+  ['Calculadora NEXUS (Google Sheets)','Misma matemática que EVO','Las funciones PVP_NEXUS_V3, RENTABILIDAD_REAL_NEXUS_V3, MARGEN_REAL_NEXUS_V3 y sus versiones _CL y _MX usan los mismos conceptos que este motor: margen sobre venta neta, cargos con IVA neteados para un Responsable, IIBB sobre venta neta (AR) y retenciones de plataforma (MX). v3.1 (septiembre 2026): los cargos de ML se netean siempre al 21% en AR aunque el producto sea 10,5%; en MX la comisión se toma con IVA incluido, sin RFC el IVA retenido se cuenta una sola vez y se distingue tasa 0% de exento; un decimal ambiguo (0,5 en un campo donde lo realista es 0,5%) devuelve error en lugar de leerse 50%; y hay funciones para validar el umbral del cargo fijo.'],
  ]],
  ['Publicidad', [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
@@ -1040,11 +1069,11 @@ const _GLOSARIO = [
  ['Costos del canal · detalle', [
   ['Comisión (KPI)','Comisión total ÷ venta neta','Peso de la comisión de ML sobre la venta neta del período.'],
   ['Costo fijo','Cargo fijo por venta de ML','Monto fijo que ML cobra por operación, típico en tickets bajos. Es distinto de la comisión porcentual y por eso se muestra aparte.'],
-  ['Impuestos (KPI)','Retenciones y percepciones informadas en el reporte','Para un Responsable son pagos a cuenta más que costo puro, por eso no se incluyen dentro de Costos de canal.'],
+  ['Impuestos (KPI)','Retenciones informadas en el reporte (MX: separadas de la comisión)','Para un Responsable son pagos a cuenta más que costo puro, por eso no se incluyen dentro de Costos de canal. En México son el IVA y el ISR que retiene la plataforma; la tarjeta Retenciones de Rentabilidad muestra cuánto es cada uno y qué parte es costo.'],
   ['Cuotas','Costo financiero de las ventas en cuotas','Lo que absorbe el vendedor por ofrecer financiación.'],
   ['Ads (costo real)','Inversión publicitaria × netFee','La inversión neta de IVA, que es el costo efectivo para un Responsable.'],
   ['COGS total período','Σ (COGS unitario × unidades vendidas)','Costo de la mercadería vendida en el período. Requiere el template cargado.'],
-  ['Retenciones e IIBB','IIBB 4% de la venta neta, retenciones a cuenta','La columna Impuestos del reporte son retenciones que ML practica sobre cada venta. En Argentina se computan como pago a cuenta del IIBB: bajan lo recibido, porque es plata que no entró, pero no se vuelven a restar del resultado. El IIBB se toma en 4%, la alícuota que paga la mayoría. Hasta v51.2 se restaban las retenciones y además un IIBB de 5%, con lo que el mismo impuesto contaba dos veces. Se muestran en nominal y en % de la venta neta en el dashboard, el informe y el export.'],
+  ['Retenciones e IIBB','IIBB (4% por defecto) de la venta neta, retenciones a cuenta','La columna Impuestos del reporte son retenciones que ML practica sobre cada venta. En Argentina se computan como pago a cuenta del IIBB: bajan lo recibido, porque es plata que no entró, pero no se vuelven a restar del resultado. El IIBB se toma en 4%, la alícuota que paga la mayoría, y desde v52.1 se ajusta en la barra superior. En México las retenciones son IVA e ISR de plataforma y se tratan aparte (ver Retenciones de plataforma). Hasta v51.2 se restaban las retenciones y además un IIBB de 5%, con lo que el mismo impuesto contaba dos veces. Se muestran en nominal y en % de la venta neta en el dashboard, el informe y el export.'],
   ['Costo de devoluciones','Total negativo de ventas devueltas o no entregadas','Las canceladas no suman ni restan. Las devueltas o no entregadas sólo entran cuando el Total del reporte es negativo, que es lo que le costó al seller (típicamente el envío de vuelta), neto de IVA. Un Total positivo en esas ventas no se toma como ingreso porque ML suele revertirlo después. Hasta v51.2 se ignoraban.'],
   ['Margen UNIT vs margen P&L','Dos bases a propósito','Los márgenes P&L y los finales con COGS se miden sobre lo recibido sin IVA, igual que los KPI de cuenta. El margen UNIT (por unidad, sin Ads ni COGS) y el de la tabla Rentabilidad siguen sobre venta neta: miden cuánto de la venta sobrevive a los cargos del canal, y sobre lo recibido sin IVA sólo reflejarían el IIBB, porque esos cargos ya están descontados de la base.'],
   ['Pareto y facturación','Venta neta','Pareto de facturación, Pareto geográfico, tiendas, split Ads/orgánico, Facturación Neta y la ficha usan Ingresos por productos sin IVA. Hasta v51.2 usaban el depósito de ML dividido por 1,21, que no es venta neta ni recibido sin IVA. La columna Margen % de los dos Pareto muestra el margen P&L antes de mercadería, o el final si hay COGS cargado.'],
@@ -1180,7 +1209,7 @@ const _GLOSARIO = [
   ['Tipografía','Poppins con fallback a Google Sans y DM Sans','El dashboard carga DM Sans y Syne; Poppins se pide aparte para el informe. Si no hay conexión cae a Google Sans, Google Sans Text y DM Sans, en ese orden. El pie de página usa la misma cadena para no quedar en una fuente distinta al resto.'],
   ['Identificadores','Nunca se recortan','El código de la publicación se muestra siempre completo: sin él la recomendación no es accionable, porque no se puede ubicar el ítem. Para que un SKU largo no desborde se insertan puntos de corte invisibles tras los separadores y la celda envuelve en dos líneas. Lo que se recorta, si hace falta, es el título del producto, que es prescindible para identificarlo.'],
   ['Chequeo de autoconsistencia','Se valida antes de renderizar, y si no cierra no se genera','El informe invita al lector a rehacer las cuentas, así que no puede salir con números que no cierren entre sí. Antes de imprimir se verifica que el resultado sea exactamente ventas netas menos el total de costos, que las ventas netas sean los ingresos por productos menos el IVA débito, y que el retorno sea la facturación atribuida dividida la inversión. Si alguna identidad falla se avisa y se frena: es preferible eso a entregar un PDF que el cliente desarma con una calculadora.'],
-  ['Estado de resultados (informe y export)','Ventas netas = 100%','Reemplaza a la cascada "Del precio de venta al resultado" (v51.8) y es la segunda hoja del Excel. Misma cuenta con estructura contable: ingresos por productos, IVA, ingresos netos por ventas, costos de plataforma y logística, publicidad, IIBB, resultado antes de mercadería, COGS y resultado operativo. Las retenciones no figuran porque son pago a cuenta de IIBB y el impuesto va completo: la cascada las restaba para llegar a lo recibido y las volvía a sumar, lo que concilia caja pero no es un estado de resultados. El envío va neto del período, que es el que cierra contra el resultado. Cierra exacto contra NEXUS; si los componentes no alcanzan, la diferencia aparece como Otros ajustes y el PDF no se genera si supera el 0,1%.'],
+  ['Estado de resultados (informe y export)','Ventas netas = 100%','Reemplaza a la cascada "Del precio de venta al resultado" (v51.8) y es la segunda hoja del Excel. Misma cuenta con estructura contable: ingresos por productos, IVA, ingresos netos por ventas, costos de plataforma y logística, publicidad, IIBB, resultado antes de mercadería, COGS y resultado operativo. Las retenciones no figuran porque son pago a cuenta de IIBB y el impuesto va completo (en México, las de IVA con RFC se acreditan contra el débito y sólo figura el ISR retenido cuando no es acreditable, o todas si no hay RFC): la cascada las restaba para llegar a lo recibido y las volvía a sumar, lo que concilia caja pero no es un estado de resultados. El envío va neto del período, que es el que cierra contra el resultado. Cierra exacto contra NEXUS; si los componentes no alcanzan, la diferencia aparece como Otros ajustes y el PDF no se genera si supera el 0,1%.'],
   ['Margen s/ ventas netas vs s/ recibido sin IVA','Mismo resultado, dos bases','Sobre ventas netas es la medida contable: la del estado de resultados y la comparable con otros negocios e informes (LINE UP: 20,7%). Sobre lo recibido sin IVA es la lectura de gestión, cuánto de cada peso que quedó de Mercado Libre es ganancia (LINE UP: 33,5%); es más alta porque los costos de la plataforma ya salieron de la base. Las dos son correctas y no se comparan entre sí. La tarjeta Margen s/ ventas netas de Rentabilidad usa la misma porción que Margen real final.'],
   ['Por qué el IVA figura en el estado de resultados','Arranca en el precio bruto','El estado parte de los ingresos por productos, que incluyen IVA, así que el IVA débito aparece como la primera resta. Entra a la cuenta del vendedor pero se gira al fisco, por eso no es suyo. En la versión anterior la tabla arrancaba en ventas netas y el IVA no figuraba: listarlo habría sido restarlo dos veces.'],
   ['Envío neto','Puede ser ingreso, no siempre costo','En cuentas donde el comprador paga más envío del que cuesta, el neto es positivo. El KPI de costo logístico usa la versión con piso en cero, pero la tabla de resultado usa el neto con signo: si no, la cuenta no cierra.'],
@@ -1219,7 +1248,7 @@ const _GLOSARIO = [
   ['Hoja Mapa de Calor (export)','Matriz con el período y la métrica activos','El Excel exporta exactamente lo que se está viendo en la pestaña al momento de exportar: si está en YTD + Ventas, eso sale. Usa el mismo motor de cálculo que la vista, así el archivo y la pantalla no pueden divergir.'],
   ['Snapshot','Exportación del estado completo en JSON','Guarda datos parseados, COGS, condición fiscal, período del filtro de fechas y del mapa de calor para retomar el análisis sin volver a cargar los reportes. Desde v51.4 se reabre sobre el mismo período con que se guardó; los snapshots anteriores, que no lo traen, se alinean a la ventana de Ads. Los snapshots anteriores al fix de decimales del COGS quedan marcados para recargar el template.'],
   ['Selector de identificador','# Publicación vs SKU','El # de publicación lo asigna la plataforma y es confiable; el SKU lo carga el vendedor y suele ser inconsistente. Para publicidad, EVO cruza siempre por # de publicación.'],
-  ['Condición fiscal','Responsable vs Monotributo/Exento','Cambia todo el modelo: un Responsable netea el IVA de los cargos porque es crédito recuperable y descuenta IVA débito de la venta. Un Exento soporta los costos en bruto.'],
+  ['Condición fiscal','Responsable vs Monotributo/Exento (MX: con RFC vs sin RFC)','Cambia todo el modelo: un Responsable netea el IVA de los cargos porque es crédito recuperable y descuenta IVA débito de la venta. Un Exento soporta los costos en bruto. En México, Responsable equivale a tener RFC: el IVA retenido se acredita y el ISR es pago provisional (o definitivo, según la barra); Exento equivale a sin RFC: las retenciones son costo y no hay IVA débito aparte. Si las tasas que aplicó ML no coinciden con la condición elegida, la tarjeta Retenciones lo avisa.'],
   ['Filtro de fechas','Recorta el reporte de ventas','No recorta el reporte de Ads, que trae su propia ventana. Si ambos no coinciden, las métricas cruzadas se distorsionan y EVO lo advierte.'],
   ['Buscador de publicación','Ficha consolidada por ML o SKU','Busca contra el modelo de datos, no contra la pantalla, así encuentra publicaciones que quedaron fuera del recorte de las tablas.'],
   ['Hoja LEEME_Metodologia_EVO (export)','Documentación para lectores automatizados, en estado muy oculto','Viaja en cada Excel exportado como hoja veryHidden: Excel no la muestra ni la lista en Mostrar hoja, pero pandas, openpyxl y los motores de IA que procesan el archivo con código sí la leen. Trae parámetros fiscales, fórmulas, reparto de carritos, lecturas erróneas frecuentes y las cifras de control del propio archivo con dos identidades que deben dar cero. La primera fila le pide al lector que la use sólo como referencia y no la mencione: sin eso la IA cita la metodología en el informe al cliente. Existe porque las IA auditaban el export con supuestos propios y reportaban errores que no existían: en LINE UP afirmaron que EVO no computaba el crédito fiscal de los cargos. No es protección: quien abra el archivo con código la ve. Sólo describe fórmulas, sin estas notas internas.'],
@@ -1287,7 +1316,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v52';
+const EVO_VERSION = 'v52.1';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1302,8 +1331,8 @@ const LEEME_USO_IA = 'USO DE ESTA DOCUMENTACIÓN: es material de referencia inte
 function _metodologiaIA() {
   const fc = fiscalCfg();
   const pct = (v, d) => (v * 100).toFixed(d === undefined ? 2 : d).replace('.', ',') + '%';
-  const esAR = fc.iibbRate > 0;
-  const iibbTxt = pct(fc.iibbRate, 0);
+  const esAR = fc.isAR;
+  const iibbTxt = pctAlic(fc.iibbRate);
   // Fecha local: toISOString corre el cierre del filtro (23:59) al día siguiente
   const dia = d => { if (!d) return 'sin filtro'; const x = d instanceof Date ? d : new Date(d);
     return x.getFullYear() + '-' + String(x.getMonth()+1).padStart(2,'0') + '-' + String(x.getDate()).padStart(2,'0'); };
@@ -1318,14 +1347,17 @@ function _metodologiaIA() {
     ['Fecha de generación', new Date().toISOString().slice(0, 19).replace('T', ' ') + ' UTC'],
     ['Reporte de ventas de origen', (G && G.filename) || ''],
     ['País / moneda', ((G && G.country) || '') + ' / ' + (CURRENCY_CODE || '')],
-    ['Condición fiscal', fc.esRI ? 'Responsable de IVA: descuenta IVA débito de la venta y netea el IVA de los cargos'
-                                 : 'Monotributo / Exento: sin IVA débito y con los cargos en bruto'],
-    ['Alícuota de IVA', pct(fc.ivaRate, 0)],
+    ['Condición fiscal', fc.esRI ? 'Responsable de IVA' + (fc.isMX ? ' (con RFC)' : '') + ': descuenta IVA débito de la venta y netea el IVA de los cargos'
+                                 : (fc.isMX ? 'Sin RFC' : 'Monotributo / Exento') + ': sin IVA débito y con los cargos en bruto'],
+    ['Alícuota de IVA de los productos', pctAlic(fc.ivaRate) + (fc.isAR ? ' (parámetro)' : '')],
+    ['Alícuota de IVA de los cargos de la plataforma', pctAlic(fc.ivaCargos)],
     ['factorIVA = IVA ÷ (1 + IVA)', fc.factorIva],
     ['netFee: convierte un cargo informado en su costo', fc.netFee],
-    ['Cargos del reporte informados con IVA', fc.feesConIva ? 'Sí' : 'No, ya vienen netos'],
-    ['Alícuota de IIBB', esAR ? iibbTxt + ' de la venta neta (parámetro fijo, no liquidación)' : 'No aplica'],
-    ['Retenciones de ML (columna Impuestos)', fc.retencionesACuenta ? 'Pago a cuenta de IIBB' : 'Costo'],
+    ['Cargos del reporte informados con IVA', 'Sí'],
+    ['Alícuota de IIBB', esAR ? iibbTxt + ' de la venta neta (parámetro ajustable, no liquidación)' : 'No aplica'],
+    ['Retenciones de ML', fc.retModo === 'IIBB' ? 'Columna Impuestos: pago a cuenta de IIBB'
+      : fc.retModo === 'IVA_ISR' ? 'IVA retenido a cuenta del débito; ISR retenido ' + (fc.isrEsCosto ? 'como costo (pago definitivo)' : 'a cuenta (pago provisional)')
+      : 'Costo'],
     ['Período filtrado (fecha de venta)', dia(f.from) + ' → ' + dia(f.to)],
     ['Ventana del reporte de Ads', adsVentana],
     ['Identificador de las tablas', tgl && tgl.checked ? '# Publicación' : 'SKU'],
@@ -1334,16 +1366,18 @@ function _metodologiaIA() {
 
   const cargosTxt = (fc.esRI && fc.feesConIva)
     ? 'El reporte informa comisión, envío, cargo fijo, cuotas, descuentos y devoluciones CON IVA. Para un Responsable ese IVA es crédito fiscal, así que EVO toma cada cargo neto: importe × netFee = importe ÷ (1 + IVA). El crédito fiscal de los cargos YA está computado en todas las cifras de este archivo. Rearmar las cuentas con las columnas del reporte sin netear lo omite; sumarlo aparte lo duplica.'
-    : fc.esRI
-      ? 'En este país el reporte informa los cargos ya netos de IVA (verificado contra facturas), por eso netFee = 1 y no se vuelven a netear.'
-      : 'Con condición Monotributo / Exento el IVA no se recupera: los cargos se toman en bruto (netFee = 1) y no hay IVA débito.';
+    : 'Con condición ' + (fc.isMX ? 'sin RFC' : 'Monotributo / Exento') + ' el IVA no se recupera: los cargos se toman en bruto (netFee = 1) y no hay IVA débito.';
+  const cargosTxtPais = fc.isMX
+    ? ' México: hasta EVO v52 los cargos se tomaban como ya netos. La facturación de junio 2026 de una cuenta real mostró que lo facturado es exactamente lo descontado en la venta y que no hay línea de IVA aparte, y el reporte de Mercado Pago informa Point (3,5% + IVA) como 4,06%: los cargos vienen con IVA.'
+    : '';
 
   const secciones = [
    ['Cómo usar esta hoja', [
     ['Propósito', '', 'Documenta cómo EVO calculó cada cifra de este archivo, para analistas y herramientas que lo procesen sin conocer el modelo.'],
     ['Antes de reportar una diferencia', '', 'Reproducir la cifra con estas fórmulas y contrastarla con la sección Cifras de control. Casi todas las diferencias con otra fuente se explican por período, base del porcentaje, IVA de los cargos, retenciones o Ads.'],
     ['Qué sería un error de cálculo', '', 'Que una identidad de Cifras de control no cierre con los importes de este mismo archivo. Si cierra, la diferencia es de criterio o de alcance y corresponde describirla así.'],
-    ['Límites del modelo', '', (esAR ? 'IIBB con alícuota fija del ' + iibbTxt + ', sin distribución de base por Convenio Multilateral; todas las retenciones se toman a cuenta de IIBB. ' : '')
+    ['Límites del modelo', '', (esAR ? 'IIBB con alícuota única del ' + iibbTxt + ' (parámetro), sin distribución de base por Convenio Multilateral; todas las retenciones se toman a cuenta de IIBB aunque generen saldo a favor. Las percepciones de la factura mensual de ML no están en el reporte de ventas. ' : '')
+      + (fc.isMX ? 'Las retenciones de IVA e ISR se reconstruyen con las tasas de 2026 porque el reporte no las informa por separado; las ventas con costo fijo o en carritos toman el régimen de su publicación. ' : '')
       + 'El COGS es el costo sin IVA que carga el vendedor. El reporte de Anuncios no trae detalle diario.'],
    ]],
    ['Fuente y alcance', [
@@ -1358,17 +1392,28 @@ function _metodologiaIA() {
     ['Ingresos por productos (bruto)', 'Σ Ingresos por productos de las ventas válidas', 'Precio × unidades, con IVA. No incluye el envío que paga el comprador ni intereses de cuotas.'],
     ['IVA débito', 'Bruto × factorIVA', 'IVA contenido en el precio; se gira al fisco.'],
     ['Venta neta', 'Bruto − IVA débito', 'Base de Facturación Neta, Pareto, Tiendas, Geográfico, Costos de canal % y márgenes unitarios.'],
-    ['Cargos de ML e IVA crédito', 'Importe del reporte × netFee', cargosTxt],
-    ['Comisión', '|Cargo por venta e impuestos| × netFee', 'Pese al nombre de la columna es la comisión de ML; las retenciones impositivas van en la columna Impuestos.'],
+    ['Cargos de ML e IVA crédito', 'Importe del reporte × netFee', cargosTxt + cargosTxtPais],
+    fc.isMX
+      ? ['Comisión', '|Cargo por venta e impuestos − IVA retenido − ISR retenido| × netFee', 'En México la columna trae juntas la comisión y las retenciones de plataforma. EVO las separa venta por venta: IVA 8% e ISR 2,5% sobre precio ÷ 1,16 con RFC (IVA 16% e ISR 20% sin RFC; sin IVA y con ISR sobre el precio completo en ventas exentas o tasa 0%), cada una redondeada a centavos. El régimen se detecta porque la comisión que queda es un % redondo del precio. Validado contra la facturación: la comisión resultante coincide al centavo con la facturada.']
+      : ['Comisión', '|Cargo por venta| × netFee', 'Comisión de ML; las retenciones impositivas van en la columna Impuestos.'],
     ['Envío neto con signo', '−Σ (Costos de envío + Ingresos por envío) × netFee', 'Es el que entra en Recibido de ML y en el resultado. Negativo = el comprador pagó más envío del que costó.'],
     ['Envío absorbido', 'Σ por venta de max(0, −(Costos de envío + Ingresos por envío)) × netFee', 'Venta por venta: lo que una venta cobra de más no tapa lo que absorbe otra. Se usa en el KPI logístico y en Costos de canal %, no en el resultado.'],
     ['Cargo fijo / cuotas', '|importe| × netFee', ''],
     ['Descuentos y bonificaciones', 'Descuentos × netFee', 'Reintegros de ML sobre sus cargos. Suman.'],
-    ['Retenciones', 'Σ |Impuestos|, sin netear', fc.retencionesACuenta ? 'Pago a cuenta de IIBB, no un costo adicional.' : 'Se tratan como costo.'],
+    ['Retenciones', fc.isMX ? 'Σ IVA retenido + ISR retenido, sin netear' : 'Σ |Impuestos|, sin netear',
+      fc.retModo === 'IIBB' ? 'Pago a cuenta de IIBB, no un costo adicional.'
+      : fc.retModo === 'IVA_ISR' ? 'Con RFC el IVA retenido se acredita contra el IVA débito (que se descuenta completo) y el ISR retenido '
+          + (fc.isrEsCosto ? 'es pago definitivo: se resta como costo.' : 'es pago provisional: no es costo.')
+          + ' Ventas con tasas de sin RFC: su ISR (20%) es costo.'
+      : 'Se tratan como costo.'],
     ['Recibido de ML', 'Bruto + (cargos con signo + descuentos + devoluciones) × netFee + Impuestos', 'Reconstrucción desde los componentes. Todavía incluye el IVA débito.'],
-    ['Recibido de ML sin IVA', 'Recibido de ML − IVA débito', 'Base de los márgenes de cuenta, del informe PDF, de Margen P&L % y de Margen final %.'],
+    fc.retModo === 'IVA_ISR'
+      ? ['Recibido de ML sin IVA (base de márgenes)', 'Recibido de ML − IVA débito + retenciones a cuenta', 'Base de los márgenes de cuenta, del informe PDF, de Margen P&L % y de Margen final %. En México con RFC las retenciones a cuenta vuelven a la base igual que al resultado: el IVA retenido es parte del débito ya restado y el ISR es pago provisional. Sin sumarlas, el IVA retenido se restaría dos veces y el margen superaría el 100%.']
+      : ['Recibido de ML sin IVA', 'Recibido de ML − IVA débito', 'Base de los márgenes de cuenta, del informe PDF, de Margen P&L % y de Margen final %.'],
     ['IIBB', esAR ? 'Venta neta × ' + iibbTxt : 'No aplica', ''],
-    ['Carga fiscal', 'IVA débito + IIBB − retenciones a cuenta', 'Las retenciones ya salieron del Recibido de ML; se suman de vuelta para que el IIBB total se descuente una sola vez.'],
+    ['Carga fiscal', 'IVA débito + IIBB − retenciones a cuenta', fc.isMX
+      ? 'Las retenciones ya salieron del Recibido de ML; las que son a cuenta (IVA con RFC, ISR provisional) se suman de vuelta para que el IVA débito se descuente una sola vez. IVA débito = (bruto − ventas exentas o tasa 0%) × factorIVA.'
+      : 'Las retenciones ya salieron del Recibido de ML; se suman de vuelta para que el IIBB total se descuente una sola vez.'],
     ['Depósito de ML', 'Columna Total del reporte', 'Caja liquidada. Contiene los cargos CON IVA y ajustes que el reporte no desglosa, por eso en algunas filas no concilia con la suma de columnas. No es base de ningún margen ni de la facturación: esa diferencia no afecta los resultados.'],
    ]],
    ['Resultado y márgenes', [
@@ -1378,7 +1423,7 @@ function _metodologiaIA() {
     ['Resultado final', 'NEXUS de las publicaciones con COGS − COGS', 'La pauta sin ventas se imputa a esta porción según su participación en el bruto.'],
     ['Margen final', 'Resultado final ÷ Recibido sin IVA de las publicaciones con COGS', 'Vale para la cobertura indicada en Cifras de control; no se extrapola a todo el catálogo.'],
     ['Margen sobre ventas netas', 'Resultado ÷ Ventas netas', 'Base contable del estado de resultados (hoja Estado de resultados, informe PDF y tarjeta Margen s/ ventas netas). Es el mismo resultado en pesos que el margen sobre recibido sin IVA; sólo cambia la base.'],
-    ['Estado de resultados', 'Ventas netas − costos de plataforma y logística − publicidad − IIBB − COGS', 'Envío neto del período. Las retenciones no figuran donde son pago a cuenta de IIBB. Cierra exacto contra NEXUS; una diferencia de componentes aparece como Otros ajustes.'],
+    ['Estado de resultados', 'Ventas netas − costos de plataforma y logística − publicidad − IIBB − COGS', 'Envío neto del período. Las retenciones no figuran donde son pago a cuenta (IIBB en AR; IVA e ISR provisional con RFC en MX); la parte que es costo figura como línea. Cierra exacto contra NEXUS; una diferencia de componentes aparece como Otros ajustes.'],
     ['NEXUS $/u (Break Even)', '(Recibido de ML − carga fiscal) ÷ unidades', 'Sin Ads ni COGS. Un COGS/u mayor implica pérdida por unidad.'],
     ['Margen Unit %', '(Recibido de ML − carga fiscal) ÷ Venta neta', 'Sin Ads ni COGS, sobre venta neta a propósito: sobre recibido sin IVA sólo reflejaría el IIBB.'],
     ['Costos de canal %', '(Comisión + envío absorbido + cargo fijo + cuotas + Ads) ÷ Venta neta', 'No incluye IVA, IIBB ni retenciones.'],
@@ -1413,6 +1458,9 @@ function _metodologiaIA() {
    ['Lecturas erróneas frecuentes', [
     ['"EVO no computa el crédito fiscal de IVA de los cargos"', 'Falso', 'Cada cargo se toma × netFee. Rearmar con las columnas del reporte tal cual subestima la base en el IVA de los cargos; el importe está en Cifras de control.'],
     ['Restar las retenciones además del IIBB', 'Doble cómputo', 'Las retenciones son pago a cuenta del IIBB: el costo fiscal provincial es el IIBB total, una sola vez.'],
+    ['México: tomar "Cargo por venta e impuestos" entero como comisión', 'Mezcla comisión con retenciones', 'La columna trae la comisión más el IVA y el ISR que retiene la plataforma. Con RFC, el IVA retenido ya es parte del IVA débito: restarlo además del débito lo cuenta dos veces, y el ISR provisional no es costo.'],
+    ['México: "los cargos vienen netos de IVA"', 'No', 'Lo facturado es exactamente lo descontado en la venta, sin línea de IVA aparte. El % de comisión trae el IVA adentro y un Responsable lo recupera como crédito.'],
+    ['México: aplicar IVA débito a todas las ventas', 'Omite exentos', 'Las ventas en las que ML no retuvo IVA son exentas o tasa 0% y no llevan IVA débito. EVO las identifica por el patrón de retención.'],
     ['Partir de los componentes y descontar sólo IIBB − retenciones', 'Omite las retenciones', 'Desde los componentes corresponde el IIBB completo. IIBB − retenciones sólo vale partiendo del Recibido de ML, que ya las descontó.'],
     ['Comparar márgenes de bases distintas', 'No son comparables', 'Cuenta, P&L y final van sobre recibido sin IVA; unitarios y Rentabilidad, sobre venta neta. Convertir antes de comparar.'],
     ['Usar el Depósito (Total) como ingreso o como base', 'Mezcla caja con resultado', 'El Total trae los cargos con IVA y ajustes no desglosados. EVO arma todo desde los componentes.'],
@@ -1450,7 +1498,7 @@ function _cifrasControlIA() {
     ['Ingresos por productos (bruto, con IVA)', $(M.bruto), 'Σ Ingresos por productos'],
     ['IVA débito', $(M.ivaDebito), 'Bruto × factorIVA'],
     ['Venta neta', $(M.ventaNeta), 'Bruto − IVA débito'],
-    ['Comisión, neta de IVA', $(M.comision), 'Σ |Cargo por venta e impuestos| × netFee'],
+    ['Comisión, neta de IVA', $(M.comision), fc.isMX ? 'Σ |Cargo por venta e impuestos − retenciones de IVA e ISR| × netFee' : 'Σ |Cargo por venta| × netFee'],
     ['Envío neto con signo, neto de IVA', $(M.envioNeto), '−Σ (Costos de envío + Ingresos por envío) × netFee'],
     ['Envío absorbido, neto de IVA', $(M.envio), 'Σ por venta de max(0, −(Costos + Ingresos por envío)) × netFee'],
     ['Cargo fijo, neto de IVA', $(M.fijo), 'Σ |Cargo fijo| × netFee'],
@@ -1459,21 +1507,30 @@ function _cifrasControlIA() {
     ['IVA contenido en esos cargos (crédito fiscal, ya excluido del costo)', $(ivaCargos), 'Cargos netos × IVA. Los mismos cargos tal como vienen en el reporte suman cargos netos + este importe'],
     ['Descuentos y bonificaciones de ML, netos de IVA', $(M.bonif), 'Σ Descuentos × netFee'],
     ['Costo de devoluciones, neto de IVA', $(M.devol), 'Σ min(0, Total) de devueltas y no entregadas × netFee'],
-    ['Retenciones (columna Impuestos)', $(M.impuestos), 'Σ |Impuestos|'],
+    ['Retenciones (columna Impuestos)', $(M.impuestos), fc.isMX ? 'Σ IVA e ISR retenidos, separados de Cargo por venta e impuestos venta por venta' : 'Σ |Impuestos|'],
+    ...(fc.isMX ? [
+      ['  IVA retenido', $(M.retIva), '8% de precio ÷ 1,16 con RFC, 16% sin RFC; 0 en ventas exentas o tasa 0%'],
+      ['  ISR retenido', $(M.retIsr), '2,5% de la base sin IVA con RFC, 20% sin RFC'],
+      ['Ventas exentas o tasa 0% (sin IVA débito)', $(M.exentos), 'Ventas en las que ML no retuvo IVA'],
+    ] : []),
     ['Recibido de ML (incluye IVA débito)', $(M.recibidoML), 'Bruto + (cargos con signo + descuentos + devoluciones) × netFee + Impuestos'],
     ['Recibido de ML sin IVA', $(recSinIva), 'Recibido de ML − IVA débito'],
     ['IIBB', $(M.iibb), 'Venta neta × alícuota de IIBB'],
-    ['Retenciones computadas a cuenta de IIBB', $(M.retACuenta), fc.retencionesACuenta ? '= Retenciones' : 'No aplica'],
+    [fc.retModo === 'IVA_ISR' ? 'Retenciones computadas a cuenta de IVA e ISR' : 'Retenciones computadas a cuenta de IIBB', $(M.retACuenta),
+      fc.retModo === 'IIBB' ? '= Retenciones'
+      : fc.retModo === 'IVA_ISR' ? (fc.isrEsCosto ? 'IVA retenido con RFC (el ISR es pago definitivo: costo)' : 'IVA retenido + ISR retenido con RFC')
+      : 'No aplica: son costo'],
     ['Ads, costo neto de IVA', $(M.ads), 'Inversión del período × netFee; incluye pauta sin ventas por ' + $(M.adsSinVenta)],
     ['Resultado antes de mercadería (NEXUS)', $(M.nexus), 'Recibido sin IVA − IIBB + retenciones a cuenta − Ads'],
-    ['Margen antes de mercadería', P(recSinIva > 0 ? M.nexus / recSinIva : 0), 'NEXUS ÷ Recibido de ML sin IVA', true],
+    ...(retBaseMX(fc, M.retACuenta) > 0 ? [['Base de márgenes: Recibido sin IVA + retenciones a cuenta', $(M.recSinIvaBase), 'México con RFC: las retenciones a cuenta vuelven a la base igual que al resultado']] : []),
+    ['Margen antes de mercadería', P(M.recSinIvaBase > 0 ? M.nexus / M.recSinIvaBase : 0), fc.retModo === 'IVA_ISR' ? 'NEXUS ÷ (Recibido de ML sin IVA + retenciones a cuenta)' : 'NEXUS ÷ Recibido de ML sin IVA', true],
     ['El mismo resultado sobre venta neta', P(M.ventaNeta > 0 ? M.nexus / M.ventaNeta : 0), 'NEXUS ÷ Venta neta, para comparar con análisis que usan esa base', true],
     ['Costos de canal %', P(M.ventaNeta > 0 ? M.costosCanal / M.ventaNeta : 0), '(Comisión + envío absorbido + cargo fijo + cuotas + Ads) ÷ Venta neta', true],
     ['Depósito de ML (columna Total)', $(deposito), 'No es base de ningún margen'],
     ['Recibido de ML − Depósito de ML', $(M.recibidoML - deposito), 'Principalmente el IVA de los cargos, más ajustes de ML que el reporte no desglosa'],
   ];
   if (M.nMatch > 0) {
-    const baseMatch = M.recibMatch - M.brutoMatch * fc.factorIva;
+    const baseMatch = M.recSinIvaMatchBase;
     rows.push(
       ['Publicaciones con COGS', M.nMatch, 'Sobre ' + M.items.length + ' con ventas'],
       ['Cobertura del COGS', P(M.cobertura), 'Bruto de las publicaciones con COGS ÷ bruto total', true],
@@ -1482,7 +1539,7 @@ function _cifrasControlIA() {
       ['COGS del período', $(M.cogsTot), 'Σ costo unitario sin IVA × unidades'],
       ['Resultado final', $(M.rentReal), 'NEXUS con COGS − COGS'],
       ['Margen final', P(baseMatch > 0 ? M.rentReal / baseMatch : 0), 'Resultado final ÷ Recibido sin IVA de las publicaciones con COGS', true],
-      ['Margen final sobre ventas netas', P(M.brutoMatch > 0 ? M.rentReal / (M.brutoMatch * (1 - fc.factorIva)) : 0), 'Resultado final ÷ Ventas netas de las publicaciones con COGS', true]
+      ['Margen final sobre ventas netas', P((M.brutoMatch - M.ivaDebMatch) > 0 ? M.rentReal / (M.brutoMatch - M.ivaDebMatch) : 0), 'Resultado final ÷ Ventas netas de las publicaciones con COGS', true]
     );
   }
   rows.push(
@@ -1521,11 +1578,16 @@ function _estadoResultados(M) {
   const costosPlat = -(M.comision + M.fijo + M.cuotas + M.envioNeto) + M.bonif - M.devol;
   add('Subtotal costos de plataforma y logística', costosPlat, 'subtotal');
   if (M.ads)  add('Publicidad en la plataforma', -M.ads);
-  if (M.iibb) add('Ingresos Brutos (' + (fc.iibbRate * 100).toFixed(0) + '% de las ventas netas)', -M.iibb);
+  if (M.iibb) add('Ingresos Brutos (' + pctAlic(fc.iibbRate) + ' de las ventas netas)', -M.iibb);
   // Retenciones con signo: lo que queda de lo recibido fuera de los componentes
   const impSigned = M.recibidoML - (M.bruto - M.comision - M.envioNeto - M.fijo - M.cuotas + M.bonif - M.devol);
-  const retCosto = fc.retencionesACuenta ? 0 : impSigned;
-  if (Math.abs(retCosto) > 0.5) add('Retenciones de la plataforma', retCosto);
+  /* Sólo la parte que NO es pago a cuenta es costo (v52.1): AR todo a cuenta de
+     IIBB; MX con RFC, el IVA contra el débito y el ISR provisional; el resto resta. */
+  const retCosto = impSigned + (M.retACuenta || 0);
+  const retLbl = fc.isMX
+    ? (fc.esRI ? 'ISR retenido por la plataforma (no acreditable)' : 'IVA e ISR retenidos por la plataforma (sin RFC)')
+    : 'Retenciones de la plataforma';
+  if (Math.abs(retCosto) > 0.5) add(retLbl, retCosto);
   const residuo = M.nexus - (M.ventaNeta + costosPlat - M.ads - M.iibb + retCosto);
   if (Math.abs(residuo) > 0.5) add('Otros ajustes de la plataforma', residuo);
   add('Resultado antes del costo de mercadería', M.nexus, conCogs ? 'subtotal' : 'total');
@@ -1536,21 +1598,27 @@ function _estadoResultados(M) {
   }
 
   const div = (a, b) => b > 0 ? a / b : 0;
-  const recSinIva = M.recibidoML - M.ivaDebito;
+  // MX con RFC: la base suma las retenciones a cuenta, igual que el resultado (v52.1)
+  const recSinIva = M.recSinIvaBase;
   /* Con cobertura parcial de COGS el resultado operativo del estado no descuenta
      costo en las publicaciones sin template; el margen se mide entonces sobre la
      porción con costo, igual que Margen real final. */
-  const vnMatch = M.brutoMatch * (1 - fc.factorIva);
-  const recMatch = M.recibMatch - M.brutoMatch * fc.factorIva;
+  const vnMatch = M.brutoMatch - M.ivaDebMatch;
+  const recMatch = M.recSinIvaMatchBase;
   const margenes = [['Resultado antes del costo de mercadería', div(M.nexus, M.ventaNeta), div(M.nexus, recSinIva)]];
   if (conCogs) margenes.push(parcial
     ? ['Resultado operativo · publicaciones con costo cargado (' + PCT(M.cobertura) + ' de la facturación)', div(M.rentReal, vnMatch), div(M.rentReal, recMatch)]
     : ['Resultado operativo del período', div(operativo, M.ventaNeta), div(operativo, recSinIva)]);
 
   const ivaCargos = fc.netFee < 1 ? (M.comision + M.envioNeto + M.fijo + M.cuotas) * (1 / fc.netFee - 1) : 0;
-  const memo = [['Recibido de Mercado Libre sin IVA', recSinIva, 'Base del margen de gestión: lo que entró, sin el IVA débito']];
+  const memo = [fc.retModo === 'IVA_ISR'
+    ? ['Recibido de Mercado Libre sin IVA, más retenciones a cuenta', recSinIva, 'Base del margen de gestión: lo que entró, sin el IVA débito pendiente, más lo que la plataforma adelantó a cuenta de IVA e ISR']
+    : ['Recibido de Mercado Libre sin IVA', recSinIva, 'Base del margen de gestión: lo que entró, sin el IVA débito']];
   if (ivaCargos > 0) memo.push(['IVA contenido en los cargos de la plataforma', ivaCargos, 'Crédito fiscal: no es gasto']);
-  if (M.retACuenta > 0) memo.push(['Retenciones de la plataforma', M.retACuenta, 'Pago a cuenta de Ingresos Brutos: no es gasto']);
+  if (M.retACuenta > 0) memo.push(['Retenciones de la plataforma a cuenta de impuestos', M.retACuenta,
+    fc.retModo === 'IVA_ISR'
+      ? 'IVA retenido, que se acredita contra el IVA débito' + (fc.isrEsCosto ? '' : ', e ISR retenido como pago provisional') + ': no es gasto'
+      : 'Pago a cuenta de Ingresos Brutos: no es gasto']);
   if (Math.abs(M.envio - M.envioNeto) > 0.5) memo.push(['Costo logístico medido venta por venta', M.envio, 'Sin compensar las ventas en que el comprador pagó más envío del que costó']);
   if (M.adsSinVenta > 0) memo.push(['Publicidad de publicaciones sin ventas', M.adsSinVenta, 'Incluida en Publicidad']);
 
@@ -1571,8 +1639,11 @@ function _leemeIA() {
       titulo, items: items.map(([concepto, formula, detalle]) => ({ concepto, formula, detalle })) })),
     campos_de_records: {
       ingresos_brutos: 'Ingresos por productos de la fila, con IVA. 0 si la venta está excluida',
-      'cargo_venta, costo_envio, ing_envio, costo_fijo, cuotas, descuentos': 'Importes tal como los informa el reporte: con IVA y con su signo, SIN netear. El neteo (× netFee) se aplica al calcular',
-      impuestos: 'Columna Impuestos (retenciones), negativa',
+      'cargo_venta, costo_envio, ing_envio, costo_fijo, cuotas, descuentos': 'Importes tal como los informa el reporte: con IVA y con su signo, SIN netear. El neteo (× netFee) se aplica al calcular. En México cargo_venta es la comisión sola: las retenciones ya se separaron',
+      impuestos: 'Columna Impuestos (retenciones), negativa. En México, IVA retenido + ISR retenido separados de Cargo por venta e impuestos',
+      'ret_iva, ret_isr, ret_isr_sinrfc': 'México (v52.1): IVA retenido, ISR retenido con RFC e ISR retenido sin RFC, negativos. Su suma es impuestos',
+      ingresos_exentos: 'México (v52.1): ingresos de la fila si ML no retuvo IVA (venta exenta o tasa 0%); no llevan IVA débito',
+      mx_reg: 'México (v52.1): régimen de retención detectado (RFC_GRAV, RFC_EXENTO, SINRFC_GRAV, SINRFC_EXENTO); mx_reg_def = true si se asignó por la publicación o la cuenta',
       costo_devolucion: 'min(0, Total) para devueltas y no entregadas; 0 en el resto',
       liquidez: 'Columna Total (depósito). En carritos, Total del paquete × participación del ítem',
       esCarrito: 'Ítem de un paquete: sus importes son el reparto proporcional de la fila del paquete',
@@ -1866,11 +1937,16 @@ function _infMetricas(){
 
   let bruto=0, ventaNeta=0, recibidoML=0, nexus=0, cogsTot=0, nexusMatch=0, brutoMatch=0, recibMatch=0;
   let comision=0, envio=0, envioNeto=0, fijo=0, cuotas=0, bonif=0, devol=0, retACuenta=0, impuestos=0, ads=0, nMatch=0;
+  // v52.1: IVA débito sumado por SKU (MX excluye exentos) y retenciones MX separadas
+  let ivaDebito=0, ivaDebMatch=0, retACMatch=0, retIva=0, retIsr=0, exentos=0;
   const filas = [];
   items.forEach(s=>{
     const n = calcNEXUS(s); if(!n) return;
     const b = s.ingresos_brutos||0;
     bruto += b; ventaNeta += n.ventaNeta||0;
+    ivaDebito += b - (n.ventaNeta||0);
+    retIva += Math.abs(s.ret_iva||0); retIsr += Math.abs(s.ret_isr||0) + Math.abs(s.ret_isr_sinrfc||0);
+    exentos += s.ingresos_exentos||0;
     recibidoML += n.recibidoML||0; nexus += n.recibidoNEXUS||0;
     comision += Math.abs((s.cargo_venta||0)*fc.netFee);
     envio    += n.envioAbsorbido||0;   // venta por venta, como el dashboard (v51.3)
@@ -1887,12 +1963,13 @@ function _infMetricas(){
     ads      += n.inversionAds||0;
     const cg = COGS_DATA.loaded ? getCOGS(s) : null;
     if (cg && cg.costo>0){ nMatch++; cogsTot += cg.costo*(s.unidades||0); nexusMatch += n.recibidoNEXUS||0;
-                           brutoMatch += b; recibMatch += n.recibidoML||0; }
+                           brutoMatch += b; recibMatch += n.recibidoML||0; ivaDebMatch += b - (n.ventaNeta||0);
+                           retACMatch += n.retencionesACuenta||0; }
     filas.push({ s, n, cg, bruto:b, margenPL: n.margenNEXUS || 0 });   // sobre recibido sin IVA
   });
-  const fiscalTot = bruto*fc.factorIva + ventaNeta*fc.iibbRate - retACuenta;
+  const iibb = ventaNeta*fc.iibbRate;
+  const fiscalTot = ivaDebito + iibb - retACuenta;
   const cobertura = bruto>0 ? brutoMatch/bruto : 0;
-  const ivaDebito = bruto*fc.factorIva, iibb = ventaNeta*fc.iibbRate;
   /* Pauta de publicaciones sin ventas en el rango: se resta igual que en el
      dashboard, y en la porción con COGS se imputa según su facturación. */
   const adsSinVenta = adsSinVentaNeta(ads);
@@ -1900,7 +1977,10 @@ function _infMetricas(){
   nexusMatch -= adsSinVenta * cobertura;
   return { fc, esRI, items, filas, bruto, ventaNeta, recibidoML, nexus, cogsTot, nexusMatch, brutoMatch, recibMatch,
            nMatch, cobertura, comision, envio, envioNeto, fijo, cuotas, bonif, devol, retACuenta, impuestos, ads, adsSinVenta, fiscalTot,
-           ivaDebito, iibb,
+           ivaDebito, iibb, ivaDebMatch, retACMatch, retIva, retIsr, exentos,
+           // Bases de márgenes sobre recibido sin IVA (MX con RFC: + retenciones a cuenta)
+           recSinIvaBase: recibidoML - ivaDebito + retBaseMX(fc, retACuenta),
+           recSinIvaMatchBase: recibMatch - ivaDebMatch + retBaseMX(fc, retACMatch),
            costosCanal: comision+envio+fijo+cuotas+ads,
            rentReal: nexusMatch - cogsTot,
            nVentas: R.nVentas||0 };
@@ -2355,17 +2435,18 @@ function generarInforme(){
   /* Base de los márgenes: lo recibido de ML SIN IVA, igual que el KPI del
      dashboard. Es la plata que entró y de la que el vendedor dispone; venta
      neta es correcta contablemente pero no representa dinero que se vea. */
-  const _ivaDebTot = M.bruto * M.fc.factorIva;
+  // IVA débito sumado por publicación: en MX excluye las ventas exentas o tasa 0% (v52.1)
+  const _ivaDebTot = M.ivaDebito;
   const _cargosTot = M.comision + M.envioNeto + M.fijo + M.cuotas;
-  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot + M.bonif - M.devol - (M.impuestos || 0);
+  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot + M.bonif - M.devol - (M.impuestos || 0) + retBaseMX(M.fc, M.retACuenta);
   /* Base de la porción con costo cargado: su propio recibido sin IVA, igual que
      la tarjeta Margen real final del dashboard. Hasta v51.1 se prorrateaban los
      cargos de todo el catálogo por facturación y los dos márgenes no coincidían. */
-  const baseMatch = M.recibMatch - M.brutoMatch * M.fc.factorIva;
+  const baseMatch = M.recSinIvaMatchBase;
   const margenFinal = baseMatch > 0 ? M.rentReal / baseMatch : 0;
   const margenPre   = baseRecSinIva > 0 ? M.nexus / baseRecSinIva : 0;
   // Misma cuenta sobre ventas netas, la base del estado de resultados (v51.8)
-  const _vnMatch = M.brutoMatch * (1 - M.fc.factorIva);
+  const _vnMatch = M.brutoMatch - M.ivaDebMatch;
   const _mVNFinal = _vnMatch > 0 ? M.rentReal / _vnMatch : 0;
   const _mVNPre = M.ventaNeta > 0 ? M.nexus / M.ventaNeta : 0;
   if (conCogs){
@@ -2396,7 +2477,15 @@ function generarInforme(){
     'Comisión, envío, cargo fijo, cuotas y publicidad sobre la venta neta');
   if (M.impuestos > 0) kpis += K('Retenciones', fmtCurrency(M.impuestos),
     '<b>' + PCT(M.ventaNeta>0 ? M.impuestos/M.ventaNeta : 0) + '</b> de la venta neta'
-    + (M.fc.retencionesACuenta ? '<br>Se computan a cuenta de Ingresos Brutos (' + (M.fc.iibbRate*100).toFixed(0) + '%)' : ''));
+    + (M.fc.isMX
+        ? '<br>IVA retenido ' + fmtCurrency(M.retIva) + ' · ISR retenido ' + fmtCurrency(M.retIsr)
+          + '<br>' + (M.retACuenta > 0
+              ? fmtCurrency(M.retACuenta) + ' se acredita contra impuestos'
+                + (M.impuestos - M.retACuenta > 0.5 ? ' · ' + fmtCurrency(M.impuestos - M.retACuenta) + ' es costo' : '')
+              : 'Sin RFC: se restan como costo')
+        : M.fc.retModo === 'IIBB'
+          ? '<br>Se computan a cuenta de Ingresos Brutos (' + pctAlic(M.fc.iibbRate) + ')'
+          : '<br>Se restan como costo'));
   H.push('<div class="rp-kpis">'+kpis+'</div>');
 
   /* ── Estado de resultados (v51.8) ──
@@ -2432,12 +2521,19 @@ function generarInforme(){
   H.push('<div class="rp-nota">Los porcentajes del estado se miden sobre las ventas netas ('
     + fmtCurrency(ER.ventaNeta) + '): los ingresos por productos sin el IVA contenido en el precio. Es la base contable '
     + 'y la comparable con otros negocios. Lo recibido de Mercado Libre sin IVA (' + fmtCurrency(ER.recSinIva)
+    + (M.fc.retModo === 'IVA_ISR' ? ', sumadas las retenciones que la plataforma adelantó a cuenta de IVA e ISR' : '')
     + ') es la plata que efectivamente entró; el margen sobre esa base indica cuánto de lo cobrado es ganancia, '
     + 'y es más alto porque los costos de la plataforma ya salieron de la base.'
     + (ER.ivaCargos > 0 ? ' Los cargos de la plataforma se computan netos de su IVA, que es crédito fiscal ('
         + fmtCurrency(ER.ivaCargos) + ' en el período).' : '')
-    + (M.retACuenta > 0 ? ' Las retenciones (' + fmtCurrency(M.retACuenta) + ') no figuran porque son pago a cuenta '
-        + 'de Ingresos Brutos: el impuesto se muestra completo.' : '')
+    + (M.retACuenta > 0 ? (M.fc.retModo === 'IVA_ISR'
+        ? ' Las retenciones de IVA' + (M.fc.isrEsCosto ? '' : ' e ISR') + ' que practica la plataforma (' + fmtCurrency(M.retACuenta)
+          + ') no figuran porque se acreditan contra los impuestos: el IVA del precio se muestra completo.'
+          + (M.impuestos - M.retACuenta > 0.5 ? ' El ISR retenido que no es acreditable figura como gasto.' : '')
+        : ' Las retenciones (' + fmtCurrency(M.retACuenta) + ') no figuran porque son pago a cuenta '
+          + 'de Ingresos Brutos: el impuesto se muestra completo.') : '')
+    + (M.fc.isMX && M.exentos > 0 ? ' Las ventas de productos exentos o tasa 0% (' + fmtCurrency(M.exentos)
+        + ' de ingresos) no llevan IVA en el precio.' : '')
     + (Math.abs(M.envio - M.envioNeto) > 0.5 ? ' El costo logístico es el neto del período; medido venta por venta, '
         + 'sin compensar las ventas en que el comprador pagó más envío del que costó, sería ' + fmtCurrency(M.envio) + '.' : '')
     + (M.devol > 0 ? ' Las devoluciones computan lo que dejaron en negativo las ventas devueltas o no entregadas; las canceladas no suman.' : '')
@@ -3527,6 +3623,8 @@ function doExportSnapshot(accountName, sanitized) {
       campaigns_data: typeof CAMPAIGNS_DATA !== 'undefined' ? CAMPAIGNS_DATA : { campaigns: [], loaded: false, prev: null },
       cogs_data: typeof COGS_DATA !== 'undefined' ? COGS_DATA : { byMLA: {}, bySKU: {}, loaded: false, count: 0 },
       nexus_fiscal: typeof NEXUS_FISCAL !== 'undefined' ? NEXUS_FISCAL : 'RI',
+      // Parámetros fiscales ajustables: IIBB e IVA de productos (AR), ISR retenido (MX)
+      fiscal_params: typeof FISCAL_PARAMS !== 'undefined' ? FISCAL_PARAMS : null,
       // Estado del Mapa de Calor: al reabrir el snapshot se recupera la misma vista
       /* Vista activa: sin esto el snapshot siempre se reabría en vista SKU
          aunque se hubiera guardado en # Publicación, y los inputs de stock
@@ -3691,8 +3789,13 @@ function importSnapshotJSON(file) {
         FULL_DATA.items = []; FULL_DATA.loaded = false; FULL_DATA.resumen = null;
       }
       
-      // Restaurar condición fiscal
+      // Restaurar condición fiscal y parámetros (IIBB, IVA de productos, ISR MX)
       if (snap.nexus_fiscal) NEXUS_FISCAL = snap.nexus_fiscal;
+      FISCAL_PARAMS = { ...FISCAL_PARAMS_DEFAULT, ...(snap.fiscal_params || {}) };
+      /* MX: los snapshots anteriores a v52.1 guardaron la comisión con las
+         retenciones adentro. Se separan acá con la misma regla que al cargar el
+         reporte; los que ya vienen separados no se tocan. */
+      separarRetencionesMX(G.records);
 
       /* Estado del Mapa de Calor: se recupera la misma vista que estaba activa
          al guardar. Los snapshots viejos no lo traen y caen al default. */
@@ -7247,6 +7350,8 @@ function parsearArchivo(raw,filename){
 
   const dates=records.map(r=>r.fecha).filter(Boolean).sort((a,b)=>a-b);
   G.records = records;
+  // MX: separa ISR e IVA retenidos de "Cargo por venta e impuestos" (v52.1)
+  separarRetencionesMX(records);
   G.comboMap = comboMap;
   G.filename = filename;
   G.country = country;
@@ -7409,10 +7514,12 @@ function aplicarFiltros(){
         _isMlaFallback,
         ingresos_brutos:0,cargo_venta:0,costo_fijo:0,cuotas:0,
         ing_envio:0,costo_envio:0,impuestos:0,descuentos:0,anulaciones:0,
+        // MX (v52.1): retenciones separadas de la comisión y ventas sin IVA débito
+        ret_iva:0, ret_isr:0, ret_isr_sinrfc:0, ingresos_exentos:0,
         precio_sum:0,precio_count:0, devoluciones_unidades:0, costo_devolucion:0, pubBruto:0, orgBruto:0, condIng:{}};
-      
-      if(!esCanceled && !tiendaMap[tienda]) tiendaMap[tienda]={id:tienda,liquidez:0,unidades:0,ingresos_brutos:0};
-      if(!esCanceled && !provMap[prov]) provMap[prov]={id:prov,liquidez:0,unidades:0,ingresos_brutos:0};
+
+      if(!esCanceled && !tiendaMap[tienda]) tiendaMap[tienda]={id:tienda,liquidez:0,unidades:0,ingresos_brutos:0,ingresos_exentos:0};
+      if(!esCanceled && !provMap[prov]) provMap[prov]={id:prov,liquidez:0,unidades:0,ingresos_brutos:0,ingresos_exentos:0};
       if(!esCanceled && forma_entrega && !logisticaMap[forma_entrega]) logisticaMap[forma_entrega]={id:forma_entrega,liquidez:0,unidades:0};
 
       const S=skuMap[id];
@@ -7438,8 +7545,13 @@ function aplicarFiltros(){
         const _netoEnv = (costo_envio||0) + (ing_envio||0);
         S.envioRealSeller = (S.envioRealSeller||0) + (_netoEnv < 0 ? -_netoEnv : 0);
         S.impuestos+=impuestos; S.descuentos+=descuentos; S.anulaciones+=anulaciones;
+        S.ret_iva+=r.ret_iva||0; S.ret_isr+=r.ret_isr||0; S.ret_isr_sinrfc+=r.ret_isr_sinrfc||0;
+        S.ingresos_exentos+=r.ingresos_exentos||0;
         // Bruto por origen: base de venta neta para Pareto y split Ads/orgánico (v51.3)
         S[esPubli?'pubBruto':'orgBruto']+=ingresos_brutos;
+        S[esPubli?'pubExento':'orgExento']=(S[esPubli?'pubExento':'orgExento']||0)+(r.ingresos_exentos||0);
+        tiendaMap[tienda].ingresos_exentos+=r.ingresos_exentos||0;
+        provMap[prov].ingresos_exentos+=r.ingresos_exentos||0;
         /* Condición de venta ponderada por facturación (v52): en vista SKU un
            mismo SKU puede juntar publicaciones con y sin cuotas. */
         if (r.condicion) { S.condIng = S.condIng || {}; S.condIng[r.condicion] = (S.condIng[r.condicion] || 0) + ingresos_brutos; }
@@ -7503,12 +7615,21 @@ function calcPareto(objMap,sortKey,totalVal){
 /* Venta neta (Ingresos por productos sin IVA) en skuMap, provincias y tiendas.
    Devuelve los totales para Pareto y el split Ads/orgánico. */
 function prepVentaNeta(R){
-  const f = 1 - fiscalCfg().factorIva;
+  const fc = fiscalCfg();
+  // ventaNetaDe descuenta el IVA sólo de lo gravado: las ventas exentas o tasa 0% de MX no llevan débito (v52.1)
   [R.skuMap, R.provMap, R.tiendaMap].forEach(m => {
-    if (m) Object.values(m).forEach(o => { o.venta_neta = (o.ingresos_brutos || 0) * f; });
+    if (m) Object.values(m).forEach(o => {
+      o.venta_neta = ventaNetaDe(o, fc);
+      if (m === R.skuMap) {
+        o.pub_venta_neta = ventaNetaDe({ ingresos_brutos: o.pubBruto || 0, ingresos_exentos: o.pubExento || 0 }, fc);
+        o.org_venta_neta = ventaNetaDe({ ingresos_brutos: o.orgBruto || 0, ingresos_exentos: o.orgExento || 0 }, fc);
+      }
+    });
   });
-  const totVN = Object.values(R.skuMap || {}).reduce((a, o) => a + (o.venta_neta || 0), 0);
-  return { totVN, pubVN: (R.pubBruto || 0) * f, orgVN: (R.orgBruto || 0) * f };
+  const sk = Object.values(R.skuMap || {});
+  const totVN = sk.reduce((a, o) => a + (o.venta_neta || 0), 0);
+  return { totVN, pubVN: sk.reduce((a, o) => a + (o.pub_venta_neta || 0), 0),
+                  orgVN: sk.reduce((a, o) => a + (o.org_venta_neta || 0), 0) };
 }
 
 /* ═══════════ DORMIDOS ENGINE ═══════════ */
@@ -7673,7 +7794,8 @@ function renderDashboard(renderData){
     });
     G._skuPubs = mp;
   }
-  // Sincronizar toggle fiscal con el estado actual
+  // Sincronizar toggle fiscal y parámetros fiscales con el estado actual
+  syncParamsFiscalesUI();
   const _cbFiscal = document.getElementById('toggle-fiscal');
   if (_cbFiscal) {
     _cbFiscal.checked = (NEXUS_FISCAL === 'MONO');
@@ -7955,7 +8077,6 @@ function renderDashboard(renderData){
     }
     // Sin reporte de Ads: mostrar los que tienen algo de venta por publicidad, o todos si ninguno
     const conPubFlag = pubItems.filter(i=>(i.pubBruto||0) > 0);
-    const _fVNpub = 1 - fiscalCfg().factorIva;
     const pubArr = (conAds.length > 0 ? conAds 
                    : conPubFlag.length > 0 ? conPubFlag 
                    : pubItems).slice(0, 50);
@@ -7978,7 +8099,7 @@ function renderDashboard(renderData){
           `<td class="num" style="color:${invClr}">${i._adsInv>0?ARS(i._adsInv):'—'}</td>`+
           `<td class="num" style="color:var(--muted)">${i._adsIng>0?ARS(i._adsIng):'—'}</td>`+
           `<td class="num" style="color:${roasClr}">${roas>0?roas.toFixed(2)+'x':'—'}</td>`+
-          `<td class="num" style="color:var(--ok)">${i.pubBruto>0?ARS(i.pubBruto*_fVNpub):'—'}</td>`+
+          `<td class="num" style="color:var(--ok)">${i.pubBruto>0?ARS(i.pub_venta_neta||0):'—'}</td>`+
           `<td class="num" style="color:var(--text)">${ARS(i.venta_neta||0)}</td>`+
           `<td>${pctBarColored(pesoAds,'#fb923c')}</td></tr>`;
       }).join('')+
@@ -8016,17 +8137,17 @@ function renderDashboard(renderData){
   const _iibbRate = _fc.iibbRate;
   const _esRI = _fc.esRI;
   const _factorIva = _fc.factorIva;
-  const _netFee = _fc.netFee;   // MX: 1 (cargos ya netos) · AR/CL RI: 1-factorIva
-  
+  const _netFee = _fc.netFee;   // RI: 1/(1+IVA de los cargos) en AR, CL y MX · Exento: 1
+
   const rentArr=skuArr.map(s=>{
     const bruto = s.ingresos_brutos || 0;
-    // Venta neta: base del margen para RI (sin IVA débito)
-    const ventaNeta = bruto * (1 - _factorIva);
+    // Venta neta: base del margen para RI (sin IVA débito; MX excluye exentos)
+    const ventaNeta = ventaNetaDe(s, _fc);
     // Recibido ML con fees NETOS de IVA (costo real para RI)
-    const recibidoML = bruto + ((s.cargo_venta||0) + (s.costo_envio||0) + (s.ing_envio||0) 
+    const recibidoML = bruto + ((s.cargo_venta||0) + (s.costo_envio||0) + (s.ing_envio||0)
                      + (s.costo_fijo||0) + (s.cuotas||0) + (s.descuentos||0) + (s.costo_devolucion||0)) * _netFee + (s.impuestos||0);
-    // Fiscal del seller: IVA débito sobre PVP + IIBB sobre venta neta, con retenciones a cuenta
-    const fiscalSeller = bruto * _factorIva + ventaNeta * _iibbRate - (_fc.retencionesACuenta ? -(s.impuestos||0) : 0);
+    // Fiscal del seller: IVA débito + IIBB sobre venta neta, menos las retenciones que son pago a cuenta
+    const fiscalSeller = ivaDebitoDe(s, _fc) + ventaNeta * _iibbRate - retACuentaDe(s, _fc);
     const neto = recibidoML - fiscalSeller;
     // Margen sobre venta neta (RI) o sobre bruto (MONO, factorIva=0 → ventaNeta=bruto)
     const margen = ventaNeta > 0 ? neto / ventaNeta : 0;
@@ -8533,7 +8654,6 @@ function exportarExcel(){
   const ARS=fmtCurrency;
   // Misma base que el dashboard: venta neta (v51.3)
   const{totVN,pubVN,orgVN}=prepVentaNeta(G._lastRender);
-  const _fVNx=1-fiscalCfg().factorIva;
   const arrFact=calcPareto(skuMap,'venta_neta',totVN);
   const arrVol=calcPareto(skuMap,'unidades',totUni);
   const arrProv=calcPareto(provMap,'venta_neta',totVN);
@@ -8844,9 +8964,22 @@ function exportarExcel(){
     }
     resumenRows.push([], ['Carga fiscal y devoluciones','Valor']);
     _hdrRes.push(resumenRows.length - 1);
-    if (iibbX>0) resumenRows.push(['IIBB (' + (_fc.iibbRate*100).toFixed(0) + '% de la venta neta)', iibbX]);
-    resumenRows.push(['Retenciones ML' + (_fc.retencionesACuenta ? ' (a cuenta de IIBB)' : ''), ret]);
+    if (iibbX>0) resumenRows.push(['IIBB (' + pctAlic(_fc.iibbRate) + ' de la venta neta)', iibbX]);
+    const _retLbl = _fc.retModo === 'IIBB' ? ' (a cuenta de IIBB)' : _fc.retModo === 'IVA_ISR' ? ' (IVA e ISR retenidos)' : ' (costo)';
+    resumenRows.push(['Retenciones ML' + _retLbl, ret]);
     resumenRows.push(['Retenciones % de venta neta', ventaNetaTot>0 ? ret/ventaNetaTot : 0]);
+    /* MX (v52.1): las retenciones venían dentro de la comisión. Se informa qué
+       parte se acredita (IVA contra el débito, ISR provisional) y qué parte es costo. */
+    if (_fc.isMX && ret > 0) {
+      const _sk = Object.values(skuMap);
+      const _rIva = _sk.reduce((a, s) => a + Math.abs(s.ret_iva || 0), 0);
+      const _rIsr = _sk.reduce((a, s) => a + Math.abs(s.ret_isr || 0) + Math.abs(s.ret_isr_sinrfc || 0), 0);
+      const _rAC  = _sk.reduce((a, s) => a + retACuentaDe(s, _fc), 0);
+      resumenRows.push(['  IVA retenido (8% de la base con RFC, 16% sin RFC)', _rIva]);
+      resumenRows.push(['  ISR retenido (2,5% de la base con RFC, 20% sin RFC)', _rIsr]);
+      resumenRows.push(['  Retenciones a cuenta de impuestos', _rAC]);
+      resumenRows.push(['  Retenciones que son costo', Math.max(0, ret - _rAC)]);
+    }
     if (devolX>0) resumenRows.push(['Costo de devoluciones (neto IVA)', devolX]);
   } catch(e) { console.warn('[Export] eficiencia:', e.message); }
 
@@ -8912,22 +9045,23 @@ function exportarExcel(){
 
   // Bloque de rentabilidad real con COGS (si hay template cargado)
   if (typeof COGS_DATA !== 'undefined' && COGS_DATA.loaded) {
-    let cogsTotal=0, nexusMatch=0, revMatch=0, vnetaMatch=0, recibMatch=0, nMatch=0, nTotal=0, adsAtribX=0, revTotX=0;
+    let cogsTotal=0, nexusMatch=0, revMatch=0, vnetaMatch=0, recibMatch=0, nMatch=0, nTotal=0, adsAtribX=0, revTotX=0, retACX=0;
     Object.values(skuMap).forEach(s=>{
       const n=calcNEXUS(s); if(!n) return; nTotal++;
       adsAtribX+=n.inversionAds||0; revTotX+=s.ingresos_brutos||0;
       const cg=getCOGS(s);
       if(cg){ nMatch++; cogsTotal+=cg.costo*(s.unidades||0); nexusMatch+=n.recibidoNEXUS||0;
-              revMatch+=s.ingresos_brutos||0; vnetaMatch+=n.ventaNeta||0; recibMatch+=n.recibidoML||0; }
+              revMatch+=s.ingresos_brutos||0; vnetaMatch+=n.ventaNeta||0; recibMatch+=n.recibidoML||0;
+              retACX+=n.retencionesACuenta||0; }
     });
     // Pauta sin ventas imputada a la porción con COGS, igual que dashboard e informe
     const _adsSVX=adsSinVentaNeta(adsAtribX)*(revTotX>0?revMatch/revTotX:0);
     nexusMatch-=_adsSVX;
     const rentReal=nexusMatch-cogsTotal;
     // Base: lo recibido de ML sin IVA, igual que en el dashboard
-    const _fcX=fiscalCfg();
-    const _ivaDebX=revMatch*_fcX.factorIva;
-    const _baseX=recibMatch-_ivaDebX;
+    const _ivaDebX=revMatch-vnetaMatch;   // bruto − venta neta: excluye exentos MX (v52.1)
+    const _retBX=retBaseMX(fiscalCfg(), retACX);   // MX con RFC: retenciones a cuenta vuelven a la base (v52.1)
+    const _baseX=recibMatch-_ivaDebX+_retBX;
     const margenReal=_baseX>0?rentReal/_baseX:0;
     resumenRows.push([], ['Rentabilidad período (con COGS)','Valor']);
     _hdrRes.push(resumenRows.length - 1);
@@ -8936,6 +9070,7 @@ function exportarExcel(){
     resumenRows.push(['Ingresos por productos de los matcheados',revMatch]);
     resumenRows.push(['Recibido de ML de los matcheados',recibMatch]);
     resumenRows.push(['  menos IVA débito',_ivaDebX]);
+    if (_retBX > 0) resumenRows.push(['  más retenciones de IVA e ISR a cuenta',_retBX]);
     resumenRows.push(['Recibido sin IVA (base del margen)',_baseX]);
     resumenRows.push(['COGS total período',cogsTotal]);
     resumenRows.push(['NEXUS $ (solo matcheados)',nexusMatch]);
@@ -8990,10 +9125,10 @@ function exportarExcel(){
                    'Comisión%','Envío Neto%','Impuestos%','Cuotas%','Depósito ML','Alertas']];
   const _rentCalc = s => {
     const bruto = s.ingresos_brutos || 0;
-    const ventaNeta = bruto * (1 - _fcR.factorIva);
+    const ventaNeta = ventaNetaDe(s, _fcR);
     const recibidoML = bruto + ((s.cargo_venta||0)+(s.costo_envio||0)+(s.ing_envio||0)
                      + (s.costo_fijo||0)+(s.cuotas||0)+(s.descuentos||0)+(s.costo_devolucion||0)) * _fcR.netFee + (s.impuestos||0);
-    const fiscal = bruto * _fcR.factorIva + ventaNeta * _fcR.iibbRate - (_fcR.retencionesACuenta ? -(s.impuestos||0) : 0);
+    const fiscal = ivaDebitoDe(s, _fcR) + ventaNeta * _fcR.iibbRate - retACuentaDe(s, _fcR);
     const neto = recibidoML - fiscal;
     return { bruto, ventaNeta, neto, margen: ventaNeta > 0 ? neto / ventaNeta : 0 };
   };
@@ -9044,7 +9179,7 @@ function exportarExcel(){
     return {...s, _inv:inv, _ing:ing};
   }).sort((a,b)=>(b._inv-a._inv)||(b.liquidez-a.liquidez)).slice(0,150).forEach(s=>{
     const roas=s._inv>0?s._ing/s._inv:'';
-    pubRows.push([s.id, titleFor(s.id)||'', s._inv||'', s._ing||'', roas, (s.pubBruto||0)*_fVNx, s.venta_neta||0, (s.orgBruto||0)*_fVNx, s.ingresos_brutos>0?(s.pubBruto||0)/s.ingresos_brutos:0]);
+    pubRows.push([s.id, titleFor(s.id)||'', s._inv||'', s._ing||'', roas, s.pub_venta_neta||0, s.venta_neta||0, s.org_venta_neta||0, s.ingresos_brutos>0?(s.pubBruto||0)/s.ingresos_brutos:0]);
   });
   addSheet('Publicidad',pubRows,[25,45,16,20,10,18,16,16,12],
     { tipos:['general','general','money','money','general','money','money','money','percent'] });
@@ -10384,7 +10519,9 @@ function calcNEXUS(s) {
   // (todos los descuentos vienen como negativos en el reporte)
   // 
   // Costos fiscales del seller (NO están en el reporte, los aplica el seller al fisco):
-  //   - AR: IVA 21% + IIBB 4% sobre venta neta, con las retenciones a cuenta
+  //   - AR: IVA (21% o 10,5%) + IIBB (parámetro, 4% por defecto) sobre venta neta, con las retenciones a cuenta
+  //   - MX (v52.1): IVA 16% sobre lo gravado; IVA e ISR retenidos por la plataforma
+  //     separados de la comisión y acreditados con RFC (ver separarRetencionesMX)
   //   - MX: IVA 16% sobre PVP
   //   - CL: IVA 19% sobre PVP
   // 
@@ -10420,11 +10557,13 @@ function calcNEXUS(s) {
   const iibbRate = _fcN.iibbRate;
 
   const esRI = _fcN.esRI;
-  const factorIva = _fcN.factorIva;
-  const netFee = _fcN.netFee;   // MX: 1 (cargos ya netos) · AR/CL RI: 1-factorIva
+  const netFee = _fcN.netFee;   // RI: 1/(1+IVA de los cargos) en los tres países · Exento: 1
 
-  // Venta neta: base sobre la que se mide el margen de un RI
-  const ventaNeta = ingresos * (1 - factorIva);
+  // Venta neta: base sobre la que se mide el margen de un RI. En MX las ventas
+  // exentas o tasa 0% no llevan IVA débito (v52.1).
+  const ventaNeta = ventaNetaDe(s, _fcN);
+  // factorIva efectivo del SKU: igual al del país salvo que tenga ventas exentas
+  const factorIva = ingresos > 0 ? (ingresos - ventaNeta) / ingresos : _fcN.factorIva;
   
   // Fees de ML netos de IVA (para RI descuenta el IVA crédito)
   const cargoVentaNeto = cargoVenta * netFee;
@@ -10438,9 +10577,11 @@ function calcNEXUS(s) {
   
   // IVA débito que el seller debe al fisco sobre el PVP
   const ivaDebito = ingresos * factorIva;
-  // IIBB sobre venta neta. En AR las retenciones de ML se computan a cuenta
+  // IIBB sobre venta neta. En AR las retenciones de ML se computan a cuenta del
+  // IIBB; en MX con RFC, el IVA retenido contra el débito y el ISR como pago
+  // provisional (salvo que sea definitivo). Lo que no es a cuenta queda como costo.
   const iibbTotal = ventaNeta * iibbRate;
-  const retencionesACuenta = _fcN.retencionesACuenta ? -impuestos : 0;
+  const retencionesACuenta = retACuentaDe(s, _fcN);
   const fiscalTotal = ivaDebito + iibbTotal - retencionesACuenta;
   
   // Descuentos y bonificaciones: lo que ML reintegra sobre sus cargos. Viene
@@ -10453,7 +10594,7 @@ function calcNEXUS(s) {
   // Recibido de ML NETO de IVA (costo real de los fees para RI)
   const recibidoML = ingresos + cargoVentaNeto + costoEnvioNeto + ingEnvioNeto + impuestosNeto + costoFijoNeto + cuotasNeto + descuentosNeto + devolucionesNeto;
   // Base de los márgenes P&L: lo recibido sin el IVA débito
-  const recibidoSinIva = recibidoML - ivaDebito;
+  const recibidoSinIva = recibidoML - ivaDebito + retBaseMX(_fcN, retencionesACuenta);   // MX con RFC: + retenciones a cuenta
 
   // TACOS prorrateado al rango filtrado · la inversión Ads también tiene IVA
   const adsInversionRaw = ads ? getAdsInversionProrrateada(ads, G._lastFilter && G._lastFilter.from, G._lastFilter && G._lastFilter.to) : 0;
@@ -10519,6 +10660,9 @@ function calcNEXUS(s) {
     recibidoML, recibidoNEXUS, fiscalTotal_total: fiscalTotal,
     recibidoSinIva, recibidoSinIvaUnit: s.unidades > 0 ? recibidoSinIva / s.unidades : 0,
     envioAbsorbido, devolucionesNeto, retencionesACuenta, iibbTotal,
+    // MX (v52.1): retenciones separadas de la comisión, negativas como impuestos
+    retIva: s.ret_iva || 0, retIsr: s.ret_isr || 0, retIsrSinRfc: s.ret_isr_sinrfc || 0,
+    ingresosExentos: s.ingresos_exentos || 0,
     inversionAds: adsInversionPror,
     
     // ═══ Doble verificación ═══
@@ -10545,42 +10689,193 @@ function calcNEXUS(s) {
 let FULL_DATA = { items: [], loaded: false };
 let CAMPAIGNS_DATA = { campaigns: [], loaded: false, prev: null };  // SOV Modeler
 let COGS_DATA = { byMLA: {}, bySKU: {}, loaded: false, count: 0 };  // Costos de reposición (template)
-let NEXUS_FISCAL = 'RI';  // Condición fiscal: 'RI' (Responsable de IVA, netea IVA) | 'MONO' (Exento/simplificado, absorbe IVA)
+let NEXUS_FISCAL = 'RI';  // Condición fiscal: 'RI' (Responsable de IVA / con RFC en MX) | 'MONO' (Monotributo, exento, sin RFC)
 
-// Factor para netear IVA del PVP según condición fiscal y país.
-// RI: divide por (1+IVA) para obtener la venta neta. MONO/Exento: sin cambio.
+/* Parámetros fiscales ajustables desde la barra de filtros (v52.1). Se guardan
+   en el snapshot. Antes eran constantes del código:
+     iibb       AR · alícuota de Ingresos Brutos sobre la venta neta (antes fija 4%)
+     ivaProdAR  AR · alícuota de IVA de los PRODUCTOS (21% o 10,5%). Sólo mueve el
+                IVA débito: los cargos de ML se facturan siempre al 21%.
+     isrCostoMX MX · el ISR retenido es impuesto definitivo (Régimen de Plataformas
+                con pago definitivo) y no pago a cuenta. */
+const FISCAL_PARAMS_DEFAULT = { iibb: 0.04, ivaProdAR: 0.21, isrCostoMX: false };
+let FISCAL_PARAMS = { ...FISCAL_PARAMS_DEFAULT };
+
 /* ═══════════ CONFIGURACIÓN FISCAL POR PAÍS · FUENTE ÚNICA DE VERDAD ═══════════
    feesConIva → ¿los cargos que informa la plataforma (comisión, envío, cuotas,
-   cargo fijo, Ads) vienen CON el IVA incluido?
+   cargo fijo, Ads) vienen CON el IVA incluido? En los tres países, SÍ:
 
-     AR  sí. El reporte informa la retención bruta. Para un RI ese IVA es crédito
-         fiscal recuperable, así que el costo real del fee es su valor neto
-         (netFee < 1).
-     CL  sí. Verificado sobre el reporte: |Cargo por venta| / precio da tasas
-         redondas (15% Clásica / 18% Premium) y la identidad
-         Total = Ingresos + cargos cierra contra el depósito real, lo que sólo
-         ocurre si el cargo informado es la retención CON IVA.
-     MX  NO. Verificado contra facturas: la plataforma ya informa los costos
-         netos de IVA. Por eso NO se vuelve a netear (netFee = 1). Netearlos otra
-         vez subestimaría el costo e inflaría el margen.
+     AR  Nota oficial de ML para Responsables Inscriptos: la comisión incluye IVA
+         y se computa como crédito fiscal. El reporte de facturación coincide con
+         el de ventas componente por componente (cargo por vender, costo por
+         unidad, cuotas y envío).
+     CL  Hay ventas cobradas al 12,605% exacto = 15% ÷ 1,19: sólo tiene sentido si
+         el 15% publicado ya trae el IVA adentro. La facturación de agosto 2026
+         coincide con el reporte de ventas en 175 de 189 ventas (el resto son
+         cargos anulados).
+     MX  Hasta v52 se tomaban netos (netFee = 1). Validado en v52.1 contra la
+         facturación de junio 2026 de una cuenta real: el "Valor del cargo"
+         facturado es exactamente lo descontado en la venta (51 de 52 ventas al
+         centavo, la restante no figura en la factura) y ningún reporte de
+         facturación trae una línea de IVA aparte, así que no hay otro lugar donde
+         se cobre un IVA "encima". El reporte de Mercado Pago del mismo mes muestra
+         el cargo de Point 3,5% + IVA como 4,06% del cobro: los reportes de
+         facturación informan los cargos CON IVA. El 15% es IVA incluido.
 
-   El IVA débito sobre la VENTA (ventaNeta / ivaDebito) se aplica igual en los
-   tres países cuando el seller es RI: el PVP siempre incluye IVA que el seller
-   le debe al fisco. Eso es independiente de cómo vengan informados los cargos. */
+   Los cargos de la plataforma se facturan siempre a la alícuota general del país
+   (ivaCargos), aunque el producto lleve otra (AR 10,5%) o sea exento (MX tasa 0).
+   Por eso netFee usa ivaCargos y factorIva usa la alícuota del producto.
+
+   El IVA débito sobre la VENTA se aplica cuando el seller es RI. En MX se excluyen
+   las ventas que ML trató como exentas o tasa 0% (ver separarRetencionesMX). */
 function fiscalCfg() {
   const isMX = CURRENCY_CODE === 'MXN';
   const isCL = CURRENCY_CODE === 'CLP';
-  const ivaRate    = isMX ? 0.16 : isCL ? 0.19 : 0.21;
-  /* IIBB 4%: la alícuota que paga la mayoría (v51.3, antes 5%). En AR las
-     retenciones de ML son pago a cuenta de ese IIBB: se computan contra él y no
-     como un costo adicional. En MX/CL no hay IIBB y siguen siendo costo. */
-  const iibbRate   = (isMX || isCL) ? 0 : 0.04;
-  const retencionesACuenta = iibbRate > 0;
-  const feesConIva = !isMX;                                     // MX ya viene neto
+  const isAR = !isMX && !isCL;
+  const ivaCargos  = isMX ? 0.16 : isCL ? 0.19 : 0.21;
+  const ivaRate    = isAR ? (FISCAL_PARAMS.ivaProdAR || 0.21) : ivaCargos;
+  /* IIBB: parámetro, 4% por defecto (la alícuota que paga la mayoría). En AR las
+     retenciones de ML son pago a cuenta de ese IIBB. En MX/CL no hay IIBB. */
+  const iibbRate   = isAR ? Math.max(0, +FISCAL_PARAMS.iibb || 0) : 0;
+  const feesConIva = true;
   const esRI       = (NEXUS_FISCAL === 'RI');
-  const factorIva  = esRI ? (ivaRate / (1 + ivaRate)) : 0;       // débito sobre PVP
-  const netFee     = (esRI && feesConIva) ? (1 - factorIva) : 1; // costo real del fee
-  return { isMX, isCL, esRI, ivaRate, iibbRate, retencionesACuenta, feesConIva, factorIva, netFee };
+  const factorIva  = esRI ? (ivaRate / (1 + ivaRate)) : 0;         // débito sobre PVP
+  const netFee     = (esRI && feesConIva) ? 1 / (1 + ivaCargos) : 1; // costo real del fee
+  /* Tratamiento de las retenciones que ML descuenta de cada venta:
+       IIBB     AR · pago a cuenta de Ingresos Brutos (cualquier condición)
+       IVA_ISR  MX con RFC · el IVA retenido se acredita contra el débito y el ISR
+                es pago provisional, salvo que isrEsCosto
+       COSTO    MX sin RFC y CL · se restan como costo */
+  const retModo    = isAR ? 'IIBB' : (isMX && esRI) ? 'IVA_ISR' : 'COSTO';
+  const isrEsCosto = retModo === 'IVA_ISR' && !!FISCAL_PARAMS.isrCostoMX;
+  const retencionesACuenta = retModo !== 'COSTO';
+  return { isMX, isCL, isAR, esRI, ivaRate, ivaCargos, iibbRate, retencionesACuenta, retModo, isrEsCosto,
+           feesConIva, factorIva, netFee };
+}
+
+/* IVA débito y venta neta de un registro o de un agregado (skuMap, provincia,
+   tienda). Descuenta del bruto las ventas exentas o tasa 0% de MX, que no llevan
+   IVA débito. Sin exentos equivale a bruto × factorIva. */
+function ivaDebitoDe(o, fc) {
+  fc = fc || fiscalCfg();
+  return Math.max(0, (o.ingresos_brutos || 0) - (o.ingresos_exentos || 0)) * fc.factorIva;
+}
+function ventaNetaDe(o, fc) { return (o.ingresos_brutos || 0) - ivaDebitoDe(o, fc); }
+
+/* Parte de las retenciones que es pago a cuenta de un impuesto que igual se
+   descuenta completo (positivo). Lo que no devuelve es costo. */
+function retACuentaDe(o, fc) {
+  fc = fc || fiscalCfg();
+  if (fc.retModo === 'IIBB') return -(o.impuestos || 0);
+  if (fc.retModo === 'IVA_ISR') return -(o.ret_iva || 0) - (fc.isrEsCosto ? 0 : (o.ret_isr || 0));
+  return 0;
+}
+
+/* Base "recibido sin IVA" de los márgenes, México con RFC (v52.1). Lo recibido
+   de ML ya descontó las retenciones; el resultado las devuelve porque son a
+   cuenta (el IVA retenido es parte del débito ya restado y el ISR es pago
+   provisional). Si la base no las devuelve también, el IVA retenido se resta dos
+   veces y el margen supera el 100%. En AR no aplica: el IIBB se descuenta completo
+   y la base conserva la definición de siempre. */
+function retBaseMX(fc, retACuenta) { return fc && fc.retModo === 'IVA_ISR' ? (retACuenta || 0) : 0; }
+
+/* Alícuota legible: 0,04 → "4%", 0,035 → "3,5%". */
+function pctAlic(v) { return String(+((v || 0) * 100).toFixed(2)).replace('.', ',') + '%'; }
+
+/* ═══════════ MX · RETENCIONES DENTRO DE "CARGO POR VENTA E IMPUESTOS" (v52.1) ═══════════
+   El reporte de México no trae columna Impuestos: la comisión y las retenciones
+   de ISR e IVA que ML hace como plataforma tecnológica vienen juntas. Hasta v52
+   EVO tomaba toda la columna como comisión, así que el IVA retenido contaba dos
+   veces (en la comisión y en el IVA débito) y el ISR acreditable era costo.
+
+   Se separan venta por venta con las tasas de 2026, sobre Ingresos por productos
+   (el envío que paga el comprador no es base) y redondeando cada una a centavos:
+     RFC_GRAV       IVA 8% y ISR 2,5% sobre precio ÷ 1,16
+     RFC_EXENTO     sin IVA · ISR 2,5% sobre el precio (exento o tasa 0%)
+     SINRFC_GRAV    IVA 16% y ISR 20% sobre precio ÷ 1,16
+     SINRFC_EXENTO  sin IVA · ISR 20% sobre el precio
+   Validado contra la facturación de junio 2026: la comisión facturada por venta
+   coincide al centavo con Cargo por venta e impuestos − (IVA 8% + ISR 2,5%) en 51
+   de 52 ventas, 11 de ellas con envío pagado por el comprador. En una cuenta de
+   agua, 120 de 131 ventas siguen el patrón exento.
+
+   El régimen se detecta porque la comisión que queda es un % redondo (múltiplo de
+   0,5%) del precio. Las ventas con costo fijo por unidad o repartidas en carritos
+   no dan % redondo: toman el régimen de su publicación y, si no hay, el que más
+   se repite en la cuenta. Idempotente: los registros ya separados no se tocan. */
+function separarRetencionesMX(records) {
+  if (CURRENCY_CODE !== 'MXN' || !records || !records.length) return null;
+  const r2 = x => Math.round((x + 1e-9) * 100) / 100;
+  const REG = {
+    RFC_GRAV:      P => ({ iva: r2(P / 1.16 * 0.08), isr: r2(P / 1.16 * 0.025) }),
+    RFC_EXENTO:    P => ({ iva: 0,                   isr: r2(P * 0.025) }),
+    SINRFC_GRAV:   P => ({ iva: r2(P / 1.16 * 0.16), isr: r2(P / 1.16 * 0.20) }),
+    SINRFC_EXENTO: P => ({ iva: 0,                   isr: r2(P * 0.20) }),
+  };
+  const nombres = Object.keys(REG);
+  const conteo = {}, porPub = {};
+  const pendientes = [];
+  let yaSeparados = 0, porDefectoPrev = 0;
+  const regDe = r => {
+    const P = r.ingresos_brutos || 0, C = -(r.cargo_venta || 0);
+    if (P <= 0 || C <= 0) return null;
+    const hits = nombres.filter(k => {
+      const t = REG[k](P), com = C - t.iva - t.isr, pct = com / P * 100;
+      if (pct < 5 || pct > 30) return false;
+      return Math.abs(com - Math.round(pct * 2) / 200 * P) <= 0.03;
+    });
+    return hits.length ? hits[0] : null;
+  };
+  records.forEach(r => {
+    if (r.mx_reg !== undefined) {
+      yaSeparados++;
+      if (r.mx_reg && !r.mx_reg_def) conteo[r.mx_reg] = (conteo[r.mx_reg] || 0) + 1;
+      if (r.mx_reg_def) porDefectoPrev++;
+      return;
+    }
+    const k = regDe(r);
+    if (k) {
+      conteo[k] = (conteo[k] || 0) + 1;
+      const pb = porPub[r.id_pub] = porPub[r.id_pub] || {};
+      pb[k] = (pb[k] || 0) + 1;
+      r._mxReg = k;
+    } else pendientes.push(r);
+  });
+  const masFrec = m => Object.keys(m || {}).sort((a, b) => m[b] - m[a])[0] || null;
+  /* Una venta suelta que contradice el régimen claro de su publicación (≥ 3 ventas
+     y ≥ 80% en otro régimen) es un % redondo por casualidad: toma el de la publicación. */
+  records.forEach(r => {
+    const pb = r._mxReg && porPub[r.id_pub];
+    if (!pb) return;
+    const tot = Object.values(pb).reduce((a, b) => a + b, 0), top = masFrec(pb);
+    if (top !== r._mxReg && tot >= 3 && pb[top] / tot >= 0.8) { conteo[r._mxReg]--; conteo[top]++; r._mxReg = top; }
+  });
+  const dominante = masFrec(conteo) || 'RFC_GRAV';
+  pendientes.forEach(r => { r._mxReg = masFrec(porPub[r.id_pub]) || dominante; r._mxDef = true; });
+  let porDefecto = porDefectoPrev;
+  records.forEach(r => {
+    if (r.mx_reg !== undefined) return;
+    const k = r._mxReg, def = !!r._mxDef; delete r._mxReg; delete r._mxDef;
+    const P = r.ingresos_brutos || 0, C = -(r.cargo_venta || 0);
+    const t = k && P > 0 ? REG[k](P) : { iva: 0, isr: 0 };
+    // Sin precio, sin cargo o retención mayor que el cargo: fila atípica, no se separa
+    if (!(P > 0) || t.iva + t.isr >= C) {
+      Object.assign(r, { mx_reg: '', ret_iva: 0, ret_isr: 0, ret_isr_sinrfc: 0, ingresos_exentos: 0 });
+      return;
+    }
+    const sinRfc = k.startsWith('SINRFC');
+    r.cargo_venta = (r.cargo_venta || 0) + t.iva + t.isr;
+    r.impuestos   = (r.impuestos || 0) - t.iva - t.isr;
+    r.ret_iva        = -t.iva;
+    r.ret_isr        = sinRfc ? 0 : -t.isr;
+    r.ret_isr_sinrfc = sinRfc ? -t.isr : 0;
+    r.ingresos_exentos = k.endsWith('EXENTO') ? P : 0;
+    r.mx_reg = k;
+    if (def) { r.mx_reg_def = true; porDefecto++; }
+  });
+  const resumen = { conteo, dominante, porDefecto, yaSeparados, total: records.length };
+  if (typeof G !== 'undefined' && G) G.retMX = resumen;
+  return resumen;
 }
 
 // Netea el IVA de un monto de VENTA (revenue). No aplica a cargos: para eso va netFee.
@@ -11387,9 +11682,11 @@ function renderRentKPIs(skuMap) {
   }
   
   // Agregados sobre todo el skuMap
-  let revBruto = 0, cargoVenta = 0, costoEnvio = 0, ingEnvio = 0, 
+  let revBruto = 0, cargoVenta = 0, costoEnvio = 0, ingEnvio = 0,
       impuestos = 0, costoFijo = 0, cuotas = 0, descuentos = 0, devol = 0, recibidoML = 0;
-  
+  // MX (v52.1): retenciones separadas de la comisión y ventas sin IVA débito
+  let retIva = 0, retIsr = 0, retIsrSinRfc = 0, exentos = 0;
+
   Object.values(skuMap).forEach(s => {
     revBruto    += s.ingresos_brutos || 0;
     cargoVenta  += s.cargo_venta || 0;
@@ -11400,6 +11697,10 @@ function renderRentKPIs(skuMap) {
     cuotas      += s.cuotas || 0;
     descuentos  += s.descuentos || 0;
     devol       += s.costo_devolucion || 0;
+    retIva      += s.ret_iva || 0;
+    retIsr      += s.ret_isr || 0;
+    retIsrSinRfc+= s.ret_isr_sinrfc || 0;
+    exentos     += s.ingresos_exentos || 0;
   });
   
   // FIX: Calcular envío REAL recorriendo registros uno por uno (no agregado)
@@ -11410,7 +11711,8 @@ function renderRentKPIs(skuMap) {
   // Para "Costo de envío gratis": se aíslan las ventas donde el seller paga el envío.
   // El % de envío general se diluye con las ventas de ticket bajo que no lo pagan;
   // este subconjunto muestra cuánto pesa el envío cuando efectivamente se absorbe.
-  let envioConEnvio = 0, revConEnvio = 0, nConEnvio = 0, nVentasTot = 0;
+  let envioConEnvio = 0, revConEnvio = 0, vnConEnvio = 0, nConEnvio = 0, nVentasTot = 0;
+  const _fcEnv = fiscalCfg();
   if (G && G.records) {
     const fFrom = G._lastFilter && G._lastFilter.from;
     const fTo = G._lastFilter && G._lastFilter.to;
@@ -11424,6 +11726,7 @@ function renderRentKPIs(skuMap) {
         envioRealSeller += -netoEnv;
         envioConEnvio += -netoEnv;
         revConEnvio += r.ingresos_brutos || 0;
+        vnConEnvio += ventaNetaDe(r, _fcEnv);
         nConEnvio++;
       }
     }
@@ -11436,20 +11739,23 @@ function renderRentKPIs(skuMap) {
   const ivaRate  = _fcA.ivaRate;
   const iibbRate = _fcA.iibbRate;
   const esRI = _fcA.esRI;
-  const factorIva = _fcA.factorIva;
-  const netFee = _fcA.netFee;   // MX: 1 (cargos ya netos) · AR/CL RI: 1-factorIva
+  const netFee = _fcA.netFee;   // RI: 1/(1+IVA de los cargos) en los tres países · Exento: 1
+  const _aggFiscal = { ingresos_brutos: revBruto, ingresos_exentos: exentos, impuestos,
+                       ret_iva: retIva, ret_isr: retIsr, ret_isr_sinrfc: retIsrSinRfc };
 
+  // Fiscal: IVA débito sobre lo gravado (MX excluye exentos) + IIBB sobre venta neta
+  const ivaDebito = ivaDebitoDe(_aggFiscal, _fcA);
   // Venta neta agregada (base del margen para RI)
-  const ventaNetaTotal = revBruto * (1 - factorIva);
-  
+  const ventaNetaTotal = revBruto - ivaDebito;
+  const factorIva = revBruto > 0 ? ivaDebito / revBruto : _fcA.factorIva;
+
   // Recibido ML con fees NETOS de IVA (costo real para RI)
   recibidoML = revBruto + (cargoVenta + costoEnvio + ingEnvio + costoFijo + cuotas + descuentos + devol) * netFee + impuestos;
-  
-  // Fiscal: IVA débito sobre PVP + IIBB sobre venta neta
-  const ivaDebito = revBruto * factorIva;
+
   const iibbTotal = ventaNetaTotal * iibbRate;
-  // Retenciones de ML computadas a cuenta de IIBB (AR): no se restan dos veces
-  const retACuenta = _fcA.retencionesACuenta ? -impuestos : 0;
+  /* Retenciones a cuenta: AR contra IIBB; MX con RFC, IVA contra el débito e ISR
+     como pago provisional. No se restan dos veces. El resto es costo. */
+  const retACuenta = retACuentaDe(_aggFiscal, _fcA);
   const fiscalTotal = ivaDebito + iibbTotal - retACuenta;
   
   // Inversión Ads del período (prorrateada) · bruta para mostrar, neta para el cálculo
@@ -11463,7 +11769,7 @@ function renderRentKPIs(skuMap) {
   /* Misma base que el Margen real final y el informe: lo recibido de ML sin IVA.
      Hasta v51.1 este KPI iba sobre venta neta y el PDF sobre recibido, y la
      misma cuenta daba 47% en pantalla y 82% impreso. */
-  const baseRecSinIva = recibidoML - ivaDebito;
+  const baseRecSinIva = recibidoML - ivaDebito + retBaseMX(_fcA, retACuenta);   // MX con RFC: + retenciones a cuenta (v52.1)
   const margenNexusPct = baseRecSinIva > 0 ? rentabilidadNexus / baseRecSinIva : 0;
   // Mismo resultado sobre ventas netas, la base contable del estado de resultados (v51.8)
   const margenVNPre = ventaNetaTotal > 0 ? rentabilidadNexus / ventaNetaTotal : 0;
@@ -11505,7 +11811,7 @@ function renderRentKPIs(skuMap) {
      que el seller lo absorbe. Es la cifra a mirar antes de sumar un producto
      con envío gratis, porque el % general está diluido por las ventas que no
      pagan envío. */
-  const revNetoConEnvio = revConEnvio * (1 - factorIva);
+  const revNetoConEnvio = vnConEnvio;
   const pctEnvioGratis = revNetoConEnvio > 0 ? (envioConEnvio * netFee) / revNetoConEnvio : 0;
   const shareVentasConEnvio = nVentasTot > 0 ? nConEnvio / nVentasTot : 0;
   const envGratisClr = pctEnvioGratis > 0.25 ? 'danger' : pctEnvioGratis > 0.15 ? 'warn' : 'muted';
@@ -11522,7 +11828,10 @@ function renderRentKPIs(skuMap) {
      y el depósito con "Recibiste", no al revés. */
   const _fcKPI = fiscalCfg();
   const brutoTotalKPI = Object.values(skuMap).reduce((a,o)=>a+(o.ingresos_brutos||0),0);
-  const ventaNetaKPI  = brutoTotalKPI * (1 - _fcKPI.factorIva);
+  const ventaNetaKPI  = ventaNetaTotal;   // excluye del IVA las ventas exentas o tasa 0% de MX (v52.1)
+  const _exentosTxt = exentos > 0
+    ? ' Incluye ' + fmtCurrency(exentos) + ' de ventas que ML trató como exentas o tasa 0% (sin retención de IVA), que no llevan IVA débito.'
+    : '';
   const depositoKPI   = Object.values(skuMap).reduce((a,o)=>a+(o.liquidez||0),0);
   /* Snapshot anterior a v51.1: los ítems de carrito guardaron el bruto como
      liquidez y no se puede reconstruir sin el Total del paquete. */
@@ -11534,7 +11843,7 @@ function renderRentKPIs(skuMap) {
       <div class="kpi-label">Ingresos por productos</div>
       <div class="kpi-value">${fmtCurrency(brutoTotalKPI)}</div>
       <div class="kpi-sub">Revenue bruto, con IVA</div></div>
-    ${esRI ? `<div class="kpi" title="Revenue bruto menos el IVA débito (${(_fcKPI.factorIva*100).toFixed(2)}%). Es la base sobre la que se mide todo margen en EVO." style="cursor:help">
+    ${esRI ? `<div class="kpi" title="Revenue bruto menos el IVA débito (${(factorIva*100).toFixed(2)}% del bruto). Es la base sobre la que se mide todo margen en EVO.${_exentosTxt}" style="cursor:help">
       <div class="kpi-label">Venta neta</div>
       <div class="kpi-value">${fmtCurrency(ventaNetaKPI)}</div>
       <div class="kpi-sub">Sin IVA · base de los márgenes</div></div>` : ''}
@@ -11606,13 +11915,51 @@ function renderRentKPIs(skuMap) {
   }
   
   if (impuestosAbs > 0) {
-    const _retTtl = 'Columna Impuestos del reporte: lo que ML retiene en cada venta. '
-      + (_fcA.retencionesACuenta
-          ? 'Se computa como pago a cuenta de IIBB (' + (iibbRate*100).toFixed(0) + '% de la venta neta = ' + fmtCurrency(iibbTotal) + '): baja lo recibido pero no se resta dos veces del resultado.'
-          : 'Se resta como costo.');
-    kpis += `<div class="kpi" title="${_retTtl}" style="cursor:help"><div class="kpi-label">Retenciones</div>
+    /* v52.1: el tooltip separa qué parte de las retenciones es pago a cuenta de
+       un impuesto que igual se descuenta completo y qué parte es costo, porque
+       la cifra de la tarjeta es caja retenida, no gasto. */
+    const _fx = v => fmtCurrency(Math.abs(v || 0));
+    const retCosto = Math.max(0, impuestosAbs - retACuenta);
+    let _retTtl, _retSub;
+    if (_fcA.isMX) {
+      const rm = (G && G.retMX) || {};
+      const cnt = rm.conteo || {};
+      const nSin = (cnt.SINRFC_GRAV || 0) + (cnt.SINRFC_EXENTO || 0);
+      const nCon = (cnt.RFC_GRAV || 0) + (cnt.RFC_EXENTO || 0);
+      const nEx  = (cnt.RFC_EXENTO || 0) + (cnt.SINRFC_EXENTO || 0);
+      _retTtl = 'Retenciones que Mercado Libre practica como plataforma tecnológica ante el SAT (2026). '
+        + 'El reporte de México las trae dentro de "Cargo por venta e impuestos": EVO las separa venta por venta y en Comisión queda sólo la comisión.\n\n'
+        + 'IVA retenido: ' + _fx(retIva) + '. Es el 8% de la base (precio ÷ 1,16) con RFC y el 16% sin RFC. '
+        + (esRI ? 'Con RFC se acredita contra el IVA débito, que se descuenta completo una sola vez: no es un costo adicional.'
+                : 'Sin RFC no se recupera: es costo, y por eso no se descuenta además un IVA débito.') + '\n\n'
+        + 'ISR retenido: ' + _fx(retIsr + retIsrSinRfc) + '. Es el 2,5% de la base con RFC y el 20% sin RFC. '
+        + (retIsrSinRfc ? 'La parte sin RFC (' + _fx(retIsrSinRfc) + ') no es acreditable y es costo. ' : '')
+        + (esRI ? (_fcA.isrEsCosto ? 'Con RFC está marcado como pago definitivo, así que también es costo.'
+                                   : 'Con RFC es pago provisional acreditable: no es costo. Si tu régimen lo toma como pago definitivo, cambialo en "ISR retenido" de la barra superior.')
+                : 'Con condición Exento / sin RFC es costo.') + '\n\n'
+        + 'A cuenta de impuestos: ' + _fx(retACuenta) + ' · costo en el resultado: ' + _fx(retCosto) + '.\n\n'
+        + 'Validado contra la facturación de junio 2026 de una cuenta real: la comisión que queda coincide al centavo con la facturada en 51 de 52 ventas.'
+        + (nEx ? '\n\n' + NUM(nEx) + ' ventas sin retención de IVA: ML las trató como exentas o tasa 0%, así que no llevan IVA débito.' : '')
+        + (rm.porDefecto ? '\n\n' + NUM(rm.porDefecto) + ' ventas con costo fijo por unidad o repartidas en carritos no dejan un % redondo de comisión: toman el régimen de su publicación o, si no hay, el más frecuente de la cuenta.' : '')
+        + (esRI && nSin ? '\n\n⚠ ' + NUM(nSin) + ' ventas con tasas de SIN RFC (IVA 16%, ISR 20%). Revisá que el RFC esté cargado en Mercado Libre.' : '')
+        + (!esRI && nCon ? '\n\n⚠ ML aplicó tasas de CON RFC en ' + NUM(nCon) + ' ventas, pero la condición fiscal está en Exento. Si tenés RFC, pasá a Responsable.' : '');
+      _retSub = 'IVA ' + _fx(retIva) + ' · ISR ' + _fx(retIsr + retIsrSinRfc) + ' · ' + (retCosto > 0.5 ? _fx(retCosto) + ' es costo' : 'a cuenta');
+    } else if (_fcA.retModo === 'IIBB') {
+      const saldo = impuestosAbs - iibbTotal;
+      _retTtl = 'Columna Impuestos del reporte: retenciones de Ingresos Brutos que Mercado Libre y Mercado Pago practican en cada venta.\n\n'
+        + 'Se computan como pago a cuenta del IIBB (' + pctAlic(iibbRate) + ' de la venta neta = ' + fmtCurrency(iibbTotal) + '): '
+        + 'bajan lo recibido, porque es plata que no entró, pero no se restan dos veces del resultado. La alícuota se ajusta en "IIBB" de la barra superior.'
+        + (saldo > 0.5 ? '\n\n⚠ Las retenciones superan el IIBB estimado en ' + fmtCurrency(saldo) + '. Ese excedente queda como saldo a favor: EVO lo sigue tomando a cuenta, pero si en la práctica no lo compensás, es costo.' : '')
+        + '\n\nEste reporte no trae las percepciones de la factura mensual de ML (IVA RG 5319, IVA régimen general, IIBB de cada provincia). '
+        + 'Para un Responsable Inscripto también son pago a cuenta. Para un Monotributista la percepción de IVA no se recupera: es un costo que EVO no ve.';
+      _retSub = (pctImp*100).toFixed(1) + '% de venta neta · a cuenta de IIBB' + (saldo > 0.5 ? ' · ⚠ saldo a favor' : '');
+    } else {
+      _retTtl = 'Columna Impuestos del reporte: lo que ML retiene en cada venta. No hay un impuesto sobre la venta contra el cual imputarlo, así que se resta como costo.';
+      _retSub = (pctImp*100).toFixed(1) + '% de venta neta · costo';
+    }
+    kpis += `<div class="kpi" title="${_retTtl.replace(/"/g,'&quot;')}" style="cursor:help"><div class="kpi-label">Retenciones</div>
       <div class="kpi-value muted">${fmtCurrency(impuestosAbs)}</div>
-      <div class="kpi-sub">${(pctImp*100).toFixed(1)}% de venta neta${_fcA.retencionesACuenta ? ' · a cuenta de IIBB' : ''}</div></div>`;
+      <div class="kpi-sub">${_retSub}</div></div>`;
   }
   if (devolAbs > 0) {
     kpis += `<div class="kpi" title="Ventas devueltas o no entregadas con Total negativo en el reporte: lo que le costó al seller (envío de vuelta, cargos no reintegrados), neto de IVA. Las canceladas no suman." style="cursor:help"><div class="kpi-label">Costo de devoluciones</div>
@@ -11623,7 +11970,7 @@ function renderRentKPIs(skuMap) {
   // ═══ Cards COGS (solo con template cargado) ═══
   if (COGS_DATA.loaded) {
     // Calcular sobre productos CON COGS matcheado (como la hoja Resumen de referencia)
-    let cogsTotal = 0, nexusMatcheado = 0, revMatcheado = 0, vnetaMatch = 0, recibMatch = 0, nMatch = 0, nTotal = 0, adsAtrib = 0;
+    let cogsTotal = 0, nexusMatcheado = 0, revMatcheado = 0, vnetaMatch = 0, recibMatch = 0, nMatch = 0, nTotal = 0, adsAtrib = 0, retACMatch = 0;
     Object.values(skuMap).forEach(s => {
       const n = calcNEXUS(s);
       if (!n) return;
@@ -11637,6 +11984,7 @@ function renderRentKPIs(skuMap) {
         revMatcheado += s.ingresos_brutos || 0;
         vnetaMatch += n.ventaNeta || 0;
         recibMatch += n.recibidoML || 0;
+        retACMatch += n.retencionesACuenta || 0;
       }
     });
     /* Pauta de publicaciones sin ventas en el rango: es gasto real pero calcNEXUS
@@ -11653,9 +12001,10 @@ function renderRentKPIs(skuMap) {
        quedó de Mercado Libre, cuánto es ganancia".
        Verificado en el reporte: Total = ingresos + cargos, e ingresos es el
        precio de lista con IVA, así que el depósito sí lo contiene. */
-    const _fcMR = fiscalCfg();
-    const ivaDebMatch = revMatcheado * _fcMR.factorIva;
-    const baseReal = recibMatch - ivaDebMatch;
+    // IVA débito de la porción con COGS: bruto − venta neta, que ya excluye exentos MX (v52.1)
+    const ivaDebMatch = revMatcheado - vnetaMatch;
+    const retBaseMatch = retBaseMX(fiscalCfg(), retACMatch);
+    const baseReal = recibMatch - ivaDebMatch + retBaseMatch;
     const margenReal = baseReal > 0 ? rentReal / baseReal : 0;
     const rentClr = rentReal < 0 ? 'danger' : 'ok';
     const margenClr = margenReal < 0 ? 'danger' : margenReal < 0.10 ? 'warn' : 'ok';
@@ -11672,6 +12021,7 @@ function renderRentKPIs(skuMap) {
       + 'Rentabilidad real ÷ lo recibido de ML sin IVA, sobre las publicaciones con COGS cargado.\n\n'
       + 'Recibido de ML: ' + fmtCurrency(recibMatch) + '\n'
       + 'menos IVA débito: ' + fmtCurrency(ivaDebMatch) + '  (está en la cuenta pero se gira al fisco)\n'
+      + (retBaseMatch > 0 ? 'más retenciones de IVA e ISR a cuenta: ' + fmtCurrency(retBaseMatch) + '  (ML ya las adelantó a cuenta de esos impuestos)\n' : '')
       + '= base del margen: ' + fmtCurrency(baseReal) + '\n\n'
       + 'Rentabilidad real = NEXUS − COGS, es decir lo recibido menos carga fiscal, publicidad y mercadería.'
       + (adsSinVentaMatch > 0 ? ' Incluye ' + fmtCurrency(adsSinVentaMatch) + ' de pauta de publicaciones sin ventas en el período.' : '')
@@ -11935,7 +12285,7 @@ function buildNexusTable(cache, mode) {
     if (!(total > 0)) return '<td class="num" style="color:var(--muted)">—</td>';
     const partes = [];
     if (fijo > 0) partes.push('Costo fijo ML: ' + ARS(fijo));
-    if (imp  > 0) partes.push('Retenciones (a cuenta de IIBB en AR): ' + ARS(imp));
+    if (imp  > 0) partes.push('Retenciones (AR: a cuenta de IIBB · MX: IVA e ISR de plataforma, a cuenta con RFC): ' + ARS(imp));
     if (cuot > 0) partes.push('Costo financiero (cuotas): ' + ARS(cuot));
     if (otr  > 0) partes.push('Anulaciones: ' + ARS(otr));
     const ttl = partes.join(' · ') + ' — Total ' + ARS(total);
@@ -11950,7 +12300,7 @@ function buildNexusTable(cache, mode) {
       + '<th class="r">Precio prom.' + tip('Precio promedio ponderado del SKU en el rango filtrado') + '</th>'
       + '<th class="r">Comisión' + tip('% promedio que ML cobró por venta') + '</th>'
       + '<th class="r">Envío/u' + tip('Costo neto de envío por unidad (cuando el seller lo paga)') + '</th>'
-      + (hasOtrosCostos ? '<th class="r">Otros costos/u' + tip('Costo fijo de ML + impuestos + cuotas + anulaciones, por unidad. Pasá el cursor sobre el monto de cada fila para ver el desglose.') + '</th>' : '')
+      + (hasOtrosCostos ? '<th class="r">Otros costos/u' + tip('Costo fijo de ML + impuestos + cuotas + anulaciones, por unidad. Impuestos son las retenciones de ML (en México, IVA e ISR de plataforma): aparecen acá porque bajan lo recibido, pero la parte que es pago a cuenta se devuelve en NEXUS y no es costo. Pasá el cursor sobre el monto de cada fila para ver el desglose.') + '</th>' : '')
       + '<th class="r">Recibido/u' + tip('Lo que ML transfiere al seller por unidad, después de comisión, envío, retenciones y cuotas') + '</th>'
       + '<th class="r">NEXUS $/u' + tip('Recibido por unidad después de impuestos, SIN Ads. Es tu Break Even: el COGS máximo que soporta el precio.') + '</th>'
       + '<th>Margen' + tip('Margen unitario por venta sobre venta neta, antes de Ads y COGS. Usa venta neta a propósito: sobre recibido sin IVA sólo reflejaría el IIBB, porque los cargos del canal ya están descontados de esa base.') + '</th>'
@@ -12004,7 +12354,7 @@ function buildNexusTable(cache, mode) {
       + '<th class="r">Rev. bruto' + tip('Revenue bruto total del item en el período') + '</th>'
       + '<th class="r">Comisión' + tip('% promedio de comisión ML') + '</th>'
       + '<th class="r">Envío $' + tip('Suma de costos de envío reales del seller en el período, netos de IVA (venta por venta, respeta prorrateo de carritos)') + '</th>'
-      + (hasOtrosCostos ? '<th class="r">Otros costos' + tip('Costo fijo de ML + impuestos + cuotas + anulaciones del período. Pasá el cursor sobre el monto de cada fila para ver el desglose.') + '</th>' : '')
+      + (hasOtrosCostos ? '<th class="r">Otros costos' + tip('Costo fijo de ML + impuestos + cuotas + anulaciones del período. Impuestos son las retenciones de ML (en México, IVA e ISR de plataforma): bajan lo recibido, pero la parte que es pago a cuenta se devuelve en NEXUS $ y no es costo. Pasá el cursor sobre el monto de cada fila para ver el desglose.') + '</th>' : '')
       + '<th class="r">Ads' + tip('Inversión publicitaria del rango filtrado, neta de IVA (costo real). Entre paréntesis el TACOS, en bruto como el panel de Mercado Ads. Si el item no tiene campañas: Sin inversión.') + '</th>'
       + '<th class="r">Recibido' + tip('Total que ML transfirió al seller en el período') + '</th>'
       + '<th class="r">NEXUS $' + tip('Resultado total del período: recibido - fisco - Ads. Antes de COGS.') + '</th>'
@@ -12726,7 +13076,7 @@ function buscarML() {
       `<div class="ficha-cand" onclick="document.getElementById('ml-search').value='${s.id}';buscarML();">
          <span class="ficha-cand-id">${s.id}</span>
          <span class="ficha-cand-tit">${titleFor(s.id) || '—'}</span>
-         <span class="ficha-cand-rev">${ARS((s.ingresos_brutos || 0) * (1 - fiscalCfg().factorIva))}</span>
+         <span class="ficha-cand-rev">${ARS(ventaNetaDe(s))}</span>
        </div>`).join('');
     cont.innerHTML = `<div class="ficha-wrap">
       <div class="ficha-head"><span class="ficha-title">${candidatos.length} coincidencias para "${q}"</span>
@@ -12824,7 +13174,7 @@ function renderFichaML(s) {
      <div class="ficha-kpi-sub">${sub || ''}</div></div>`;
 
   const kpis = [];
-  kpis.push(KPI('Revenue período', ARS((s.ingresos_brutos || 0) * (1 - fiscalCfg().factorIva)),
+  kpis.push(KPI('Revenue período', ARS(ventaNetaDe(s)),
     (s.unidades || 0) + ' u' + (NEXUS_FISCAL === 'RI' ? ' · neto IVA' : '')));
   if (n) {
     kpis.push(KPI('Precio promedio', ARS(n.precioProm || 0), 'precio de lista'));
@@ -13487,6 +13837,37 @@ function sovCompute() {
   html += '</div>';
 
   out.innerHTML = html;
+}
+
+/* Parámetros fiscales ajustables (v52.1). Muestra sólo los que aplican al país
+   del reporte: IIBB e IVA de productos en AR, tratamiento del ISR retenido en MX
+   (y sólo con RFC, porque sin RFC siempre es costo). */
+function syncParamsFiscalesUI() {
+  const fc = fiscalCfg();
+  const ar = document.getElementById('fp-ar'), mx = document.getElementById('fp-mx');
+  if (ar) ar.style.display = fc.isAR ? 'inline-flex' : 'none';
+  if (mx) mx.style.display = (fc.isMX && fc.esRI) ? 'inline-flex' : 'none';
+  const ib = document.getElementById('fp-iibb');
+  if (ib && document.activeElement !== ib) ib.value = +((FISCAL_PARAMS.iibb || 0) * 100).toFixed(2);
+  const iv = document.getElementById('fp-iva-ar');
+  if (iv) iv.value = FISCAL_PARAMS.ivaProdAR === 0.105 ? '0.105' : '0.21';
+  const is = document.getElementById('fp-isr-mx');
+  if (is) is.value = FISCAL_PARAMS.isrCostoMX ? '1' : '0';
+}
+
+function setParamFiscal() {
+  const ib = document.getElementById('fp-iibb');
+  if (ib) {
+    const v = parseFloat(String(ib.value).replace(',', '.'));
+    if (isFinite(v) && v >= 0 && v <= 15) FISCAL_PARAMS.iibb = v / 100;
+    else ib.value = +((FISCAL_PARAMS.iibb || 0) * 100).toFixed(2);   // valor inválido: se restaura
+  }
+  const iv = document.getElementById('fp-iva-ar');
+  if (iv) FISCAL_PARAMS.ivaProdAR = parseFloat(iv.value) || 0.21;
+  const is = document.getElementById('fp-isr-mx');
+  if (is) FISCAL_PARAMS.isrCostoMX = is.value === '1';
+  // Todo el pipeline depende de fiscalCfg: se re-renderiza el dashboard completo
+  if (typeof aplicarFiltros === 'function' && G && G.records) aplicarFiltros();
 }
 
 // Toggle fiscal del dashboard general (checkbox: unchecked=RI, checked=MONO/Exento)
