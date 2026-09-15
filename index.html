@@ -1286,7 +1286,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v51.8';
+const EVO_VERSION = 'v51.9';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -3678,6 +3678,15 @@ function importSnapshotJSON(file) {
         if (_sanImp.corregidos) console.warn('[FULL] snapshot: '+_sanImp.corregidos+' valores fuera de rango corregidos al importar.');
         FULL_DATA.items = _sanImp.items;
         FULL_DATA.loaded = !!snap.full_data.loaded;
+        /* La rueda de stock (buena calidad / atención) lee FULL_DATA.resumen, que
+           la carga fresca arma con buildFULLResumen. El import sólo reponía los
+           items: el resumen quedaba vacío y toda la rueda caía en "Sin
+           clasificar". Se recalcula desde los items ya saneados en vez de usar
+           el guardado, para que refleje las correcciones de _fullSanear. */
+        buildFULLResumen();
+      } else if (typeof FULL_DATA !== 'undefined') {
+        // Snapshot sin FULL: no arrastrar el de una cuenta cargada antes
+        FULL_DATA.items = []; FULL_DATA.loaded = false; FULL_DATA.resumen = null;
       }
       
       // Restaurar condición fiscal
