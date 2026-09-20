@@ -1283,6 +1283,9 @@ const _GLOSARIO = [
   ['Hoja Contribución por sesión (export)','Contribución por visita, publicación por publicación','Misma lógica que el panel del Dashboard General: ASP, cargos reales, contribución bruta y contribución por sesión. Requiere el reporte de Rendimiento cargado.'],
   ['Formato del export','Fila 1 y columna A vacías · identidad PTI','Todas las hojas dejan la primera fila y la primera columna libres para que las tablas no queden pegadas al borde. Headers en violeta PTI, etiquetas sobre lavanda en negrita, y los valores con formato de moneda o porcentaje según el concepto. En hojas de etiqueta/valor el formato lo define la etiqueta de la fila, no la columna.'],
   ['Cuándo un valor sale en moneda','Por la etiqueta, con dos trampas resueltas en v52.2','El formato lo decide el texto del encabezado de columna o, en las hojas de etiqueta/valor, la etiqueta de la fila. Dos huecos que arrastraba v52.1: (1) la lista de palabras de dinero tenía "neto" pero no "neta", así que la columna <b>Venta neta</b> del Pareto de Revenue salía como número pelado; lo mismo pasaba con "retenido" frente a "retención", y con CPC, Presupuesto, Depósito e Importe, que no estaban. (2) Un "%" dentro del texto se tomaba siempre como unidad de la columna, aunque fuera una tasa mencionada al pasar: la fila <b>IIBB (4% de la venta neta)</b> del Resumen mostraba $146.924 como 14.692.423%, y las dos filas de retenciones de México caían igual. Ahora un % pegado a un número se lee como prosa y la fila se clasifica por el resto de su texto. Tercer arreglo: el Uplift del calendario es un multiplicador (2,5), no un porcentaje, y salía como 250%.'],
+  ['Columna Envío','Todo el envío que absorbe el vendedor','Suma el envío que informa ML y el envío propio que sale del template. Hasta v52.5 mostraba sólo el primero, así que una publicacion 100% Flex quedaba en $0 aunque el costo estuviera cargado y ya descontado del margen: el tooltip lo mostraba y la celda no. El tooltip abre las dos partes por separado.'],
+  ['Sonda de envío propio promedio','Botón apagado, a la izquierda del toggle UNIT','Aplica un costo único por unidad a todas las publicaciones de despacho propio que el template no declara. Sirve para ver de un saque cuánto mueve la aguja el envío propio antes de sentarse a cargar el detalle item por item. El botón va apagado como el de documentación interna porque es una herramienta de trabajo del consultor, no una función del tablero. El template siempre gana sobre el promedio: la estimación sólo cubre lo que no está declarado.'],
+  ['Marca ENVÍO ESTIMADO','Distinta de ENVÍO S/ COSTO','Con el promedio aplicado el margen ya contempla el envío, pero con un número que no es el real. Se marca con un chip propio, separado del de dato faltante, para que una revisión preliminar no llegue a una reunión como si fuera definitiva. En Argentina la tarifa de Flex cambia por zona (CABA y cordones 1, 2 y 3) y sube con la distancia, así que un único promedio depende de a dónde despacha la cuenta.'],
   ['Costo de envío por canal (tarjetas)','Una card por canal de despacho','En la cabecera de Rentabilidad, el costo de envío del período abierto por ME2, FULL y Flex/propio, con las unidades despachadas y cuánto pesa sobre la facturación de cada canal. Va ahí porque es la cifra que explica el margen de toda la pestaña: en cuentas reales el envío se lleva más que la comisión. Las tres no son comparables sin aclararlo, y por eso cada tarjeta declara su origen en el tooltip: ME2 y FULL salen del costo que informa ML venta por venta; Flex sale del template.'],
   ['Por qué Flex dice "sin medir" y no $0','Un cero diría que despachar por cuenta propia es gratis','Mientras falten publicaciones en el template, la tarjeta de Flex no muestra un importe: muestra cuántas publicaciones y cuántas unidades quedaron sin medir. Mostrar $0 sería la lectura más peligrosa del tablero. Al cargar el template pasa a mostrar el costo real y el detalle de unidades.'],
   ['Lentes por canal de envío','Consolidado · ME2 · FULL · Flex/propio','El panel NEXUS tiene una segunda barra de toggles, independiente de UNIT/P&L, que filtra por cómo se despachó cada venta. Existe porque el reporte de ventas informa el costo de envío de unos canales y de otros no: ME2 (Colecta, Correo y puntos de despacho, Places) y FULL lo traen; Flex, "Acuerdo con el comprador" y las ventas sin forma de entrega informada no, porque el vendedor le paga a su propio repartidor fuera de la plataforma. Medido en una cuenta real: ME2 40,6% de la facturación, Flex 35,8%, FULL 12,3%, sin dato 10,9%, o sea 47% despachado por canales sin costo en el reporte.'],
@@ -1369,7 +1372,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v52.5';
+const EVO_VERSION = 'v52.6';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -3733,6 +3736,7 @@ function doExportSnapshot(accountName, sanitized) {
       campaigns_data: typeof CAMPAIGNS_DATA !== 'undefined' ? CAMPAIGNS_DATA : { campaigns: [], loaded: false, prev: null },
       cogs_data: typeof COGS_DATA !== 'undefined' ? COGS_DATA : { byMLA: {}, bySKU: {}, loaded: false, count: 0 },
       flex_data: typeof FLEX_DATA !== 'undefined' ? FLEX_DATA : { byMLA: {}, bySKU: {}, loaded: false, count: 0 },
+      flex_promedio: typeof FLEX_PROMEDIO !== 'undefined' ? FLEX_PROMEDIO : 0,
       nexus_fiscal: typeof NEXUS_FISCAL !== 'undefined' ? NEXUS_FISCAL : 'RI',
       // Parámetros fiscales ajustables: IIBB e IVA de productos (AR), ISR retenido (MX)
       fiscal_params: typeof FISCAL_PARAMS !== 'undefined' ? FISCAL_PARAMS : null,
@@ -3919,6 +3923,7 @@ function importSnapshotJSON(file) {
           ? snap.flex_data
           : { byMLA: {}, bySKU: {}, loaded: false, count: 0 };
       }
+      if (typeof FLEX_PROMEDIO !== 'undefined') FLEX_PROMEDIO = +snap.flex_promedio || 0;
 
       // Restaurar condición fiscal y parámetros (IIBB, IVA de productos, ISR MX)
       if (snap.nexus_fiscal) NEXUS_FISCAL = snap.nexus_fiscal;
@@ -8964,6 +8969,7 @@ function resetDashboard(){
   REND_DATA={}; OPOR_DATA={}; ADS_DATA={};
   ADS_CAMPANAS={rows:[], loaded:false};
   FLEX_DATA={byMLA:{}, bySKU:{}, loaded:false, count:0};
+  FLEX_PROMEDIO=0;
   NEXUS_CANAL='TODO';
   FULL_DATA={items:[], loaded:false};
   MOFU_DATA={daily:[], totals:{}};
@@ -10630,6 +10636,7 @@ function subItemPorCanal(s, canal) {
       sub._flexUnit = fx.costo;
       sub._flexTotal = fx.costo * C.unidades;
       sub._flexVia = fx.via;
+      sub._flexEstimado = fx.via === 'PROMEDIO';
     }
   }
   return sub;
@@ -10758,15 +10765,20 @@ function parseFlex(wb) {
 
 // Costo de envío propio por unidad para un item, match por MLA y después por SKU
 function getFlexCost(s) {
-  if (!FLEX_DATA.loaded || !s) return null;
-  for (const m of [s.id_pub_raw, s.id].filter(Boolean)) {
-    const n = String(m).replace(/^ML[A-Z]+0*/i, '').replace(/\D/g, '');
-    if (n && FLEX_DATA.byMLA['MLA' + n]) return { ...FLEX_DATA.byMLA['MLA' + n], via: 'MLA' };
+  if (!s) return null;
+  if (FLEX_DATA.loaded) {
+    for (const m of [s.id_pub_raw, s.id].filter(Boolean)) {
+      const n = String(m).replace(/^ML[A-Z]+0*/i, '').replace(/\D/g, '');
+      if (n && FLEX_DATA.byMLA['MLA' + n]) return { ...FLEX_DATA.byMLA['MLA' + n], via: 'MLA' };
+    }
+    for (const sk of [s.sku, s.id].filter(Boolean)) {
+      const k = String(sk).replace(/\.0+$/, '').trim();
+      if (k && FLEX_DATA.bySKU[k]) return { ...FLEX_DATA.bySKU[k], via: 'SKU' };
+    }
   }
-  for (const sk of [s.sku, s.id].filter(Boolean)) {
-    const k = String(sk).replace(/\.0+$/, '').trim();
-    if (k && FLEX_DATA.bySKU[k]) return { ...FLEX_DATA.bySKU[k], via: 'SKU' };
-  }
+  /* El promedio sólo cubre lo que el template no declara: una fila cargada a
+     mano siempre gana sobre la estimación. */
+  if (FLEX_PROMEDIO > 0) return { costo: FLEX_PROMEDIO, titulo: '', via: 'PROMEDIO', estimado: true };
   return null;
 }
 
@@ -11238,6 +11250,15 @@ function _flexUnitDe(s) {
 }
 /* Unidades sobre las que se aplica: en una lente FLEX son todas las del canal;
    en la vista consolidada, sólo las que se despacharon por canal propio. */
+/* true cuando el costo aplicado sale del promedio global y no del template.
+   Todo lo que se calcule con él va rotulado ESTIMADO. */
+function _flexEstimadoDe(s) {
+  if (!s) return false;
+  if (s._canal && s._canal !== 'FLEX') return false;
+  if (s._flexVia) return s._flexVia === 'PROMEDIO';
+  const fx = (typeof getFlexCost === 'function') ? getFlexCost(s) : null;
+  return !!(fx && fx.via === 'PROMEDIO');
+}
 function _flexUnidadesDe(s) {
   if (!s) return 0;
   if (s._canal) return s.unidades || 0;
@@ -11348,6 +11369,7 @@ function calcNEXUS(s) {
      hasta 203%, y otras —las de envío gratis arriba del umbral— con el costo
      logístico entero invisible y un margen que se veía sano. */
   const flexUnit = _flexUnitDe(s);
+  const flexEstimado = _flexEstimadoDe(s);
   const flexUnidades = _flexUnidadesDe(s);
   const flexTotal = flexUnit > 0 ? flexUnit * flexUnidades : 0;
 
@@ -11447,7 +11469,7 @@ function calcNEXUS(s) {
     // P&L período (con Ads): margen del rango → margenNEXUS / recibidoNEXUS
     
     // Envío propio y fiabilidad del margen (v52.4)
-    flexUnit, flexTotal, flexUnitEfectivo, envioSinCosto, margenNoComputable,
+    flexUnit, flexTotal, flexUnitEfectivo, flexEstimado, envioSinCosto, margenNoComputable,
     coberturaEnvio: _cobN,
     canalLente: s._canal || null, shareCanal: s._shareCanal != null ? s._shareCanal : 1,
 
@@ -11474,6 +11496,13 @@ let COGS_DATA = { byMLA: {}, bySKU: {}, loaded: false, count: 0 };  // Costos de
    fuera de la plataforma, y sin él el margen de esas ventas queda inflado por el
    envío que cobra el comprador. */
 let FLEX_DATA = { byMLA: {}, bySKU: {}, loaded: false, count: 0 };
+/* Costo de envío propio PROMEDIO para todo el catálogo. No reemplaza al
+   template: es una sonda para ver de un saque cuánto cambia el tablero cuando
+   el envío propio entra en el margen, antes de sentarse a cargar item por item.
+   En Argentina la tarifa de Flex varía por zona (CABA y cordones 1, 2 y 3) y
+   crece con la distancia, así que un único número es siempre una aproximación:
+   todo lo que se calcula con él queda rotulado como ESTIMADO. */
+let FLEX_PROMEDIO = 0;
 let NEXUS_FISCAL = 'RI';  // Condición fiscal: 'RI' (Responsable de IVA / con RFC en MX) | 'MONO' (Monotributo, exento, sin RFC)
 
 /* Parámetros fiscales ajustables desde la barra de filtros (v52.1). Se guardan
@@ -13179,6 +13208,15 @@ function buildNexusTable(cache, mode) {
      costo de envío. Es el flag que pidió el usuario y aparece en TODAS las
      lentes, porque el riesgo de leer un margen inflado no depende de la vista. */
   const envioBadgeFor = (n) => {
+    /* Con costo estimado el margen ya contempla el envío, pero con un número
+       que no es el real: se marca distinto de "falta el dato" para que nadie
+       lleve una revisión preliminar a una reunión como si fuera definitiva. */
+    if (n && n.flexEstimado && n.flexTotal > 0) {
+      return '<span style="background:rgba(96,165,250,.14);color:var(--accent2);padding:1px 6px;border-radius:3px;'
+        + 'font-size:9px;font-weight:700;letter-spacing:.5px;margin-left:6px;cursor:help;white-space:nowrap" title="'
+        + ('El costo de envío propio de esta publicación sale del promedio general cargado a mano, no del template. Sirve para una lectura preliminar; para decidir, cargá el costo real en el template ML | SKU | NOMBRE | COSTO FLEX.').replace(/"/g,'&quot;')
+        + '">ENVÍO ESTIMADO</span>';
+    }
     if (!n || !n.envioSinCosto) return '';
     const c = n.coberturaEnvio;
     const pct = c ? Math.round(c.pct * 100) : 0;
@@ -13208,7 +13246,11 @@ function buildNexusTable(cache, mode) {
   /* Celda de envío con el desglose por canal en el tooltip. En la vista
      consolidada responde la pregunta obvia: "¿de dónde sale este costo?". */
   const celdaEnvio = (n, s, mult) => {
-    const val = (n.envioUnit || 0) * mult;
+    /* El envío de la celda es TODO el envío que absorbe el vendedor: el que
+       informa ML más el propio que sale del template. Mostrar sólo el primero
+       dejaba en $0 a las publicaciones 100% Flex aunque el costo estuviera
+       cargado y descontado del margen: el tooltip lo mostraba y la celda no. */
+    const val = ((n.envioUnit || 0) + (n.flexUnitEfectivo || 0)) * mult;
     const base = mult === 1 ? ((n.precioProm || 0) * (1 - (n.factorIva || 0))) : (n.ventaNeta || 0);
     const pc = s && s.porCanal;
     const partes = [];
@@ -13226,7 +13268,9 @@ function buildNexusTable(cache, mode) {
         }
       });
     }
-    const ttl = 'Envío: ' + ARS(val) + (base > 0 ? ' (' + PCT(val / base) + ' de la venta neta)' : '')
+    const _mlPart = (n.envioUnit || 0) * mult, _fxPart = (n.flexUnitEfectivo || 0) * mult;
+    const ttl = 'Envío total absorbido: ' + ARS(val) + (base > 0 ? ' (' + PCT(val / base) + ' de la venta neta)' : '')
+      + (_fxPart > 0 ? '\n  informado por ML: ' + ARS(_mlPart) + '\n  envío propio (template): ' + ARS(_fxPart) : '')
       + (partes.length ? '\n\nDesglose por canal de despacho:\n' + partes.join('\n') : '')
       + (n.flexUnit > 0 ? '\n\nEl costo de Flex sale del template de costo de envío propio.' : '')
       + (n.envioSinCosto ? '\n\nHay ventas por despacho propio sin costo cargado: este número está incompleto.' : '');
@@ -13949,6 +13993,12 @@ function renderNEXUS(skuMap, useML, idLabel) {
       + '<span class="panel-title">NEXUS — Rentabilidad Blindada · ' + idLabel + '</span>'
       + '<span class="panel-subtitle" id="nexus-panel-sub">' + subInicial + _nexusSubCanal() + '</span>'
       + '<div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">'
+      /* Sonda de envío propio promedio. Va apagada como el botón de
+         documentación interna: es una herramienta de trabajo del consultor, no
+         una función del tablero, y lo que produce es una lectura preliminar. */
+      + '<button id="nexus-btn-flexprom" class="btn btn-info-hidden" onclick="abrirFlexPromedio()"'
+      + ' title="Costo de envío propio promedio para todo el catálogo (revisión preliminar)"'
+      + ' style="margin-left:0;' + (FLEX_PROMEDIO > 0 ? 'opacity:.85;color:var(--accent2);border-color:var(--accent);' : '') + '">🛵</button>'
       + '<div style="display:flex;">'
       + '<button id="nexus-btn-unit" onclick="toggleNexusMode(\'unit\')" style="' + (NEXUS_MODE==='unit'?on:off) + '">UNIT</button>'
       + '<button id="nexus-btn-pl" onclick="toggleNexusMode(\'pl\')" style="' + (NEXUS_MODE==='pl'?onR:offR) + '">P&L</button>'
@@ -15449,6 +15499,86 @@ function setNexusFiscal(cond) {
 }
 
 // Carga el template de COGS y recalcula la tab de rentabilidad
+/* Sonda de envío propio promedio.
+   El template item por item es el dato bueno, pero cargarlo lleva tiempo y
+   antes de invertirlo conviene saber si el envío propio mueve la aguja. Este
+   campo aplica un costo único a todas las publicaciones que el template no
+   declara, y marca como ESTIMADO todo lo que toca.
+   Referencia de tarifas de Flex en Argentina: cambian por zona —CABA y
+   cordones 1, 2 y 3— y suben con la distancia, así que el promedio de la
+   cuenta depende de a dónde despacha. */
+function abrirFlexPromedio() {
+  const prev = document.getElementById('flexprom-overlay');
+  if (prev) prev.remove();
+  const ov = document.createElement('div');
+  ov.id = 'flexprom-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,5,10,.8);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#15151e;border:1px solid var(--border);border-radius:12px;padding:26px 30px;max-width:520px;width:100%;';
+  box.innerHTML =
+      '<div style="font-family:Syne,sans-serif;font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px;">Costo de envío propio promedio</div>'
+    + '<div style="color:var(--muted);font-size:12px;line-height:1.65;margin-bottom:16px;">'
+    + 'Aplica un costo único por unidad a todas las publicaciones que despachan por cuenta propia '
+    + '(Flex, acuerdo con el comprador y ventas sin forma de entrega informada) y que <b>no</b> tengan un costo '
+    + 'cargado en el template. Sirve para ver de un saque cuánto cambia el margen antes de cargar el detalle.'
+    + '<br><br>En Argentina la tarifa de Flex varía por zona (CABA y cordones 1, 2 y 3) y sube con la distancia, '
+    + 'así que un único número es una aproximación: todo lo que se calcule con él queda marcado '
+    + '<span style="color:var(--accent2)">ESTIMADO</span> y no debería salir en un entregable.'
+    + '</div>'
+    + '<label style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Costo por unidad (neto de IVA)</label>'
+    + '<input id="flexprom-val" type="number" min="0" step="any" value="' + (FLEX_PROMEDIO || '') + '" placeholder="6300" '
+    + 'style="width:100%;margin-top:6px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:15px;">'
+    + '<div id="flexprom-info" style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px;"></div>'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;">'
+    + '<button class="btn" onclick="setFlexPromedio(0)" style="font-size:12px;">Quitar</button>'
+    + '<button class="btn" onclick="document.getElementById(\'flexprom-overlay\').remove()" style="font-size:12px;">Cancelar</button>'
+    + '<button class="btn" onclick="setFlexPromedio()" style="font-size:12px;background:rgba(168,85,247,.15);border-color:var(--accent);color:var(--accent);">Aplicar</button>'
+    + '</div>';
+  ov.appendChild(box);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+
+  // Cuántas publicaciones y unidades va a alcanzar: dimensiona la sonda antes de aplicarla
+  try {
+    const m = (G && G._lastRender && G._lastRender.skuMap) || {};
+    let pubs = 0, u = 0;
+    Object.values(m).forEach(x => {
+      const C = x.porCanal && x.porCanal.FLEX; if (!C || !(C.unidades > 0)) return;
+      if (FLEX_DATA.loaded) {
+        const fx = getFlexCost(x);
+        if (fx && fx.via !== 'PROMEDIO') return;   // ya tiene costo propio
+      }
+      pubs++; u += C.unidades || 0;
+    });
+    const inf = document.getElementById('flexprom-info');
+    if (inf) inf.textContent = 'Alcanza a ' + pubs + ' publicaciones · ' + NUM(u) + ' unidades despachadas por cuenta propia';
+  } catch (e) {}
+
+  const inp = document.getElementById('flexprom-val');
+  if (inp) { inp.focus(); inp.addEventListener('keydown', e => { if (e.key === 'Enter') setFlexPromedio(); }); }
+}
+
+function setFlexPromedio(forzar) {
+  const inp = document.getElementById('flexprom-val');
+  const v = (forzar === 0) ? 0 : (inp ? parseFloat(String(inp.value).replace(',', '.')) : 0);
+  FLEX_PROMEDIO = (isFinite(v) && v > 0) ? v : 0;
+  const ov = document.getElementById('flexprom-overlay');
+  if (ov) ov.remove();
+  const st = document.getElementById('flex-status');
+  if (st && FLEX_PROMEDIO > 0) {
+    st.textContent = (FLEX_DATA.loaded ? '✓ ' + FLEX_DATA.count + ' del template · ' : '')
+      + 'resto estimado a ' + fmtCurrency(FLEX_PROMEDIO) + '/u';
+    st.style.color = 'var(--accent2)';
+  } else if (st && !FLEX_DATA.loaded) {
+    st.textContent = '';
+  }
+  if (G && G._lastRender) {
+    const R = G._lastRender;
+    renderNEXUS(R.skuMap, R.useML, R.useML ? '# Publicación' : 'SKU');
+    if (typeof renderRentKPIs === 'function') renderRentKPIs(R.skuMap);
+  }
+}
+
 function loadFlexTemplate(file) {
   const isCSV = file.name.toLowerCase().endsWith('.csv');
   const reader = new FileReader();
