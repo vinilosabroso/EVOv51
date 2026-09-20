@@ -363,6 +363,23 @@
   .panel-subtitle{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
   .panel-body{overflow-y:auto;max-height:500px;flex:1;}
 
+  /* ── Filas apagadas ──
+     Una fila "apagada" es la que existe pero no tiene nada que decir en esta
+     vista: una publicación sin ventas por el canal de la lente, un anuncio
+     pausado sobre el que ya no hay puja que tocar. Mostrarlas es correcto —si
+     desaparecieran, el consultor no sabría que existen— pero cuando se ordena
+     por margen ascendente quedan todas arriba y tapan lo accionable. El check
+     del header las esconde sin sacarlas del cálculo: es un filtro de vista. */
+  tr.evo-apagada{opacity:.45;}
+  .panel.evo-ocultar-apagadas tr.evo-apagada{display:none;}
+  .evo-chk-apagadas{margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);
+    font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;cursor:pointer;
+    user-select:none;white-space:nowrap;padding:3px 8px;border:1px solid var(--border);border-radius:5px;
+    background:var(--surface2);transition:color .12s,border-color .12s;}
+  .evo-chk-apagadas:hover{color:var(--text);border-color:var(--accent);}
+  .evo-chk-apagadas input{margin:0;cursor:pointer;accent-color:var(--accent);}
+  .evo-chk-apagadas.on{color:var(--accent);border-color:var(--accent);}
+
   table{width:100%;border-collapse:collapse;}
   thead th{position:sticky;top:0;z-index:5;background:var(--surface2);color:var(--muted);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
   tbody td{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;white-space:nowrap;}
@@ -483,6 +500,20 @@
   /* ── ZERO-RETURN ADS PANEL ── */
   .zr-alert{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
   .zr-alert-ok{background:rgba(251,146,60,.06);border:1px solid rgba(251,146,60,.25);}
+  /* Las alertas son botones: cada una abre su propio listado en vez de dejar
+     todo consolidado en una sola tabla interminable. */
+  .zr-alert[data-zr-tag]{cursor:pointer;transition:border-color .12s,background .12s;}
+  .zr-alert[data-zr-tag]:hover{border-color:var(--accent);}
+  .zr-alert[data-zr-tag]::after{content:'ver lista ▸';font-family:var(--mono);font-size:9px;color:var(--muted);
+    letter-spacing:.8px;text-transform:uppercase;align-self:center;flex-shrink:0;white-space:nowrap;}
+  .zr-alert[data-zr-tag].zr-on{border-color:var(--accent);background:rgba(168,85,247,.08);}
+  .zr-alert[data-zr-tag].zr-on::after{content:'✕ quitar filtro';color:var(--accent);}
+  .zr-filtro-info{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.5px;
+    padding:7px 12px;margin-bottom:8px;background:rgba(168,85,247,.07);border-radius:6px;
+    display:flex;align-items:center;gap:10px;}
+  .zr-filtro-info button{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;
+    background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:4px;
+    padding:3px 8px;cursor:pointer;}
   .zr-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
   .zr-body{flex:1;}
   .zr-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--danger);letter-spacing:.5px;}
@@ -1295,6 +1326,11 @@ const _GLOSARIO = [
   ['Por qué el anillo se puede pisar a mano','La geografía no siempre es la tarifa','EVO propone el anillo por distancia, pero la propuesta no manda. Un vendedor en Tigre reparte geográficamente cerca a zona norte y sin embargo puede facturarlo como zona lejana, porque contrató un 3PL o una logística que cobra por sus propios anillos. Por eso la asignación es editable partido por partido y lo elegido gana sobre la distancia y sobrevive a un cambio de CP de origen. Es también la razón por la que la unidad es el partido y no el cordón: el segundo cordón contiene a Tigre y a Berazategui, que desde Tigre no están a la misma distancia ni parecido.'],
   ['Cobertura de la clasificación de zonas','Lo que no se ubica no se reparte','Una venta sin código postal reconocible no entra en ninguna zona y se informa aparte. No se prorratea sobre las demás: hacerlo maquillaría el porcentaje y el promedio ponderado saldría de una base inventada. Sobre los reportes reales medidos la cobertura fue del 100%, pero el indicador queda porque un reporte futuro puede traer destinos nuevos.'],
   ['Envío propio en el estado de resultados','Tiene línea propia desde v52.9','El envío propio se paga fuera de la plataforma, así que no está en el reporte y hasta v52.8 el estado de resultados no lo listaba. La plata estaba bien restada —calcNEXUS ya la descontaba— pero como no había línea, la diferencia se colaba por el cálculo de retenciones y salía impresa bajo "Retenciones de la plataforma": sobre un caso de $20.000 de envío propio, el estado mostraba $4.959 de costo logístico y $20.000 de retenciones inexistentes. El resultado final nunca cambió; la etiqueta, sí. Va en línea separada y no sumada al envío de ML porque son cosas distintas: uno es un cargo de la plataforma y el otro un pago a un tercero.'],
+  ['Ocultar apagados','Check en el header de cada panel que las tenga','Una fila apagada es la que existe pero no tiene nada que decir en la vista activa: una publicación sin ventas por el canal de la lente, un anuncio pausado o movido sobre el que ya no hay puja que tocar. Mostrarlas sigue siendo lo correcto —si desaparecieran, nadie sabría que existen— pero al ordenar por margen ascendente se amontonan arriba y tapan lo accionable. El check las esconde y dice cuántas son. Es filtro de VISTA: no toca los cálculos, los totales ni los exports. Se instala solo en los paneles que tengan filas marcadas, así que un panel nuevo lo hereda sin configurar nada, y recuerda su estado al cambiar de lente o de filtro.'],
+  ['Alertas de Inversión Sin Retorno como filtro','Cada card abre su propio listado','El panel acumuló casos —sigue gastando, pérdida completa, no repaga, pausar, revisar, soportar— y todos caían en una sola tabla. En cuentas con muchas publicaciones sin ventas había que barrer cientos de filas para encontrar un caso puntual. Ahora la card es el botón de su listado: al tocarla la tabla se recorta a ese caso y aparece el botón Ver todo. El total que muestra la card sigue siendo el de la cuenta entera y los exports no cambian.'],
+  ['ACOS proyectado sin ventas propias','Contra el ticket promedio de la cuenta','Una publicación que no vendió nada no tiene precio propio, y ni el reporte de Anuncios ni el de Rendimiento lo traen. Hasta v52.9 esas filas mostraban — en AOV y en ACOS, justo donde más importa: el panel existe para responder qué parte de una venta se está comiendo la pauta, y la pregunta más urgente es sobre la publicación que todavía no registró su primera venta. Ahora se proyecta contra el ticket promedio de la cuenta del período, marcado con ref. en la celda para no confundirlo con un precio propio.'],
+  ['NO REPAGA','ACOS proyectado de 100% o más','El punto de corte. La inversión ya superó lo que dejaría una venta entera: aunque la publicación vendiera ahora mismo, esa venta no alcanza a devolver lo gastado, y mientras el anuncio siga activo el pozo se profundiza. Va primero entre las alertas porque es la que manda a cortar. En las publicaciones sin ninguna venta se calcula contra el ticket de referencia.'],
+  ['Formato de múltiplos en el export','ROAS y uplift con dos decimales','Un múltiplo no es dinero ni porcentaje, así que caía en el tipo general y salía sin formato: una celda de ROAS se imprimía 7,3546370693720675. Tienen tipo propio con formato 0,00. Mismo caso en las filas de metadatos del mapa de calor y en los parámetros de la hoja de metodología, que llevaban el double crudo.'],
   ['Costo de envío por canal (tarjetas)','Una card por canal de despacho','En la cabecera de Rentabilidad, el costo de envío del período abierto por ME2, FULL y Flex/propio, con las unidades despachadas y cuánto pesa sobre la facturación de cada canal. Va ahí porque es la cifra que explica el margen de toda la pestaña: en cuentas reales el envío se lleva más que la comisión. Las tres no son comparables sin aclararlo, y por eso cada tarjeta declara su origen en el tooltip: ME2 y FULL salen del costo que informa ML venta por venta; Flex sale del template.'],
   ['Por qué Flex dice "sin medir" y no $0','Un cero diría que despachar por cuenta propia es gratis','Mientras falten publicaciones en el template, la tarjeta de Flex no muestra un importe: muestra cuántas publicaciones y cuántas unidades quedaron sin medir. Mostrar $0 sería la lectura más peligrosa del tablero. Al cargar el template pasa a mostrar el costo real y el detalle de unidades.'],
   ['Lentes por canal de envío','Consolidado · ME2 · FULL · Flex/propio','El panel NEXUS tiene una segunda barra de toggles, independiente de UNIT/P&L, que filtra por cómo se despachó cada venta. Existe porque el reporte de ventas informa el costo de envío de unos canales y de otros no: ME2 (Colecta, Correo y puntos de despacho, Places) y FULL lo traen; Flex, "Acuerdo con el comprador" y las ventas sin forma de entrega informada no, porque el vendedor le paga a su propio repartidor fuera de la plataforma. Medido en una cuenta real: ME2 40,6% de la facturación, Flex 35,8%, FULL 12,3%, sin dato 10,9%, o sea 47% despachado por canales sin costo en el reporte.'],
@@ -1381,7 +1417,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v52.9';
+const EVO_VERSION = 'v53';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -8230,6 +8266,142 @@ function calcPriceBuckets(filteredRecords){
 }
 
 /* ═══════════ RENDER ═══════════ */
+
+
+/* ═══════════ FILTRO POR CASO EN INVERSIÓN SIN RETORNO (v53) ═══════════
+   El panel acumuló casos —sigue gastando, pérdida completa, pausar, revisar,
+   soportar— y todos caían en una sola tabla. En cuentas con muchas
+   publicaciones sin ventas la lista se volvía inmanejable: había que barrer
+   cientos de filas para encontrar las de un caso puntual.
+
+   Ahora cada alerta es el botón de su propio listado. El total que muestra la
+   card sigue siendo el de la cuenta entera; lo que cambia es que al tocarla la
+   tabla se recorta a ese caso. Es filtro de vista: no altera los totales de las
+   alertas ni lo que sale en los exports. */
+const _ZR_CASO_LABEL = {
+  activo:   'anuncios activos sin retorno',
+  sinventa: 'publicaciones sin ninguna venta',
+  norepaga: 'publicaciones donde una venta no cubre lo gastado',
+  pausar:   'publicaciones a pausar',
+  revisar:  'publicaciones a revisar',
+  soportar: 'publicaciones con inversión baja'
+};
+
+function _zrFiltrar(el, tag) {
+  const panel = el.closest('.panel');
+  if (!panel) return;
+  const yaActivo = el.classList.contains('zr-on');
+  panel.querySelectorAll('.zr-alert[data-zr-tag]').forEach(a => a.classList.remove('zr-on'));
+  const nuevo = yaActivo ? '' : tag;
+  if (nuevo) el.classList.add('zr-on');
+  _zrAplicar(panel, nuevo);
+}
+
+function _zrAplicar(panel, tag) {
+  const filas = panel.querySelectorAll('tbody tr[data-zr]');
+  let visibles = 0;
+  filas.forEach(tr => {
+    const tags = (tr.getAttribute('data-zr') || '').split(/\s+/);
+    const ok = !tag || tags.indexOf(tag) >= 0;
+    /* Se marca con un atributo en vez de tocar display directo: así el filtro de
+       filas apagadas, que usa su propia regla CSS, puede convivir sin que uno
+       pise al otro. */
+    tr.style.display = ok ? '' : 'none';
+    if (ok) visibles++;
+  });
+  let info = panel.querySelector('.zr-filtro-info');
+  if (!tag) { if (info) info.remove(); return; }
+  if (!info) {
+    info = document.createElement('div');
+    info.className = 'zr-filtro-info';
+    const tabla = panel.querySelector('table');
+    if (tabla && tabla.parentNode) tabla.parentNode.insertBefore(info, tabla);
+    else panel.querySelector('.panel-body').appendChild(info);
+  }
+  info.innerHTML = '<span>Mostrando ' + visibles + ' ' + (_ZR_CASO_LABEL[tag] || tag)
+    + ' · el resto del listado está oculto</span>'
+    + '<button onclick="_zrLimpiar(this)">Ver todo</button>';
+}
+
+function _zrLimpiar(btn) {
+  const panel = btn.closest('.panel');
+  if (!panel) return;
+  panel.querySelectorAll('.zr-alert[data-zr-tag]').forEach(a => a.classList.remove('zr-on'));
+  _zrAplicar(panel, '');
+}
+
+/* ═══════════ FILTRO DE FILAS APAGADAS (v53) ═══════════
+   Una fila apagada es la que existe pero no tiene nada que decir en la vista
+   activa: una publicación sin ventas por el canal de la lente, un anuncio
+   pausado o movido sobre el que ya no hay puja que tocar. Mostrarlas sigue
+   siendo lo correcto —si desaparecieran, el consultor no sabría que existen, y
+   ese fue el motivo por el que se agregaron— pero al ordenar por margen
+   ascendente se amontonan arriba y tapan lo accionable.
+
+   El filtro es de VISTA y no de motor: no toca los cálculos, los totales ni los
+   exports. Sólo esconde filas que ya estaban en gris.
+
+   Se instala solo. En vez de tocar panel por panel, un pase posterior al render
+   recorre los paneles, cuenta las filas marcadas con .evo-apagada y, en los que
+   tengan al menos una, inyecta el check en el header. Así un panel nuevo que
+   marque sus filas hereda el filtro sin tener que acordarse de nada. */
+let APAGADAS_ESTADO = {};   // título del panel → oculto sí/no (sobrevive al re-render)
+
+function _panelClave(panel) {
+  const t = panel.querySelector('.panel-title');
+  return t ? t.textContent.trim().replace(/\s*·.*$/, '') : '';
+}
+
+function _aplicarApagadas(panel, ocultar) {
+  panel.classList.toggle('evo-ocultar-apagadas', !!ocultar);
+  const lbl = panel.querySelector('.evo-chk-apagadas');
+  if (lbl) lbl.classList.toggle('on', !!ocultar);
+}
+
+function _toggleApagadas(chk) {
+  const panel = chk.closest('.panel');
+  if (!panel) return;
+  APAGADAS_ESTADO[_panelClave(panel)] = chk.checked;
+  _aplicarApagadas(panel, chk.checked);
+}
+
+/* Recorre los paneles y pone el check donde haga falta. Idempotente: se puede
+   llamar después de cada render sin duplicar controles. */
+function instalarFiltroApagadas(raiz) {
+  const paneles = (raiz || document).querySelectorAll('.panel');
+  paneles.forEach(panel => {
+    const filas = panel.querySelectorAll('tr.evo-apagada');
+    const header = panel.querySelector('.panel-header');
+    let lbl = panel.querySelector('.evo-chk-apagadas');
+    if (!filas.length) {
+      /* El panel dejó de tener filas apagadas (cambió la lente o el filtro):
+         se saca el control y se limpia la clase, si no el panel queda con un
+         check que no gobierna nada. */
+      if (lbl) lbl.remove();
+      panel.classList.remove('evo-ocultar-apagadas');
+      return;
+    }
+    if (!header) return;
+    const clave = _panelClave(panel);
+    const ocultar = !!APAGADAS_ESTADO[clave];
+    if (!lbl) {
+      lbl = document.createElement('label');
+      lbl.className = 'evo-chk-apagadas';
+      lbl.title = 'Esconde las filas sin actividad en esta vista (sin ventas por el canal elegido, '
+                + 'o anuncios pausados, movidos y deshabilitados). No cambia ningún cálculo ni los exports: '
+                + 'sólo deja de mostrarlas para que lo accionable quede arriba.';
+      lbl.innerHTML = '<input type="checkbox" onchange="_toggleApagadas(this)">'
+                    + '<span>Ocultar apagados</span> <span class="evo-chk-n"></span>';
+      header.appendChild(lbl);
+    }
+    const n = lbl.querySelector('.evo-chk-n');
+    if (n) n.textContent = '(' + filas.length + ')';
+    const inp = lbl.querySelector('input');
+    if (inp) inp.checked = ocultar;
+    _aplicarApagadas(panel, ocultar);
+  });
+}
+
 function renderDashboard(renderData){
   if(G) G._lastRender=renderData;
   /* La mezcla de zonas se deduce del rango filtrado, así que se invalida acá y
@@ -8237,6 +8409,9 @@ function renderDashboard(renderData){
      y con la caché del render anterior el promedio ponderado saldría del
      período equivocado. */
   if (typeof _invalidarZonas === 'function') _invalidarZonas();
+  /* El filtro de filas apagadas se instala cuando el render sincrónico ya pintó
+     los paneles, por eso el timeout: acá todavía no existen las filas. */
+  setTimeout(() => { try { instalarFiltroApagadas(); } catch(e){} }, 0);
   /* Mapa SKU → publicaciones (MLA) del período. Lo usa getEnrichment para sumar
      la pauta de TODAS las publicaciones que agrupa un SKU en vista SKU. */
   if (G) {
@@ -9193,17 +9368,20 @@ function exportarExcel(){
         h.includes('margen final')) {
       return 'percent';
     }
+    /* Múltiplos: se leen "×7,35". Caían en 'general' junto con los conteos y
+       salían con todos los decimales del double. */
+    if (h.includes('roas') || h.includes('uplift')) return 'ratio';
     // Conteos y ratios que NO son dinero
     if (/^(publicaciones?|skus?|# publicaci[oó]n)\b/.test(h) || h.includes('top 80') ||
         h.startsWith('unidades') || h.startsWith('visitas') || h.startsWith('ventas') ||
         h.startsWith('veces') || h.startsWith('cantidad') ||
         h.includes('únicos') || h.includes('unicos') || h.includes('matcheado') ||
         h === 'unidades' || h === 'visitas' || h === 'ventas' || h === 'clics' ||
-        h === 'impresiones' || h.includes('roas') || h.includes('días') ||
+        h === 'impresiones' || h.includes('días') ||
         h.includes('dias') || h.includes('stock') || h.includes('cantidad') ||
         /* "detectadas por título y precio" es un conteo de publicaciones, no un
            precio: sin esto la palabra "precio" del final lo volvía moneda. */
-        h.includes('detectad') || h.includes('uplift') ||
+        h.includes('detectad') ||
         h.includes('run rate') || h.includes('publicaciones') || h.includes('lead ')) {
       return 'general';
     }
@@ -9232,6 +9410,10 @@ function exportarExcel(){
 
   const NUMFMT_MONEY = '"$"#,##0;[Red]-"$"#,##0';
   const NUMFMT_PERCENT = '0.0%';
+  /* Múltiplos (ROAS, uplift): no son dinero ni porcentaje, pero sin formato
+     Excel imprime el double completo y una celda de ROAS salía
+     7,3546370693720675 en vez de 7,35. */
+  const NUMFMT_RATIO = '0.00';
 
   /* addSheet deja SIEMPRE la fila 1 y la columna A vacías, para que las tablas
      queden despegadas del borde de la hoja.
@@ -9296,6 +9478,7 @@ function exportarExcel(){
         if (typeof ws[ref].v === 'number') {
           if (tipo === 'money') numFmt = NUMFMT_MONEY;
           else if (tipo === 'percent') numFmt = NUMFMT_PERCENT;
+          else if (tipo === 'ratio') numFmt = NUMFMT_RATIO;
         }
         ws[ref].s = styleData(numFmt);
         /* Estilos por rol dentro de un bloque antepuesto a la tabla principal.
@@ -9373,8 +9556,9 @@ function exportarExcel(){
         } else {
           /* Filas de metadatos (período, ocurrencias por día): son conteos y
              texto, no dinero. Las celdas de la matriz y los totales ya se
-             formatean arriba. */
-          ws[ref].s = styleData(null);
+             formatean arriba. Igual necesitan formato numérico: sin él, un
+             promedio salía impreso como 7261,276465892597. */
+          ws[ref].s = styleData(typeof ws[ref].v === 'number' ? '#,##0.##' : null);
         }
       }
     }
@@ -9703,7 +9887,7 @@ function exportarExcel(){
     pubRows.push([s.id, titleFor(s.id)||'', s._inv||'', s._ing||'', roas, s.pub_venta_neta||0, s.venta_neta||0, s.org_venta_neta||0, s.ingresos_brutos>0?(s.pubBruto||0)/s.ingresos_brutos:0]);
   });
   addSheet('Publicidad',pubRows,[25,45,16,20,10,18,16,16,12],
-    { tipos:['general','general','money','money','general','money','money','money','percent'] });
+    { tipos:['general','general','money','money','ratio','money','money','money','percent'] });
 
   // Top Combos de Carrito
   if (G.comboMap) {
@@ -10216,6 +10400,7 @@ function exportarExcel(){
      archivo los motores de IA. Ver _metodologiaIA. */
   try {
     const m = _metodologiaIA();
+    const filaParam0 = 5;   // las cinco primeras filas son encabezado
     const rows = [
       [LEEME_USO_IA],
       ['EVO · Metodología de cálculo de este archivo'],
@@ -10235,6 +10420,13 @@ function exportarExcel(){
     m.control.forEach((c, i) => {
       const cel = ws[XLSX.utils.encode_cell({ r: filaCtrl0 + i, c: 1 })];
       if (cel && typeof cel.v === 'number') cel.z = c[3] ? '0.00%' : '#,##0.00';
+    });
+    /* Los parámetros llevaban el double crudo: el factor de IVA salía impreso
+       0,17355371900826447. Los que son alícuotas o factores caen entre 0 y 1 y
+       se leen mejor como porcentaje; el resto, con dos decimales. */
+    m.parametros.forEach((p, i) => {
+      const cel = ws[XLSX.utils.encode_cell({ r: filaParam0 + i, c: 1 })];
+      if (cel && typeof cel.v === 'number') cel.z = (cel.v > 0 && cel.v < 1) ? '0.00%' : '#,##0.00';
     });
     XLSX.utils.book_append_sheet(wb, ws, HOJA_METODOLOGIA);
     wb.Workbook = wb.Workbook || {};
@@ -13715,6 +13907,8 @@ function rebuildNexusTable() {
   const subEl = document.getElementById('nexus-panel-sub');
   if (!body || !NEXUS_RENDER_CACHE) return;
   body.innerHTML = buildNexusTable(NEXUS_RENDER_CACHE, NEXUS_MODE);
+  // cambiar de lente cambia qué filas quedan apagadas: hay que recontar
+  setTimeout(() => { try { instalarFiltroApagadas(); } catch(e){} }, 0);
   if (btnU && btnP) {
     const on  = 'background:rgba(168,85,247,.25);color:var(--accent);border:1px solid var(--accent);';
     const off = 'background:transparent;color:var(--muted);border:1px solid var(--border);';
@@ -13852,7 +14046,7 @@ function buildNexusTable(cache, mode) {
      El colspan sobra a propósito: el navegador lo recorta al ancho real y así
      no hay que contar columnas en cada variante de la tabla. */
   const filaSinCanal = (s) =>
-    '<tr style="opacity:.45"><td>' + idWithTitle(s.id) + '</td>'
+    '<tr class="evo-apagada"><td>' + idWithTitle(s.id) + '</td>'
     + '<td colspan="20" style="font-size:11px;color:var(--muted);font-style:italic" title="'
     + ('Esta publicación no registra ventas despachadas por ' + _CANAL_LABEL[NEXUS_CANAL]
        + ' en el período. Facturó ' + fmtCurrency(s.ingresos_brutos || 0)
@@ -14402,9 +14596,8 @@ function _campPorAdHTML(c) {
         + (a.activo ? '' : ' Ya no está activo, así que el gasto es histórico del período.')
       : '';
 
-    h += '<tr style="border-bottom:1px solid var(--border);'
-      + (a.quema ? 'background:rgba(248,113,113,.05);' : '')
-      + (a.activo ? '' : 'opacity:.62;') + '"'
+    h += '<tr class="' + (a.activo ? '' : 'evo-apagada') + '" style="border-bottom:1px solid var(--border);'
+      + (a.quema ? 'background:rgba(248,113,113,.05);' : '') + '"'
       + (tipFila ? ' title="' + esc(tipFila) + '"' : '') + '>'
       + '<td style="padding:7px 9px;font-family:var(--mono);font-size:11px;color:var(--text);white-space:nowrap;">'
         + idWithTitle(a.id) + (a.quema ? ' <span style="color:var(--danger);font-size:10px;" title="Consume presupuesto sin ventas">▲</span>' : '') + '</td>'
@@ -14738,6 +14931,21 @@ function renderNEXUS(skuMap, useML, idLabel) {
     const zeroReturnArr = [];
     const allSkuArr = Object.values(skuMap);
 
+    /* Ticket promedio de la cuenta en el período. Es la única referencia de
+       precio disponible para una publicación que NO vendió nada: ni el reporte
+       de Anuncios ni el de Rendimiento traen el precio de lista, y el reporte de
+       ventas, por definición, no la tiene.
+
+       Sin esto el panel dejaba en "—" justo las filas donde más importa. El
+       panel existe para responder qué parte de una venta se está comiendo la
+       pauta, y la pregunta más urgente es sobre la publicación que todavía no
+       registró su primera venta: si la inversión ya supera el ticket promedio,
+       la primera venta no alcanza a cubrir lo gastado. Que la referencia sea la
+       cuenta y no el producto se declara en la fila y en el tooltip. */
+    let _uCta = 0, _ibCta = 0;
+    allSkuArr.forEach(o => { _uCta += o.unidades || 0; _ibCta += o.ingresos_brutos || 0; });
+    const aovCuenta = _uCta > 0 ? _ibCta / _uCta : 0;
+
     for (const s of allSkuArr) {
       const enrich = getEnrichment(s);
       if (!enrich.ads || enrich.ads.inversion <= 0) continue;
@@ -14808,12 +15016,18 @@ function renderNEXUS(skuMap, useML, idLabel) {
         if (!a || !(a.inversion > 0)) return;
         vistos.add(num);
         const idMostrar = /^ML[A-Z]/i.test(k) ? k : ('MLA' + num);
+        const _acosRef = aovCuenta > 0 ? (a.inversion / aovCuenta) : null;
         zeroReturnArr.push({
           s: { id: idMostrar, unidades: 0 },
-          inv: a.inversion, aov: 0, acosProyectado: null,
+          inv: a.inversion, aov: aovCuenta, acosProyectado: _acosRef, aovEsReferencia: true,
           accion: 'SIN VENTAS', accionClass: 'zr-row-danger',
           accionDesc: 'No registra ninguna venta en el período (ni atribuida a Ads ni orgánica). '
             + 'La inversión es pérdida completa. Verificá que el período del reporte de Ads coincida con el filtro de fechas antes de decidir.'
+            + (_acosRef !== null
+                ? ' Proyectado contra el ticket promedio de la cuenta (' + fmtCurrency(aovCuenta) + '), la pauta ya se lleva '
+                  + PCT(_acosRef) + ' de lo que dejaría su primera venta'
+                  + (_acosRef >= 1 ? ': la primera venta NO alcanza a cubrir lo invertido.' : '.')
+                : '')
             + (a.estado === 'Activo'
                 ? ' El anuncio SIGUE ACTIVO: el gasto no se detuvo.'
                 : a.estado ? ' El anuncio ya no está activo (' + a.estado + '): el gasto es histórico del período y no hay nada que frenar.' : ''),
@@ -14854,26 +15068,34 @@ function renderNEXUS(skuMap, useML, idLabel) {
 
       const sinVentaCount = zeroReturnArr.filter(z => z.sinVentaAlguna).length;
       const sinVentaInv   = zeroReturnArr.filter(z => z.sinVentaAlguna).reduce((a,z)=>a+z.inv,0);
+      /* El umbral que decide cortar: la pauta ya se llevó más de lo que dejaría
+         una venta entera. A partir de acá la primera venta no repaga el gasto,
+         y cada día que el anuncio sigue corriendo profundiza el pozo. */
+      const noRepagaArr = zeroReturnArr.filter(z => z.acosProyectado !== null && z.acosProyectado >= 1);
+      const noRepagaInv = noRepagaArr.reduce((a,z)=>a+z.inv,0);
 
       let alertsHtml = '';
       /* El primer número que tiene que ver el consultor es el que puede frenar
          hoy: lo que sigue gastando. El resto es gasto ya consumado. */
       if (activosZR.length > 0) {
-        alertsHtml += `<div class="zr-alert"><span class="zr-icon">🔴</span><div class="zr-body"><div class="zr-title">SIGUE GASTANDO · ${activosZR.length} ${activosZR.length>1?'anuncios activos':'anuncio activo'} sin retorno</div><div class="zr-desc">${fmtCurrency(invActivosZR)} de inversión en anuncios que <b>están en circulación ahora mismo</b> y no tienen ventas atribuidas. Son los únicos sobre los que pausar o ajustar la puja cambia algo: van primero en la tabla.${noActivosZR>0?` Los otros ${noActivosZR} ya están pausados, movidos o deshabilitados y figuran atenuados al final: su gasto es histórico del período.`:''}</div></div></div>`;
+        alertsHtml += `<div class="zr-alert" data-zr-tag="activo" onclick="_zrFiltrar(this,'activo')"><span class="zr-icon">🔴</span><div class="zr-body"><div class="zr-title">SIGUE GASTANDO · ${activosZR.length} ${activosZR.length>1?'anuncios activos':'anuncio activo'} sin retorno</div><div class="zr-desc">${fmtCurrency(invActivosZR)} de inversión en anuncios que <b>están en circulación ahora mismo</b> y no tienen ventas atribuidas. Son los únicos sobre los que pausar o ajustar la puja cambia algo: van primero en la tabla.${noActivosZR>0?` Los otros ${noActivosZR} ya están pausados, movidos o deshabilitados y figuran atenuados al final: su gasto es histórico del período.`:''}</div></div></div>`;
       } else if (noActivosZR > 0) {
         alertsHtml += `<div class="zr-alert zr-alert-ok"><span class="zr-icon">✓</span><div class="zr-body"><div class="zr-title zr-title-ok">Ningún anuncio activo sin retorno</div><div class="zr-desc">Las ${noActivosZR} publicaciones del listado ya están pausadas, movidas o deshabilitadas: el gasto es histórico del período y no hay nada que frenar.</div></div></div>`;
       }
+      if (noRepagaArr.length > 0) {
+        alertsHtml += `<div class="zr-alert" data-zr-tag="norepaga" onclick="_zrFiltrar(this,'norepaga')"><span class="zr-icon">💸</span><div class="zr-body"><div class="zr-title">NO REPAGA · ${noRepagaArr.length} ${noRepagaArr.length>1?'publicaciones':'publicación'} donde una venta no cubre lo gastado</div><div class="zr-desc">${fmtCurrency(noRepagaInv)} de inversión con ACOS proyectado de 100% o más: aunque vendieran ahora mismo, esa venta no alcanza a devolver lo que ya se gastó. Es el punto de corte: mientras el anuncio siga activo, el pozo se profundiza. En las publicaciones sin ninguna venta el ACOS se proyecta contra el ticket promedio de la cuenta, porque no tienen precio propio.</div></div></div>`;
+      }
       if (sinVentaCount > 0) {
-        alertsHtml += `<div class="zr-alert"><span class="zr-icon">⛔</span><div class="zr-body"><div class="zr-title">PÉRDIDA COMPLETA · ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin NINGUNA venta</div><div class="zr-desc">${fmtCurrency(sinVentaInv)} de inversión en publicaciones que no vendieron nada en el período, ni por Ads ni de forma orgánica. Antes de pausar, verificá que el período del reporte de Ads coincida con el filtro de fechas: si el reporte de ventas cubre una ventana más corta, algunas pueden haber vendido fuera de ella.</div></div></div>`;
+        alertsHtml += `<div class="zr-alert" data-zr-tag="sinventa" onclick="_zrFiltrar(this,'sinventa')"><span class="zr-icon">⛔</span><div class="zr-body"><div class="zr-title">PÉRDIDA COMPLETA · ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin NINGUNA venta</div><div class="zr-desc">${fmtCurrency(sinVentaInv)} de inversión en publicaciones que no vendieron nada en el período, ni por Ads ni de forma orgánica. Antes de pausar, verificá que el período del reporte de Ads coincida con el filtro de fechas: si el reporte de ventas cubre una ventana más corta, algunas pueden haber vendido fuera de ella.</div></div></div>`;
       }
       if (pausarCount > 0) {
-        alertsHtml += `<div class="zr-alert"><span class="zr-icon">🚨</span><div class="zr-body"><div class="zr-title">ACCIÓN URGENTE · ${pausarCount} ${pausarCount>1?'publicaciones':'publicación'} a PAUSAR</div><div class="zr-desc">Tienen inversión que supera el 30% del precio promedio sin ninguna venta ADS. Revisalas y pausalas inmediatamente para frenar el gasto sin retorno.</div></div></div>`;
+        alertsHtml += `<div class="zr-alert" data-zr-tag="pausar" onclick="_zrFiltrar(this,'pausar')"><span class="zr-icon">🚨</span><div class="zr-body"><div class="zr-title">ACCIÓN URGENTE · ${pausarCount} ${pausarCount>1?'publicaciones':'publicación'} a PAUSAR</div><div class="zr-desc">Tienen inversión que supera el 30% del precio promedio sin ninguna venta ADS. Revisalas y pausalas inmediatamente para frenar el gasto sin retorno.</div></div></div>`;
       }
       if (revisarCount > 0) {
-        alertsHtml += `<div class="zr-alert zr-alert-ok"><span class="zr-icon">⚠️</span><div class="zr-body"><div class="zr-title zr-title-ok">MONITOREAR · ${revisarCount} ${revisarCount>1?'publicaciones':'publicación'} a REVISAR</div><div class="zr-desc">ACOS proyectado entre 15% y 30%. Ajustá las pujas o revisá el contenido de la publicación para mejorar la conversión.</div></div></div>`;
+        alertsHtml += `<div class="zr-alert zr-alert-ok" data-zr-tag="revisar" onclick="_zrFiltrar(this,'revisar')"><span class="zr-icon">⚠️</span><div class="zr-body"><div class="zr-title zr-title-ok">MONITOREAR · ${revisarCount} ${revisarCount>1?'publicaciones':'publicación'} a REVISAR</div><div class="zr-desc">ACOS proyectado entre 15% y 30%. Ajustá las pujas o revisá el contenido de la publicación para mejorar la conversión.</div></div></div>`;
       }
       if (soportarCount > 0) {
-        alertsHtml += `<div class="zr-alert" style="background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.2)"><span class="zr-icon">💡</span><div class="zr-body"><div class="zr-title" style="color:var(--ok)">SOPORTAR · ${soportarCount} ${soportarCount>1?'publicaciones':'publicación'} con inversión baja</div><div class="zr-desc">Inversión menor al 15% del precio promedio. Probablemente recién incorporadas a campaña. Dales tiempo antes de tomar decisiones.</div></div></div>`;
+        alertsHtml += `<div class="zr-alert" data-zr-tag="soportar" onclick="_zrFiltrar(this,'soportar')" style="background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.2)"><span class="zr-icon">💡</span><div class="zr-body"><div class="zr-title" style="color:var(--ok)">SOPORTAR · ${soportarCount} ${soportarCount>1?'publicaciones':'publicación'} con inversión baja</div><div class="zr-desc">Inversión menor al 15% del precio promedio. Probablemente recién incorporadas a campaña. Dales tiempo antes de tomar decisiones.</div></div></div>`;
       }
 
       let html = alertsHtml;
@@ -14897,12 +15119,31 @@ function renderNEXUS(skuMap, useML, idLabel) {
               ? `<span class="tag tag-ok">${z.accion}</span>`
               : `<span class="tag tag-muted">${z.accion}</span>`;
         const _noAccionable = z.estado && z.estado !== 'Activo';
-        html += `<tr class="${z.accionClass}" title="${z.accionDesc}"${_noAccionable ? ' style="opacity:.62"' : ''}>`
+        /* Etiquetas de la fila: son las que consultan los botones de alerta para
+           abrir su propio listado. Una fila puede pertenecer a varios casos
+           (un anuncio activo que además no vendió nada). */
+        const _tags = [
+          _noAccionable ? 'inactivo' : 'activo',
+          z.sinVentaAlguna ? 'sinventa' : '',
+          z.accion === 'PAUSAR ADS' ? 'pausar' : '',
+          z.accion === 'REVISAR' ? 'revisar' : '',
+          z.accion === 'SOPORTAR' ? 'soportar' : '',
+          (z.acosProyectado !== null && z.acosProyectado >= 1) ? 'norepaga' : ''
+        ].filter(Boolean).join(' ');
+        html += `<tr data-zr="${_tags}" class="${z.accionClass}${_noAccionable ? ' evo-apagada' : ''}" title="${z.accionDesc}">`
           + `<td>${idWithTitle(z.s.id)}</td>`
           + `<td>${_adEstadoChip(z.estado)}</td>`
           + `<td class="num" style="color:var(--warn)">${ARS(z.inv)}</td>`
-          + `<td class="num">${z.aov > 0 ? ARS(z.aov) : '<span style="color:var(--muted)">—</span>'}</td>`
-          + `<td class="num" style="color:${acosClr}">${z.acosProyectado !== null ? PCT(z.acosProyectado) : '—'}</td>`
+          + `<td class="num">${z.aov > 0
+              ? (z.aovEsReferencia
+                  ? `<span style="color:var(--muted);cursor:help" title="Esta publicación no vendió nada en el período, así que no tiene precio propio: ni el reporte de Anuncios ni el de Rendimiento lo traen. Se usa el ticket promedio de la cuenta como referencia para poder proyectar el ACOS.">${ARS(z.aov)} <span style="font-size:9px">ref.</span></span>`
+                  : ARS(z.aov))
+              : '<span style="color:var(--muted)">—</span>'}</td>`
+          + `<td class="num" style="color:${acosClr}">${z.acosProyectado !== null
+              ? PCT(z.acosProyectado) + (z.acosProyectado >= 1
+                  ? ` <span style="color:var(--danger);font-size:9px;cursor:help" title="La inversión ya supera lo que dejaría una venta entera: aunque vendiera ahora mismo, esa venta no alcanza a cubrir lo gastado.">▲</span>`
+                  : '')
+              : '—'}</td>`
           + `<td style="font-size:11px;color:var(--muted)">${
               z.sinVentaAlguna ? 'Sin ninguna venta'
               : (z.pubLiqSales > 0
@@ -14919,7 +15160,9 @@ function renderNEXUS(skuMap, useML, idLabel) {
         `Inversión total expuesta: ${fmtCurrency(totalInv)}` +
         (activosZR.length > 0 ? ` · ${fmtCurrency(invActivosZR)} en ${activosZR.length} ${activosZR.length>1?'anuncios activos':'anuncio activo'} (lo único frenable hoy)` : '') +
         (sinVentaCount > 0 ? ` · ${fmtCurrency(sinVentaInv)} en ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin ninguna venta` : '') +
-        ` · ACOS proyectado = inversión ÷ precio promedio`,
+        ` · ACOS proyectado = inversión ÷ precio promedio` +
+        (aovCuenta > 0 ? ` · sin ventas propias se proyecta contra el ticket de la cuenta (${fmtCurrency(aovCuenta)})` : '') +
+        ` · tocá una alerta para ver sólo ese caso`,
         html,
         true
       );
