@@ -1120,8 +1120,9 @@ const _GLOSARIO = [
   ['Período con reporte de Ads','Se alinea solo a la ventana del reporte','Al cargar ventas o Ads y al generar el dashboard, el filtro de fechas pasa a la ventana del reporte de Mercado Ads, recortada a las fechas que tienen ventas. Es el único rango con datos de pauta, y el COGS del template refleja costos vigentes, no los de meses atrás. Medido en una cuenta real con 6 meses de ventas y 30 días de Ads: el margen real final daba 37,1% sobre todo el período y 31,2% en la ventana. Después de generar, el filtro se puede mover a mano.'],
   ['Pauta sin ventas','Se resta aunque la publicación no haya vendido','La inversión en publicaciones que no vendieron en el período es gasto real, pero no tiene fila en el análisis por publicación y calcNEXUS no la ve. Se resta del resultado en el dashboard, el informe y el export; en el resultado con COGS se imputa en proporción a la facturación con costo cargado. Hasta v51.1 el dashboard la restaba y el informe no: $71.210 de diferencia en el resultado antes de mercadería sobre la misma cuenta.'],
   ['Descuentos y bonificaciones','Suman a lo recibido, netos de IVA','Lo que ML reintegra sobre sus propios cargos. Viene positivo en el reporte y forma parte de la columna Total, así que se suma a lo recibido con el mismo neteo de IVA que los cargos. En carritos se reparte entre los ítems igual que el resto de los importes del paquete. Hasta v51.1 no se computaba.'],
+  ['Zona de cada despacho, declarada por Mercado Libre','El importe que bonifica ES la tarifa del anillo','Hasta v53.1 EVO costeaba todo el despacho propio al promedio ponderado de las cuatro tarifas, con el argumento de que el reporte no dice a qué anillo fue cada venta. Era falso. En cada venta de despacho propio ML paga la tarifa publicada del anillo de destino, y ese importe llega por "Descuentos y bonificaciones" cuando el vendedor ofrece envío gratis o por "Ingresos por envío" cuando lo paga el comprador. Como las tarifas son ocho valores conocidos y están separadas entre sí al menos un 3,4%, el monto identifica la zona sin ambigüedad. Medido sobre un reporte real de 99 ventas Flex: 60 traen uno de los dos importes y el 100% cae exactamente en una tarifa de la tabla. Las que no traen ninguno son ventas bajo el umbral donde el vendedor ofreció envío gratis —ahí ML no bonifica, y está bien— y se resuelven por código postal. Desde v53.2, cada publicación paga las zonas a las que efectivamente despachó: un item que despacha todo a zona lejana deja de costar lo mismo que uno que despacha todo a zona cercana, cuando la tarifa se lleva más del doble. El Resumen declara cuántas unidades resolvió cada vía.'],
   ['Bonificación de envío (despacho propio)','Lo que ML le paga al vendedor por despachar él','En Argentina, cada venta de Envíos Flex recibe una bonificación que viene en la columna "Descuentos y bonificaciones" del reporte de ventas, una línea por venta. En productos de hasta $33.000, usados y publicaciones gratuitas, el comprador paga el envío y el vendedor recibe la tarifa COMPLETA del anillo de destino: $4.990 cercana, $6.990 media, $8.990 lejana, $10.490 muy lejana. En productos nuevos desde $33.000 con envío gratis y reputación verde, recibe el 10%: $499, $699, $899 y $1.049. Medido sobre un reporte real de 99 ventas Flex, el 100% de los importes de esa columna cae exactamente en una de esas tarifas y ninguna venta que no sea Flex trae un peso ahí: la columna ES la bonificación de envío, y su importe dice a qué anillo fue cada venta. Siempre estuvo computada dentro de lo recibido —el margen la contempla desde v51.1— pero hasta v53.0 no tenía dónde verse, así que el despacho propio se leía a tarifa plena. Desde v53.1 el costo que muestran las tarjetas, la columna de envío de la tabla NEXUS y las hojas del export es el NETO: tarifa menos bonificación. Cuando el producto es barato y el destino lejano, el neto puede dar negativo: ML paga más de lo que cuesta el despacho.'],
-  ['Despacho propio por zona','El costo no es un número único y el export lo publica','La tarifa de reparto propio crece con la distancia y EVO resuelve la zona de cada venta por el código postal del comprador. El bloque "Despacho propio por zona" del Resumen entrega, por anillo, unidades, participación en la mezcla, tarifa cargada, costo del período, bonificación de ML y costo neto, más el costo neto por unidad despachada. Sin ese bloque, un piso de ticket construido sobre el promedio no valía para la zona cara y no había cómo saberlo mirando el archivo.'],
+  ['Despacho propio por zona','El costo no es un número único y el export lo publica','La tarifa de reparto propio crece con la distancia y EVO resuelve la zona de cada venta con lo que declara Mercado Libre y, donde no lo declara, por el código postal del comprador. El bloque "Despacho propio por zona" del Resumen entrega, por anillo, unidades, participación en la mezcla, tarifa cargada, costo del período, bonificación de ML y costo neto, más el costo neto por unidad despachada. Sin ese bloque, un piso de ticket construido sobre el promedio no valía para la zona cara y no había cómo saberlo mirando el archivo.'],
   ['Rentabilidad real $','NEXUS − COGS','Resultado final del período con todos los costos: canal, fiscal, publicidad y producto. Es el único número que puede llamarse utilidad. Se calcula sólo sobre las publicaciones con costo cargado, porque del resto no hay dato.'],
   ['Cascada del informe','Del precio de venta al resultado','El informe muestra el desglose como cascada y no como lista de costos, para que se vea dónde queda parada cada cifra y la cuenta cierre sola. El corte intermedio es lo recibido de Mercado Libre sin IVA, que es la base de todos los márgenes. Cierra en dos tramos: hasta antes de mercadería contra NEXUS de todo el catálogo, y el tramo de mercadería contra la rentabilidad real de la porción con costo cargado. Se separan porque el COGS rara vez cubre el 100% del catálogo y mezclarlos daría un resultado final que no coincide con la tarjeta.'],
   ['Margen real final','Rentabilidad real ÷ lo recibido de ML sin IVA','Responde de cada peso que quedó de Mercado Libre, cuánto es ganancia. La base es lo recibido menos el IVA débito: esa parte está en la cuenta pero no es del vendedor, hay que girarla al fisco, así que dejarla en el denominador achicaría el margen artificialmente. El numerador tampoco la tiene, con lo que la razón queda en la misma base. Se descartó calcularlo sobre el revenue bruto, que era lo que hacía hasta septiembre de 2026 y mezclaba un numerador sin IVA con un denominador con IVA. También se descartó la venta neta: es correcta desde lo contable pero no representa plata que el vendedor vea. Medido en una cuenta real: 17,8% sobre bruto, 21,6% sobre venta neta y 37,1% sobre lo recibido sin IVA. El tooltip de la tarjeta muestra las tres para poder contrastar.'],
@@ -1324,6 +1325,7 @@ const _GLOSARIO = [
   ['Por qué el código postal y no el nombre','El nombre de la localidad lo escribe el comprador','La llave de la clasificación es el CP, no el nombre. Medido sobre 9.859 ventas Flex de una cuenta real, 213 de los 473 códigos postales traían más de un nombre para el mismo lugar: el CP 1650 aparecía como "billinghurst", "billingurst pdo.san martin", "general san martin", "loma hermosa", "san andres", "villa lynch" y tres más. El CP es estable y ML lo valida: el rango 1000-1499 coincidió exacto con las 2.470 ventas cuya provincia decía Capital Federal. En Chile el CP viene vacío (0% de cobertura) y no queda otra que usar el nombre de comuna, que ML sí normaliza contra un set cerrado de 52 valores.'],
   ['Destinos del despacho propio','Contexto, y detector de ventas mal clasificadas','El modal lista los destinos del canal propio por volumen. Desde v52.9 la zona ya no se declara —sale del código postal— pero la lista sigue sirviendo para detectar que "despacho propio" esté mezclando ventas que no lo son: si aparecen destinos donde el reparto propio no llega, esas ventas son otra forma de entrega que el reporte no informó y su costo no es una tarifa de reparto. Medido en una cuenta real, 3 destinos concentran el 92% de las unidades y el resto se reparte en 20 destinos donde no hay reparto propio.'],
   ['Sonda de envío propio promedio','Botón apagado, a la izquierda del toggle UNIT','Aplica un costo único por unidad a todas las publicaciones de despacho propio que el template no declara. Sirve para ver de un saque cuánto mueve la aguja el envío propio antes de sentarse a cargar el detalle item por item. El botón va apagado como el de documentación interna porque es una herramienta de trabajo del consultor, no una función del tablero. El template siempre gana sobre el promedio: la estimación sólo cubre lo que no está declarado.'],
+  ['Marca ENVÍO POR ZONA','El grado fino de la estimación','Aparece cuando el costo de despacho propio de la fila sale de las cuatro tarifas por zona aplicadas venta por venta, con el anillo resuelto por lo que declara ML y, en su defecto, por código postal. Es la estimación buena: no es lo que facturó el proveedor, pero tampoco es un promedio único. El tooltip de la columna de envío muestra el reparto por anillo de esa publicación. La marca ENVÍO ESTIMADO queda para el caso en que sólo hay un número promedio cargado.'],
   ['Marca ENVÍO ESTIMADO','Distinta de ENVÍO S/ COSTO','Con el promedio aplicado el margen ya contempla el envío, pero con un número que no es el real. Se marca con un chip propio, separado del de dato faltante, para que una revisión preliminar no llegue a una reunión como si fuera definitiva. En Argentina la tarifa de Flex cambia por zona (CABA y cordones 1, 2 y 3) y sube con la distancia, así que un único promedio depende de a dónde despacha la cuenta.'],
   ['Código postal de despacho','Lo que ancla los anillos','Los anillos se miden desde donde sale el paquete, que no siempre es donde está el vendedor: puede ser un depósito propio o la dirección de un 3PL. El campo toma ese CP y reordena la propuesta de anillos por distancia. Medido sobre una cuenta real, mueve mucho: despachando desde CABA el 31% de las unidades cae en zona cercana; desde Pilar, con las mismas ventas, sólo el 3%, y el 32% pasa a zona muy lejana.'],
   ['Por qué el anillo se puede pisar a mano','La geografía no siempre es la tarifa','EVO propone el anillo por distancia, pero la propuesta no manda. Un vendedor en Tigre reparte geográficamente cerca a zona norte y sin embargo puede facturarlo como zona lejana, porque contrató un 3PL o una logística que cobra por sus propios anillos. Por eso la asignación es editable partido por partido y lo elegido gana sobre la distancia y sobrevive a un cambio de CP de origen. Es también la razón por la que la unidad es el partido y no el cordón: el segundo cordón contiene a Tigre y a Berazategui, que desde Tigre no están a la misma distancia ni parecido.'],
@@ -1420,7 +1422,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v53.1';
+const EVO_VERSION = 'v53.2';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1516,6 +1518,7 @@ function _metodologiaIA() {
     ['Envío absorbido', 'Σ por venta de max(0, −(Costos de envío + Ingresos por envío)) × netFee', 'Venta por venta: lo que una venta cobra de más no tapa lo que absorbe otra. Se usa en el KPI logístico y en Costos de canal %, no en el resultado.'],
     ['Cargo fijo / cuotas', '|importe| × netFee', ''],
     ['Descuentos y bonificaciones', 'Descuentos × netFee', 'Reintegros de ML sobre sus cargos. Suman.'],
+    ['Zona de cada despacho propio', 'La declara Mercado Libre; el código postal es el respaldo', 'El importe que ML paga por cada venta de despacho propio ES la tarifa publicada del anillo de destino, así que el monto identifica la zona sin inferir nada. Llega por "Descuentos y bonificaciones" cuando el vendedor ofrece envío gratis y por "Ingresos por envío" cuando lo paga el comprador. Las ventas donde ML no informa ninguno de los dos —producto bajo el umbral con envío gratis ofrecido por el vendedor, donde no hay bonificación— se resuelven por el código postal del comprador, y lo que no resuelve ninguna de las dos vías paga el promedio ponderado de la cuenta. El Resumen declara cuántas unidades resolvió cada vía. Hasta v53.1 TODO el despacho propio se costeaba al promedio ponderado: un envío a zona cercana y uno a zona muy lejana pesaban lo mismo en el margen aunque sus tarifas difieran más del doble.'],
     ['Bonificación de envío propio', 'Σ Descuentos × netFee de las ventas despachadas por canal propio', 'En Argentina, ML le paga al vendedor por despachar él: la tarifa completa del anillo de destino en productos de hasta $33.000, usados y publicaciones gratuitas ($4.990 cercana, $6.990 media, $8.990 lejana, $10.490 muy lejana), y el 10% de esa tarifa en productos nuevos desde $33.000 con envío gratis y reputación verde. Viaja en la columna "Descuentos y bonificaciones", una línea por venta. El costo real del despacho propio es la tarifa del proveedor menos esta bonificación, y así figura en las hojas NEXUS y en el estado de resultados.'],
     ['Retenciones', fc.isMX ? 'Σ IVA retenido + ISR retenido, sin netear' : 'Σ |Impuestos|, sin netear',
       fc.retModo === 'IIBB' ? 'Pago a cuenta de IIBB, no un costo adicional.'
@@ -1629,7 +1632,7 @@ function _cifrasControlIA() {
     ['Comisión, neta de IVA', $(M.comision), fc.isMX ? 'Σ |Cargo por venta e impuestos − retenciones de IVA e ISR| × netFee' : 'Σ |Cargo por venta| × netFee'],
     ['Envío neto con signo, neto de IVA', $(M.envioNeto), '−Σ (Costos de envío + Ingresos por envío) × netFee'],
     ['Envío absorbido, neto de IVA', $(M.envio), 'Σ por venta de max(0, −(Costos + Ingresos por envío)) × netFee'],
-    ['Envío propio, fuera de la plataforma', $(M.flexPropio), 'Σ por publicación de (tarifa de despacho propio × unidades despachadas por canal propio). No está en el reporte: sale del template o de las tarifas por zona'],
+    ['Envío propio, fuera de la plataforma', $(M.flexPropio), 'Σ por venta de la tarifa del anillo al que se despachó × unidades. No está en el reporte: la tarifa sale del template de costo de envío propio o de las cuatro tarifas por zona; el anillo de cada venta lo declara Mercado Libre en el importe que bonifica y, donde no lo declara, sale del código postal del comprador'],
     ['Cargo fijo, neto de IVA', $(M.fijo), 'Σ |Cargo fijo| × netFee'],
     ['Cuotas, neto de IVA', $(M.cuotas), 'Σ |Cuotas| × netFee'],
     ['Cargos de ML netos de IVA', $(cargosNetos), 'Comisión + envío neto con signo + cargo fijo + cuotas'],
@@ -7750,7 +7753,13 @@ function parsearArchivo(raw,filename){
         cargo_venta, costo_fijo, cuotas,
         ing_envio, costo_envio, impuestos,
         // Las bonificaciones del paquete se reparten como los cargos (v51.2)
-        descuentos: carritoCtx.descuentos * frac, anulaciones:0
+        descuentos: carritoCtx.descuentos * frac, anulaciones:0,
+        /* La tarifa de envío que declara ML va SIN prorratear: un carrito es UN
+           despacho a UNA dirección, así que el importe del paquete es la tarifa
+           de esa zona. Prorrateada no matchearía ninguna tarifa de la tabla y la
+           venta perdería la zona que ML ya declaró. Sólo se usa para resolver el
+           anillo; la plata sigue repartiéndose por descuentos e ing_envio. */
+        tarifaML: (carritoCtx.descuentos || 0) || (carritoCtx.ing_envio || 0)
       });
       if (!esCanceled) {
         const comboId = pubVal || skuVal;
@@ -7824,7 +7833,12 @@ function parsearArchivo(raw,filename){
       forma_entrega,
       condicion: _condVenta(get(row,'condicion')),
       ingresos_brutos,cargo_venta,costo_fijo,cuotas,
-      ing_envio,costo_envio,impuestos,descuentos,anulaciones
+      ing_envio,costo_envio,impuestos,descuentos,anulaciones,
+      /* Tarifa de envío que declara ML para esta venta: la bonificación cuando
+         el vendedor ofreció envío gratis, o lo que pagó el comprador cuando no.
+         Su importe identifica el anillo de destino (ver _zonaPorTarifaML).
+         No es plata nueva: descuentos e ing_envio ya están en el resultado. */
+      tarifaML: descuentos || ing_envio
     });
   }
   flushCombo();
@@ -8092,19 +8106,22 @@ function aplicarFiltros(){
              Una venta que no se puede ubicar entra con celda vacía y cuenta
              contra la cobertura en vez de desaparecer del total. */
           const _g = (typeof geoCelda === 'function') ? geoCelda(cpComprador, localidad) : null;
-          const _k = _g ? (_g.celda + '|' + _g.cordon) : '|';
-          S.flexCeldaU = S.flexCeldaU || {};
-          S.flexCeldaU[_k] = (S.flexCeldaU[_k] || 0) + unidades;
-          /* Bonificación de envío de la misma venta (v53.1). Se guarda pegada a
-             la celda porque su importe ES la tarifa del anillo al que fue esa
-             venta: Mercado Libre paga $4.990 / $6.990 / $8.990 / $10.490 según
-             distancia bajo el umbral de envío gratis, y el 10% de esas cifras
-             arriba. O sea que la plataforma está declarando, venta por venta, a
-             qué anillo fue. Sirve para dos cosas: mostrar el costo real del
-             despacho propio por zona y contrastar la clasificación por código
-             postal contra lo que dice ML. */
-          S.flexCeldaB = S.flexCeldaB || {};
-          S.flexCeldaB[_k] = (S.flexCeldaB[_k] || 0) + descuentos;
+          /* Clave de dos partes: la zona que DECLARÓ Mercado Libre en esta venta
+             (v53.2) y la celda geográfica del comprador, que es el respaldo.
+             La zona de ML se puede resolver acá y guardarla hecha porque sale de
+             una tabla de tarifas publicadas que no depende de ninguna
+             configuración; la celda, en cambio, se guarda SIN resolver a anillo
+             porque el anillo depende del CP de origen y de los pisados del
+             consultor, que cambian sin volver a parsear el reporte.
+             Una venta que no se puede ubicar por ninguna de las dos vías entra
+             con las dos partes vacías y cuenta contra la cobertura, en vez de
+             desaparecer del total o de colarse en el promedio. */
+          const _zML = (typeof _zonaPorTarifaML === 'function') ? (_zonaPorTarifaML(r.tarifaML || 0) || '') : '';
+          const _k = (_zML) + '§' + (_g ? (_g.celda + '|' + _g.cordon) : '|');
+          S.flexVenta = S.flexVenta || {};
+          const _V = S.flexVenta[_k] || (S.flexVenta[_k] = { u:0, bonif:0 });
+          _V.u += unidades;
+          _V.bonif += descuentos;
         }
         const _verif = (costo_envio || 0) < 0 || CANALES_CON_COSTO.indexOf(_ce) >= 0;
         if (_verif) S.ibEnvioVerif = (S.ibEnvioVerif || 0) + ingresos_brutos;
@@ -9736,23 +9753,29 @@ function exportarExcel(){
     const _calcZ = _MZ && _MZ.calc;
     const _hayTarifa = (typeof FLEX_ZONAS !== 'undefined') && _ZONA_ORDEN.some(k => (FLEX_ZONAS[k] || 0) > 0);
     if (_calcZ && _calcZ.hay && _hayTarifa) {
-      resumenRows.push([], ['Despacho propio por zona','Unidades','% de la mezcla','Tarifa por unidad','Costo del período','Bonificación de ML','Costo neto']);
+      resumenRows.push([], ['Despacho propio por zona','Unidades','u. con zona declarada por ML','% de la mezcla','Tarifa por unidad','Costo del período','Bonificación de ML','Costo neto']);
       _hdrRes.push(resumenRows.length - 1);
-      let _uT=0,_cT=0,_bT=0;
+      let _uT=0,_cT=0,_bT=0,_mT=0;
       _ZONA_ORDEN.forEach(k => {
         const u = _calcZ.unidades[k] || 0;
         if (!(u > 0)) return;
         const t = FLEX_ZONAS[k] || 0;
         const b = (_calcZ.bonif && _calcZ.bonif[k]) || 0;
-        _uT += u; _cT += t*u; _bT += b;
-        resumenRows.push([_ZONA_LABEL[k], u, (_MZ.mix[k]||0)/100, t, t*u, b, t*u - b]);
+        const ml = (_calcZ.mlZona && _calcZ.mlZona[k]) || 0;
+        _uT += u; _cT += t*u; _bT += b; _mT += ml;
+        resumenRows.push([_ZONA_LABEL[k], u, ml, (_MZ.mix[k]||0)/100, t, t*u, b, t*u - b]);
       });
       if (_uT > 0) {
-        resumenRows.push(['Total despacho propio', _uT, 1, _uT>0?_cT/_uT:0, _cT, _bT, _cT-_bT]);
-        resumenRows.push(['Costo neto por unidad despachada', '', '', '', '', '', _uT>0?(_cT-_bT)/_uT:0]);
+        resumenRows.push(['Total despacho propio', _uT, _mT, 1, _cT/_uT, _cT, _bT, _cT-_bT]);
+        resumenRows.push(['Costo neto por unidad despachada', '', '', '', '', '', '', (_cT-_bT)/_uT]);
       }
+      /* De dónde sale la zona de cada venta. Es lo que le permite al consultor
+         decir si la clasificación se apoya en lo que declaró la plataforma o en
+         la tabla de códigos postales, sin tener que preguntarlo. */
+      resumenRows.push(['  zona declarada por Mercado Libre (u)', Math.round(_calcZ.porML || 0)]);
+      resumenRows.push(['  zona deducida del código postal (u)', Math.round(_calcZ.porCP || 0)]);
       if (_calcZ.cobertura < 0.999)
-        resumenRows.push(['Unidades de despacho propio sin zona resuelta', Math.round(_calcZ.total - _calcZ.ubicadas)]);
+        resumenRows.push(['  unidades sin zona resuelta (pagan el promedio)', Math.round(_calcZ.total - _calcZ.ubicadas)]);
       const _origenManual = _ZONA_ORDEN.filter(k => _MZ.origen[k] === 'manual');
       if (_origenManual.length)
         resumenRows.push(['Zonas con mezcla declarada a mano', _origenManual.map(k => _ZONA_LABEL[k]).join(', ')]);
@@ -9865,7 +9888,7 @@ function exportarExcel(){
     resumenRows.push(['Margen real final % (sobre recibido sin IVA)',margenReal]);
     resumenRows.push(['Margen real final % (sobre ventas netas)',vnetaMatch>0?rentReal/vnetaMatch:0]);
   }
-  addSheet('Resumen',resumenRows,[42,26,15,16,16,16,16],{ titulo:true, etiquetaCol0:true, headerRows:_hdrRes });
+  addSheet('Resumen',resumenRows,[42,26,15,17,16,16,16,16],{ titulo:true, etiquetaCol0:true, headerRows:_hdrRes });
 
   /* ── Estado de resultados (v51.8) ── segunda hoja, detrás del Resumen.
      Mismo cálculo que el informe PDF (_estadoResultados). */
@@ -11042,8 +11065,7 @@ function subItemPorCanal(s, canal) {
   const share = (s.ingresos_brutos > 0) ? (C.ingresos_brutos / s.ingresos_brutos) : 0;
   const sub = Object.assign({}, s, C);
   sub.flexProvU = s.flexProvU;        // el destino no está en el subtotal del canal
-  sub.flexCeldaU = s.flexCeldaU;
-  sub.flexCeldaB = s.flexCeldaB;
+  sub.flexVenta = s.flexVenta;        // el reparto por zona tampoco está en el subtotal del canal
   sub._canal = canal;
   sub._shareCanal = share;
   sub.porCanal = null;            // evita que una lente se anide en otra
@@ -11055,7 +11077,7 @@ function subItemPorCanal(s, canal) {
       sub._flexUnit = fx.costo;
       sub._flexTotal = fx.costo * C.unidades;
       sub._flexVia = fx.via;
-      sub._flexEstimado = fx.via === 'PROMEDIO' || fx.via === 'ZONAS';
+      sub._flexEstimado = _FLEX_VIA_ESTIMADA.indexOf(fx.via) >= 0;
     }
   }
   return sub;
@@ -11198,10 +11220,19 @@ function getFlexCost(s) {
   /* Orden de precedencia: el template gana siempre; después la tarifa por zona
      cruzada contra el destino real de cada venta; y al final el promedio único.
      Una fila cargada a mano nunca se pisa con una estimación. */
-  /* Una sola estimación para todo el despacho propio: el promedio ponderado de
-     las tarifas por zona si se declaró la mezcla, y si no el promedio directo.
-     No hay variación por item porque el reporte no dice a qué anillo fue cada
-     venta; pretender lo contrario sería inventar precisión. */
+  /* v53.2 · Cada publicación paga las zonas a las que despachó.
+     Hasta v53.1 acá había una sola estimación para todo el catálogo —el promedio
+     ponderado de las cuatro tarifas— con este comentario: "no hay variación por
+     item porque el reporte no dice a qué anillo fue cada venta; pretender lo
+     contrario sería inventar precisión".
+     Resultó falso: el reporte SÍ lo dice. Mercado Libre paga en cada venta de
+     despacho propio la tarifa del anillo de destino, y ese importe viaja en
+     "Descuentos y bonificaciones" o en "Ingresos por envío" según quién pague el
+     envío. Ver _zonaPorTarifaML. Lo que no declara ML se resuelve por código
+     postal, y recién lo que no resuelve ninguna de las dos vías paga el
+     promedio. Ya no es inventar precisión: es leer un dato que estaba. */
+  const pi = _flexPorZonaDe(s);
+  if (pi > 0) return { costo: pi, titulo: '', via: 'ZONAS_ITEM', estimado: true };
   const pz = _flexPromedioZonas();
   if (pz > 0) return { costo: pz, titulo: '', via: 'ZONAS', estimado: true };
   if (FLEX_PROMEDIO > 0) return { costo: FLEX_PROMEDIO, titulo: '', via: 'PROMEDIO', estimado: true };
@@ -11676,14 +11707,27 @@ function _flexUnitDe(s) {
 }
 /* Unidades sobre las que se aplica: en una lente FLEX son todas las del canal;
    en la vista consolidada, sólo las que se despacharon por canal propio. */
-/* true cuando el costo aplicado sale del promedio global y no del template.
-   Todo lo que se calcule con él va rotulado ESTIMADO. */
+/* true cuando el costo aplicado sale de una tarifa y no de una fila cargada a
+   mano en el template. Todo lo que se calcule con él va rotulado ESTIMADO:
+   ZONAS_ITEM es mucho más fino que PROMEDIO, pero sigue siendo una tarifa
+   aplicada y no lo que efectivamente facturó el proveedor. */
+const _FLEX_VIA_ESTIMADA = ['PROMEDIO', 'ZONAS', 'ZONAS_ITEM'];
 function _flexEstimadoDe(s) {
   if (!s) return false;
   if (s._canal && s._canal !== 'FLEX') return false;
-  if (s._flexVia) return s._flexVia === 'PROMEDIO' || s._flexVia === 'ZONAS';
+  if (s._flexVia) return _FLEX_VIA_ESTIMADA.indexOf(s._flexVia) >= 0;
   const fx = (typeof getFlexCost === 'function') ? getFlexCost(s) : null;
-  return !!(fx && (fx.via === 'PROMEDIO' || fx.via === 'ZONAS'));
+  return !!(fx && _FLEX_VIA_ESTIMADA.indexOf(fx.via) >= 0);
+}
+/* Por qué vía se resolvió el costo: MLA / SKU (template), ZONAS_ITEM (tarifa
+   del anillo de cada venta), ZONAS (promedio ponderado) o PROMEDIO (número
+   único). Cambia el rótulo que ve el consultor, no el cálculo. */
+function _flexViaDe(s) {
+  if (!s) return '';
+  if (s._canal && s._canal !== 'FLEX') return '';
+  if (s._flexVia) return s._flexVia;
+  const fx = (typeof getFlexCost === 'function') ? getFlexCost(s) : null;
+  return (fx && fx.via) || '';
 }
 function _flexUnidadesDe(s) {
   if (!s) return 0;
@@ -11841,6 +11885,7 @@ function calcNEXUS(s) {
      logístico entero invisible y un margen que se veía sano. */
   const flexUnit = _flexUnitDe(s);
   const flexEstimado = _flexEstimadoDe(s);
+  const flexVia = _flexViaDe(s);
   const flexUnidades = _flexUnidadesDe(s);
   const flexTotal = flexUnit > 0 ? flexUnit * flexUnidades : 0;
   /* Bonificación de envío que paga ML por cada despacho propio. Ya está adentro
@@ -11975,7 +12020,7 @@ function calcNEXUS(s) {
     // P&L período (con Ads): margen del rango → margenNEXUS / recibidoNEXUS
     
     // Envío propio y fiabilidad del margen (v52.4)
-    flexUnit, flexTotal, flexUnitEfectivo, flexEstimado, envioSinCosto, margenNoComputable,
+    flexUnit, flexTotal, flexUnitEfectivo, flexEstimado, flexVia, envioSinCosto, margenNoComputable,
     // Envío propio neto de la bonificación de ML (v53.1) · no cambia el margen, lo explica
     bonifFlex, bonifFlexUnit, bonifFlexPorUnidadFlex, flexNetoTotal, flexNetoUnitEfectivo, flexUnidades,
     coberturaEnvio: _cobN,
@@ -12347,6 +12392,136 @@ function zonaDeCelda(celda, cordon) {
   return _zonaPropuesta(celda, cordon);
 }
 
+/* ═══════════ LA ZONA QUE DECLARA MERCADO LIBRE (v53.2) ═══════════
+   La zona del despacho propio se venía resolviendo por código postal, que es
+   una inferencia buena pero es una inferencia. Resulta que la plataforma la
+   declara, venta por venta, y nadie la estaba leyendo.
+
+   En cada venta de Envíos Flex, Mercado Libre le paga al vendedor la tarifa de
+   envío del anillo de destino. Ese importe llega por una de dos columnas:
+     · "Descuentos y bonificaciones" — el vendedor ofreció envío gratis.
+     · "Ingresos por envío" — lo pagó el comprador (productos bajo el umbral).
+   Y el importe ES la tarifa publicada del anillo, tal cual:
+
+     Producto de hasta $33.000, usado o publicación gratuita → tarifa completa
+     Producto nuevo desde $33.000 con envío gratis y reputación verde → el 10%
+
+   Así que el monto dice la zona. Medido sobre un reporte real de 99 ventas
+   Flex: 60 traen uno de los dos importes y el 100% de ellos cae exactamente en
+   una tarifa de la tabla. Las otras 39 son ventas bajo el umbral donde el
+   vendedor ofreció envío gratis y se hizo cargo del envío —ML no bonifica nada
+   ahí, y está bien— más paquetes sin bonificación: ésas siguen resolviéndose
+   por código postal.
+
+   Por qué importa: hasta v53.1 EVO costeaba TODO el despacho propio al promedio
+   ponderado de las cuatro tarifas. Un envío a zona cercana y uno a zona muy
+   lejana costaban lo mismo en el margen, cuando en la tarifa del proveedor se
+   llevan más del doble. Con la zona por venta, cada publicación paga las zonas
+   a las que efectivamente despachó.
+
+   La tabla lleva la escala vigente y la anterior porque un período de 30 días
+   puede cruzar un cambio de tarifario: en el reporte medido conviven las dos.
+   Si ML vuelve a cambiarlas, se agrega el valor nuevo acá y nada más. */
+const FLEX_TARIFA_ML = {
+  AR: {
+    cercana:   [4990, 4490],
+    media:     [6990, 6490],
+    lejana:    [8990, 8690],
+    muyLejana: [10490, 9990]
+  }
+};
+/* Tolerancia del 2%: las tarifas están separadas como mínimo un 3,4% entre sí
+   (869 contra 899), así que no hay forma de que un importe caiga en dos anillos.
+   Un monto que no matchea NO se fuerza: devuelve null y la venta se resuelve por
+   código postal, que es de dónde venía. */
+function _zonaPorTarifaML(monto) {
+  const t = FLEX_TARIFA_ML[(typeof _geoPais === 'function') ? _geoPais() : 'AR'];
+  if (!t || !(monto > 0)) return null;
+  for (const z of _ZONA_ORDEN) {
+    for (const v of (t[z] || [])) {
+      if (Math.abs(monto - v) / v <= 0.02) return z;
+      const d = Math.round(v / 10);   // el 10% que se cobra arriba del umbral de envío gratis
+      if (d > 0 && Math.abs(monto - d) / d <= 0.02) return z;
+    }
+  }
+  return null;
+}
+
+/* Tarifa vigente de la plataforma por anillo, o null si no hay tabla para ese
+   país. Es el primer valor de cada lista: FLEX_TARIFA_ML guarda la escala
+   vigente y la anterior, y la anterior sólo existe para poder reconocer ventas
+   viejas, no para proponerla. */
+function _tarifaMLVigente() {
+  const t = FLEX_TARIFA_ML[(typeof _geoPais === 'function') ? _geoPais() : 'AR'];
+  if (!t) return null;
+  const out = {};
+  for (const z of _ZONA_ORDEN) { const v = (t[z] || [])[0]; if (!(v > 0)) return null; out[z] = v; }
+  return out;
+}
+
+/* Carga el tarifario de la plataforma en los cuatro campos de la ventana.
+   No aplica nada por su cuenta: escribe los valores y recalcula el preview, así
+   el consultor ve el efecto antes de aceptar y puede pisar lo que no coincida
+   con lo que le cobra su proveedor. */
+function _flexTarifasDefault() {
+  const t = _tarifaMLVigente(); if (!t) return;
+  _ZONA_ORDEN.forEach(k => {
+    const el = document.getElementById('flexz-' + k);
+    if (el) el.value = t[k];
+  });
+  if (typeof _flexRecalc === 'function') _flexRecalc();
+  const f = document.getElementById('flexz-cercana'); if (f) f.focus();
+}
+
+/* Reparto por zona de UNA publicación, con la zona de cada venta resuelta por
+   el orden de precedencia: lo que declaró ML primero, el código postal después.
+   Lo que no se puede ubicar por ninguna de las dos vías queda aparte y no se
+   prorratea sobre el resto: se informa. */
+function _flexZonasDeItem(s) {
+  const porZona = {}; _ZONA_ORDEN.forEach(z => porZona[z] = { u:0, bonif:0, uML:0 });
+  const sinZona = { u:0, bonif:0 };
+  const src = (s && s.flexVenta) || {};
+  Object.keys(src).forEach(k => {
+    const v = src[k]; if (!(v.u > 0)) return;
+    const cut = k.indexOf('§');
+    const zML = cut >= 0 ? k.slice(0, cut) : '';
+    const geo = cut >= 0 ? k.slice(cut + 1) : '|';
+    let z = (zML && porZona[zML]) ? zML : '';
+    if (!z) {
+      const c = geo.lastIndexOf('|');
+      const celda = c > 0 ? geo.slice(0, c) : '';
+      const cordon = c > 0 ? (parseInt(geo.slice(c + 1), 10) || 0) : -1;
+      if (celda) z = zonaDeCelda(celda, cordon);
+    }
+    if (z && porZona[z]) { porZona[z].u += v.u; porZona[z].bonif += v.bonif; if (zML) porZona[z].uML += v.u; }
+    else { sinZona.u += v.u; sinZona.bonif += v.bonif; }
+  });
+  return { porZona, sinZona };
+}
+
+/* Costo de despacho propio POR UNIDAD de una publicación, cobrando a cada
+   unidad la tarifa del anillo al que fue. Devolver un costo por unidad y no el
+   total deja intacto todo lo que viene después (flexUnit × unidades ya da la
+   suma exacta) y mantiene una sola definición de "envío propio" en el motor.
+   Las unidades sin zona resuelta pagan el promedio de las que sí la tienen; si
+   la publicación no tiene ninguna, el promedio de la cuenta. */
+function _flexPorZonaDe(s) {
+  if (typeof FLEX_ZONAS === 'undefined') return 0;
+  const d = _flexZonasDeItem(s);
+  let costo = 0, u = 0, sin = 0;
+  _ZONA_ORDEN.forEach(z => {
+    const uz = d.porZona[z].u; if (!(uz > 0)) return;
+    const t = FLEX_ZONAS[z] || 0;
+    if (t > 0) { costo += t * uz; u += uz; } else sin += uz;   // anillo sin tarifa cargada
+  });
+  sin += d.sinZona.u;
+  if (sin > 0) {
+    const fb = u > 0 ? costo / u : _flexPromedioZonas();
+    if (fb > 0) { costo += fb * sin; u += sin; }
+  }
+  return u > 0 ? costo / u : 0;
+}
+
 /* ═══════════ MEZCLA CALCULADA DESDE EL REPORTE ═══════════
    Recorre las unidades de despacho propio, las ubica y arma el reparto por
    anillo. Devuelve también la cobertura: qué parte del volumen se pudo ubicar.
@@ -12363,27 +12538,40 @@ function mezclaZonasCalculada(force) {
   const m = (G && G._lastRender && G._lastRender.skuMap) || {};
   const porZona = { cercana:0, media:0, lejana:0, muyLejana:0 };
   const bonifZona = { cercana:0, media:0, lejana:0, muyLejana:0 };
+  const mlZona = { cercana:0, media:0, lejana:0, muyLejana:0 };
   const porCelda = {};
   const _nfZ = (typeof fiscalNetFactor === 'function') ? fiscalNetFactor() : 1;
-  let ubicadas = 0, total = 0, bonifTot = 0;
+  let ubicadas = 0, total = 0, bonifTot = 0, porML = 0, porCP = 0;
   Object.values(m).forEach(s => {
-    Object.entries(s.flexCeldaU || {}).forEach(([clave, u]) => {
+    const src = s.flexVenta || {};
+    Object.keys(src).forEach(clave => {
+      const v = src[clave]; const u = v.u || 0;
       if (!(u > 0)) return;
       total += u;
-      const _bo = ((s.flexCeldaB || {})[clave] || 0) * _nfZ;
+      const _bo = (v.bonif || 0) * _nfZ;
       bonifTot += _bo;
-      // clave = "celda|cordon"; sin celda quiere decir que no se pudo ubicar
-      const cut = clave.lastIndexOf('|');
-      const celda = cut > 0 ? clave.slice(0, cut) : '';
-      const cordon = cut > 0 ? (parseInt(clave.slice(cut + 1), 10) || 0) : -1;
-      if (!celda) return;
+      /* clave = "zonaML§celda|cordon". La zona que declaró ML manda; el código
+         postal es el respaldo. Las dos partes vacías = venta sin ubicar. */
+      const cut = clave.indexOf('§');
+      const zML = cut >= 0 ? clave.slice(0, cut) : '';
+      const geo = cut >= 0 ? clave.slice(cut + 1) : '|';
+      const c = geo.lastIndexOf('|');
+      const celda = c > 0 ? geo.slice(0, c) : '';
+      const cordon = c > 0 ? (parseInt(geo.slice(c + 1), 10) || 0) : -1;
+      let z = (zML && porZona[zML] !== undefined) ? zML : '';
+      if (z) { porML += u; mlZona[z] += u; }
+      else if (celda) { z = zonaDeCelda(celda, cordon); porCP += u; }
+      if (!z) return;
       ubicadas += u;
-      const z = zonaDeCelda(celda, cordon);
       porZona[z] = (porZona[z] || 0) + u;
       bonifZona[z] = (bonifZona[z] || 0) + _bo;
-      if (!porCelda[celda]) porCelda[celda] = { celda, cordon, u: 0, zona: z };
-      porCelda[celda].u += u;
-      porCelda[celda].zona = z;
+      /* El detalle por celda sigue existiendo para la vista de destinos, y sólo
+         lo alimentan las ventas que se ubicaron por código postal: mezclarle las
+         que resolvió ML pondría unidades bajo una celda que no las explica. */
+      if (celda) {
+        if (!porCelda[celda]) porCelda[celda] = { celda, cordon, u: 0, zona: zonaDeCelda(celda, cordon) };
+        porCelda[celda].u += u;
+      }
     });
   });
   const pct = {};
@@ -12391,6 +12579,10 @@ function mezclaZonasCalculada(force) {
   _MEZCLA_CACHE = {
     pct, unidades: porZona, ubicadas, total,
     bonif: bonifZona, bonifTot,
+    /* Cuántas unidades resolvió cada vía. Es la cifra que dice si la tabla de
+       códigos postales se está usando mucho o poco, y la que permite declarar
+       en NOTAS_CONSULTOR de dónde sale la zona. */
+    porML, porCP, mlZona,
     cobertura: total > 0 ? ubicadas / total : 0,
     celdas: Object.values(porCelda).sort((a, b) => b.u - a.u),
     hay: ubicadas > 0
@@ -14212,10 +14404,16 @@ function buildNexusTable(cache, mode) {
        que no es el real: se marca distinto de "falta el dato" para que nadie
        lleve una revisión preliminar a una reunión como si fuera definitiva. */
     if (n && n.flexEstimado && n.flexTotal > 0) {
+      /* Desde v53.2 hay dos grados de estimación y conviene distinguirlos: con
+         la zona resuelta venta por venta la cifra es bastante más que "un
+         promedio", y decirle promedio invita a descartarla. */
+      const porZona = n.flexVia === 'ZONAS_ITEM';
       return '<span style="background:rgba(96,165,250,.14);color:var(--accent2);padding:1px 6px;border-radius:3px;'
         + 'font-size:9px;font-weight:700;letter-spacing:.5px;margin-left:6px;cursor:help;white-space:nowrap" title="'
-        + ('El costo de envío propio de esta publicación sale del promedio general cargado a mano, no del template. Sirve para una lectura preliminar; para decidir, cargá el costo real en el template ML | SKU | NOMBRE | COSTO FLEX.').replace(/"/g,'&quot;')
-        + '">ENVÍO ESTIMADO</span>';
+        + (porZona
+            ? 'El costo de envío propio de esta publicación sale de las tarifas por zona, aplicadas venta por venta según el anillo al que fue cada despacho. La zona la declara Mercado Libre en la mayoría de las ventas —el importe que bonifica ES la tarifa del anillo— y el resto se resuelve por el código postal del comprador. El tooltip de la columna de envío tiene el reparto. Sigue siendo una tarifa aplicada y no lo que facturó el proveedor: para decidir sobre un producto puntual, cargá el costo real en el template ML | SKU | NOMBRE | COSTO FLEX.'
+            : 'El costo de envío propio de esta publicación sale del promedio general cargado a mano, no del template. Sirve para una lectura preliminar; para decidir, cargá el costo real en el template ML | SKU | NOMBRE | COSTO FLEX.').replace(/"/g,'&quot;')
+        + '">' + (porZona ? 'ENVÍO POR ZONA' : 'ENVÍO ESTIMADO') + '</span>';
     }
     if (!n || !n.envioSinCosto) return '';
     const c = n.coberturaEnvio;
@@ -14272,6 +14470,20 @@ function buildNexusTable(cache, mode) {
           partes.push('  ' + lab + ': ' + C.unidades + ' u · '
             + (fu > 0 ? ARS(fu * C.unidades) + ' (tarifa, ' + ARS(fu) + '/u)' : 'costo no informado por ML')
             + (bo > 0 ? ' − ' + ARS(bo) + ' de bonificación = ' + ARS(fu * C.unidades - bo) : ''));
+          /* Reparto por anillo de ESTA publicación (v53.2). El promedio de la
+             celda esconde que un item despachó todo a zona lejana y otro todo a
+             zona cercana pagando tarifas que difieren en más del doble. */
+          if (typeof _flexZonasDeItem === 'function' && fu > 0) {
+            const dz = _flexZonasDeItem(s);
+            _ZONA_ORDEN.forEach(z => {
+              const uz = dz.porZona[z].u; if (!(uz > 0)) return;
+              const tz = FLEX_ZONAS[z] || 0;
+              partes.push('      ' + _ZONA_LABEL[z] + ': ' + uz + ' u'
+                + (tz > 0 ? ' × ' + ARS(tz) + ' = ' + ARS(tz * uz) : '')
+                + (dz.porZona[z].uML > 0 ? ' · ' + dz.porZona[z].uML + ' con zona declarada por ML' : ''));
+            });
+            if (dz.sinZona.u > 0) partes.push('      sin zona resuelta: ' + dz.sinZona.u + ' u · pagan el promedio');
+          }
         } else {
           partes.push('  ' + lab + ': ' + C.unidades + ' u · ' + ARS(abs * (typeof fiscalNetFactor === 'function' ? fiscalNetFactor() : 1)));
         }
@@ -16598,7 +16810,7 @@ function abrirFlexPromedio() {
     const m = (G && G._lastRender && G._lastRender.skuMap) || {};
     Object.values(m).forEach(x => {
       const C = x.porCanal && x.porCanal.FLEX; if (!C || !(C.unidades > 0)) return;
-      if (FLEX_DATA.loaded) { const f0 = getFlexCost(x); if (f0 && f0.via !== 'PROMEDIO' && f0.via !== 'ZONAS') return; }
+      if (FLEX_DATA.loaded) { const f0 = getFlexCost(x); if (f0 && _FLEX_VIA_ESTIMADA.indexOf(f0.via) < 0) return; }
       pubs++;
     });
   } catch (e) {}
@@ -16631,6 +16843,11 @@ function abrirFlexPromedio() {
     : 'sin ventas de despacho propio en el período';
 
   const pais = _geoPais();
+  /* Tarifario publicado de la plataforma para ese país, si lo hay. Se ofrece
+     como punto de partida: el vendedor casi nunca tiene las cuatro tarifas de
+     su proveedor a mano, y arrancar de cero es lo que hace que la ventana se
+     cierre sin cargar nada. Ver FLEX_TARIFA_ML. */
+  const _tarifasML = (typeof _tarifaMLVigente === 'function') ? _tarifaMLVigente() : null;
   const etiquetas = GEO_CORDON_LABEL[pais] || GEO_CORDON_LABEL.AR;
   const nombreCelda = pais === 'CL' ? 'comuna' : (pais === 'MX' ? 'municipio' : 'partido');
 
@@ -16706,6 +16923,18 @@ function abrirFlexPromedio() {
     + '</tr></thead><tbody>' + _ZONA_ORDEN.map(filaZona).join('') + '</tbody></table>'
     + '<div style="font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:8px;line-height:1.6;">'
     + 'El % lo calcula EVO desde el reporte (es el número gris). Si escribís uno, gana el tuyo.</div>'
+    + (_tarifasML
+        ? '<div style="margin-top:10px;padding:10px 12px;background:rgba(52,211,153,.06);'
+          + 'border-left:2px solid var(--ok);border-radius:0 6px 6px 0;display:flex;align-items:center;gap:12px;">'
+          + '<div style="flex:1;font-size:11.5px;color:var(--muted);line-height:1.6;">'
+          + '<b style="color:var(--text)">Tarifa de Envíos Flex de Mercado Libre</b> · '
+          + _ZONA_ORDEN.map(k => _ZONA_LABEL[k].replace('Zona ','') + ' ' + fmtCurrency(_tarifasML[k])).join(' · ')
+          + '<br>Es lo que ML le cobra al comprador y le bonifica al vendedor en productos de hasta '
+          + fmtCurrency(33000) + '. Las logísticas de reparto suelen cobrar contra esa misma escala, así que '
+          + 'sirve de punto de partida. Si tu proveedor cobra otra cosa, escribila encima.</div>'
+          + '<button class="btn" onclick="_flexTarifasDefault()" style="font-size:11px;white-space:nowrap;'
+          + 'background:rgba(52,211,153,.14);border-color:var(--ok);color:var(--ok);">Usar tarifa de ML</button></div>'
+        : '')
     + '<div id="flexprom-calc" style="margin-top:14px;padding:11px 13px;background:var(--surface2);border-radius:8px;'
     + 'font-family:var(--mono);font-size:12px;color:var(--text);"></div>'
     + '<div style="margin-top:12px;font-family:var(--mono);font-size:10px;line-height:1.6;">' + cobertura + '</div>'
@@ -16803,9 +17032,16 @@ function _flexRecalc() {
   const out = document.getElementById('flexprom-calc');
   if (!out) return;
   if (peso > 0) {
-    out.innerHTML = '<span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">Costo ponderado a aplicar</span><br>'
+    /* El promedio ponderado dejó de ser lo que se aplica: desde v53.2 cada
+       publicación paga las zonas a las que despachó. Sigue mostrándose porque es
+       la cifra de cabecera de la cuenta y el fallback de las ventas sin zona,
+       pero decir "costo a aplicar" a secas ya sería mentira. */
+    out.innerHTML = '<span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">Costo ponderado de la cuenta</span><br>'
       + '<span style="font-size:19px;color:var(--accent2);font-family:Syne,sans-serif;font-weight:700;">' + fmtCurrency(tot / peso) + '</span>'
       + ' <span style="color:var(--muted);font-size:11px;">por unidad de despacho propio</span>'
+      + '<br><span style="color:var(--muted);font-size:10px;line-height:1.6;">A cada publicación no se le aplica este promedio: se le cobra la tarifa del anillo al que despachó cada una de sus ventas. '
+      + (MZ.porML > 0 ? 'La zona de ' + NUM(MZ.porML) + ' de ' + NUM(MZ.total) + ' unidades la declara Mercado Libre en lo que bonifica; el resto sale del código postal. ' : '')
+      + 'Este promedio es la cabecera de la cuenta y lo que pagan las ventas sin zona resuelta.</span>'
       + (Math.abs(peso - 100) > 0.5 ? '<br><span style="color:var(--muted);font-size:10px;">La mezcla suma ' + peso.toFixed(0) + '%; se pondera igual, sobre ese total.</span>' : '');
   } else {
     out.innerHTML = '<span style="color:var(--muted);font-size:11px;">Cargá al menos una tarifa para ver el costo ponderado. '
