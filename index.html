@@ -1283,6 +1283,8 @@ const _GLOSARIO = [
   ['Hoja Contribución por sesión (export)','Contribución por visita, publicación por publicación','Misma lógica que el panel del Dashboard General: ASP, cargos reales, contribución bruta y contribución por sesión. Requiere el reporte de Rendimiento cargado.'],
   ['Formato del export','Fila 1 y columna A vacías · identidad PTI','Todas las hojas dejan la primera fila y la primera columna libres para que las tablas no queden pegadas al borde. Headers en violeta PTI, etiquetas sobre lavanda en negrita, y los valores con formato de moneda o porcentaje según el concepto. En hojas de etiqueta/valor el formato lo define la etiqueta de la fila, no la columna.'],
   ['Cuándo un valor sale en moneda','Por la etiqueta, con dos trampas resueltas en v52.2','El formato lo decide el texto del encabezado de columna o, en las hojas de etiqueta/valor, la etiqueta de la fila. Dos huecos que arrastraba v52.1: (1) la lista de palabras de dinero tenía "neto" pero no "neta", así que la columna <b>Venta neta</b> del Pareto de Revenue salía como número pelado; lo mismo pasaba con "retenido" frente a "retención", y con CPC, Presupuesto, Depósito e Importe, que no estaban. (2) Un "%" dentro del texto se tomaba siempre como unidad de la columna, aunque fuera una tasa mencionada al pasar: la fila <b>IIBB (4% de la venta neta)</b> del Resumen mostraba $146.924 como 14.692.423%, y las dos filas de retenciones de México caían igual. Ahora un % pegado a un número se lee como prosa y la fila se clasifica por el resto de su texto. Tercer arreglo: el Uplift del calendario es un multiplicador (2,5), no un porcentaje, y salía como 250%.'],
+  ['Costo de envío por canal (tarjetas)','Una card por canal de despacho','En la cabecera de Rentabilidad, el costo de envío del período abierto por ME2, FULL y Flex/propio, con las unidades despachadas y cuánto pesa sobre la facturación de cada canal. Va ahí porque es la cifra que explica el margen de toda la pestaña: en cuentas reales el envío se lleva más que la comisión. Las tres no son comparables sin aclararlo, y por eso cada tarjeta declara su origen en el tooltip: ME2 y FULL salen del costo que informa ML venta por venta; Flex sale del template.'],
+  ['Por qué Flex dice "sin medir" y no $0','Un cero diría que despachar por cuenta propia es gratis','Mientras falten publicaciones en el template, la tarjeta de Flex no muestra un importe: muestra cuántas publicaciones y cuántas unidades quedaron sin medir. Mostrar $0 sería la lectura más peligrosa del tablero. Al cargar el template pasa a mostrar el costo real y el detalle de unidades.'],
   ['Lentes por canal de envío','Consolidado · ME2 · FULL · Flex/propio','El panel NEXUS tiene una segunda barra de toggles, independiente de UNIT/P&L, que filtra por cómo se despachó cada venta. Existe porque el reporte de ventas informa el costo de envío de unos canales y de otros no: ME2 (Colecta, Correo y puntos de despacho, Places) y FULL lo traen; Flex, "Acuerdo con el comprador" y las ventas sin forma de entrega informada no, porque el vendedor le paga a su propio repartidor fuera de la plataforma. Medido en una cuenta real: ME2 40,6% de la facturación, Flex 35,8%, FULL 12,3%, sin dato 10,9%, o sea 47% despachado por canales sin costo en el reporte.'],
   ['Por qué el default es Consolidado y no ME2','Arrancar en ME2 esconde medio negocio','ME2 es la lente con el costo verificado, pero medido en una cuenta real arrancar ahí dejaría 70 publicaciones vacías (14,2% de la facturación) y mostraría sólo el 52,9% del negocio. La pregunta de arranque del consultor es "¿este producto deja plata?", y esa se responde con el item entero más el indicador de cobertura. Las lentes por canal son el segundo paso, elegido a propósito. Además, ninguna publicación desaparece al cambiar de lente: las que no vendieron por ese canal se muestran en gris con lo que facturaron por los otros.'],
   ['Cobertura del costo de envío','Qué parte del margen está medida entera','Porcentaje de la facturación del item cuyo costo de envío está verificado. Se decide FILA POR FILA y no por la etiqueta del canal: una venta cuenta como verificada si ML informó un costo —da igual cómo se llame el canal— o si salió por un canal donde ML siempre lo informa, donde un cero es un cero real (ventas bajo el umbral de envío gratis, que el comprador paga y el vendedor no pone nada). Apoyarse sólo en la etiqueta era frágil: en una cuenta real "Correo y puntos de despacho" era el 51% de las ventas y un patrón corto lo clasificaba mal, marcando la cuenta entera como envío sin costo.'],
@@ -1367,7 +1369,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v52.4';
+const EVO_VERSION = 'v52.5';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -12823,7 +12825,84 @@ function renderRentKPIs(skuMap) {
       <div class="kpi-sub">Resultado operativo · base contable</div></div>`;
   }
   
+  kpis += _kpisEnvioPorCanal(skuMap);
+
   kpiRow.innerHTML = kpis;
+}
+
+/* ═══════════ COSTO DE ENVÍO POR CANAL ═══════════
+   Una tarjeta por canal de despacho, con lo que costó el envío en el período.
+   Va acá y no en un panel porque es la cifra que explica el margen de toda la
+   pestaña: en una cuenta real el envío se lleva más que la comisión.
+
+   Las tres tarjetas NO son comparables entre sí sin aclararlo, y por eso cada
+   una declara su origen:
+     · ME2 y FULL  → costo informado por ML, venta por venta.
+     · Flex/propio → NO está en el reporte. Sale del template de costo Flex, y
+       sin template la tarjeta muestra lo que falta medir, no un cero.
+   Mostrar un "$0" en Flex sería la lectura más peligrosa del tablero: diría que
+   despachar por cuenta propia es gratis. */
+function _kpisEnvioPorCanal(skuMap) {
+  if (!skuMap) return '';
+  const net = (typeof fiscalNetFactor === 'function') ? fiscalNetFactor() : 1;
+  const acc = {};
+  CANALES_ENVIO.forEach(k => acc[k] = { u:0, ib:0, costo:0, cobrado:0, conCosto:0, items:0, flex:0, itemsFlexSin:0 });
+  let total = 0;
+  Object.values(skuMap).forEach(s => {
+    total += s.ingresos_brutos || 0;
+    const pc = s.porCanal || {};
+    const fx = (typeof getFlexCost === 'function') ? getFlexCost(s) : null;
+    CANALES_ENVIO.forEach(k => {
+      const C = pc[k]; if (!C || !(C.unidades > 0 || C.ingresos_brutos > 0)) return;
+      const a = acc[k];
+      a.items++; a.u += C.unidades || 0; a.ib += C.ingresos_brutos || 0;
+      a.cobrado += (C.ing_envio || 0) * net;
+      a.costo += Math.max(0, -((C.costo_envio || 0) + (C.ing_envio || 0))) * net;
+      if ((C.costo_envio || 0) < 0) a.conCosto++;
+      if (k === 'FLEX') {
+        if (fx && fx.costo > 0) a.flex += fx.costo * (C.unidades || 0);
+        else a.itemsFlexSin++;
+      }
+    });
+  });
+
+  const META = {
+    ME2:  ['Envío ME2', 'var(--text)', 'Colecta, Correo y puntos de despacho, Places. El costo lo informa ML venta por venta, así que esta cifra es exacta y no necesita ningún input.'],
+    FULL: ['Envío FULL', 'var(--accent)', 'Despacho desde Fulfillment. ML informa el costo en el 100% de las ventas.'],
+    FLEX: ['Envío Flex / propio', 'var(--warn)', 'Despacho del vendedor: Flex, acuerdo con el comprador y ventas sin forma de entrega informada. El reporte de ventas NO trae este costo porque se paga fuera de la plataforma: la cifra sale del template de costo Flex.']
+  };
+  let out = '';
+  CANALES_ENVIO.forEach(k => {
+    const a = acc[k]; if (!a.items) return;
+    const [lab, clr, tip] = META[k];
+    const esFlex = k === 'FLEX';
+    const monto = esFlex ? a.flex : a.costo;
+    const pctFact = a.ib > 0 ? (monto / a.ib * 100) : 0;
+    const pesoCta = total > 0 ? (a.ib / total * 100) : 0;
+    /* Sin template cargado, la tarjeta de Flex no muestra $0: muestra cuántas
+       publicaciones y unidades quedaron sin medir. */
+    const sinDato = esFlex && a.itemsFlexSin > 0;
+    const valor = esFlex && a.flex <= 0 && sinDato ? 'sin medir' : fmtCurrency(monto);
+    const sub = esFlex
+      ? (sinDato
+          ? a.itemsFlexSin + ' pub' + (a.itemsFlexSin > 1 ? 's' : '') + ' sin costo cargado · ' + NUM(a.u) + ' u despachadas'
+          : NUM(a.u) + ' u · ' + pctFact.toFixed(1).replace('.', ',') + '% de su facturación')
+      : NUM(a.u) + ' u · ' + pctFact.toFixed(1).replace('.', ',') + '% de su facturación';
+    const ttl = tip + '\n\n'
+      + 'Facturación despachada por este canal: ' + fmtCurrency(a.ib) + ' (' + pesoCta.toFixed(1).replace('.', ',') + '% de la cuenta)\n'
+      + 'Unidades: ' + NUM(a.u) + ' en ' + a.items + ' publicaciones\n'
+      + 'Envío cobrado al comprador: ' + fmtCurrency(a.cobrado) + '\n'
+      + (esFlex
+          ? (a.flex > 0 ? 'Costo cargado por template: ' + fmtCurrency(a.flex) + '\n' : '')
+            + (sinDato ? '\nFaltan ' + a.itemsFlexSin + ' publicaciones sin costo en el template. Mientras falten, su margen cuenta el envío cobrado como ingreso y no descuenta nada: está sobreestimado.' : '')
+          : 'Costo absorbido por el vendedor: ' + fmtCurrency(a.costo) + '\n\nEs el envío neto que quedó a cargo del vendedor después de lo que pagó el comprador, neto de IVA como el resto de los cargos.');
+    out += '<div class="kpi" style="cursor:help" title="' + String(ttl).replace(/"/g, '&quot;') + '">'
+      + '<div class="kpi-label">' + lab + '</div>'
+      + '<div class="kpi-value" style="color:' + (sinDato && a.flex <= 0 ? 'var(--muted)' : clr) + ';'
+      + (valor === 'sin medir' ? 'font-size:18px;' : '') + '">' + valor + '</div>'
+      + '<div class="kpi-sub">' + sub + '</div></div>';
+  });
+  return out;
 }
 
 function renderPubKPIs(skuMap) {
@@ -13860,18 +13939,24 @@ function renderNEXUS(skuMap, useML, idLabel) {
     const off = 'padding:3px 10px;border-radius:4px 0 0 4px;font-size:10px;font-weight:700;letter-spacing:.5px;cursor:pointer;font-family:var(--mono);background:transparent;color:var(--muted);border:1px solid var(--border);';
     const onR  = on.replace('4px 0 0 4px','0 4px 4px 0');
     const offR = off.replace('4px 0 0 4px','0 4px 4px 0');
-    d.innerHTML = '<div class="panel-header" style="position:relative;">'
+    /* Los dos grupos de toggles van en el FLUJO del header, no en position
+       absolute. Con absolute la altura del header la fijaban el título y el
+       subtítulo, así que la segunda fila de botones se salía del borde y se
+       cortaba; sólo se veía entera cuando el subtítulo crecía a dos líneas (el
+       aviso de "sin template" en la lente Flex). En flujo, el header se estira
+       solo y además los botones bajan a su propia línea en pantallas angostas. */
+    d.innerHTML = '<div class="panel-header">'
       + '<span class="panel-title">NEXUS — Rentabilidad Blindada · ' + idLabel + '</span>'
       + '<span class="panel-subtitle" id="nexus-panel-sub">' + subInicial + _nexusSubCanal() + '</span>'
-      + '<div style="position:absolute;top:14px;right:16px;display:flex;">'
+      + '<div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">'
+      + '<div style="display:flex;">'
       + '<button id="nexus-btn-unit" onclick="toggleNexusMode(\'unit\')" style="' + (NEXUS_MODE==='unit'?on:off) + '">UNIT</button>'
       + '<button id="nexus-btn-pl" onclick="toggleNexusMode(\'pl\')" style="' + (NEXUS_MODE==='pl'?onR:offR) + '">P&L</button>'
       + '</div>'
-      /* Segunda fila de toggles: la lente de canal de envío. Va separada de
-         UNIT/P&L porque son ejes independientes: se puede mirar el margen
-         unitario de Flex o el P&L de ME2. */
-      + '<div id="nexus-canal-box" style="position:absolute;top:44px;right:16px;display:flex;">'
-      + _nexusCanalBtns() + '</div>'
+      /* Lente de canal de envío. Eje independiente de UNIT/P&L: se puede mirar
+         el margen unitario de Flex o el P&L de ME2. */
+      + '<div id="nexus-canal-box" style="display:flex;">' + _nexusCanalBtns() + '</div>'
+      + '</div>'
       + '</div>'
       + '<div class="panel-body" id="nexus-table-body">' + buildNexusTable(NEXUS_RENDER_CACHE, NEXUS_MODE) + '</div>';
     rentGrid.appendChild(d);
