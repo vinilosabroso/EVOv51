@@ -1417,7 +1417,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v53';
+const EVO_VERSION = 'v53.0';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1527,7 +1527,7 @@ function _metodologiaIA() {
     ['Estado de resultados', 'Ventas netas − costos de plataforma y logística − publicidad − IIBB − COGS', 'Envío neto del período. Las retenciones no figuran donde son pago a cuenta (IIBB en AR; IVA e ISR provisional con RFC en MX); la parte que es costo figura como línea. Cierra exacto contra NEXUS; una diferencia de componentes aparece como Otros ajustes.'],
     ['NEXUS $/u (Break Even)', '(Recibido de ML − carga fiscal) ÷ unidades', 'Sin Ads ni COGS. Un COGS/u mayor implica pérdida por unidad.'],
     ['Margen Unit %', '(Recibido de ML − carga fiscal) ÷ Venta neta', 'Sin Ads ni COGS. Todos los márgenes por publicación usan esta base (v52.8). Sobre venta neta a propósito: sobre recibido sin IVA sólo reflejaría el IIBB.'],
-    ['Costos de canal %', '(Comisión + envío absorbido + cargo fijo + cuotas + Ads) ÷ Venta neta', 'No incluye IVA, IIBB ni retenciones.'],
+    ['Costos de canal %', '(Comisión + envío absorbido + envío propio + cargo fijo + cuotas + Ads) ÷ Venta neta', 'No incluye IVA, IIBB ni retenciones. El envío propio entra desde v52.9: se paga fuera de la plataforma pero sale de la misma plata.'],
     ['Cambio de base', 'Margen sobre venta neta = resultado ÷ Venta neta', 'El mismo resultado en pesos da porcentajes distintos según la base. Sólo se comparan porcentajes de igual base.'],
    ]],
    ['Publicidad', [
@@ -1587,9 +1587,17 @@ function _cifrasControlIA() {
   const $ = v => Math.round((v || 0) * 100) / 100;
   const P = v => Math.round((v || 0) * 10000) / 10000;
   const cargosNetos = M.comision + M.envioNeto + M.fijo + M.cuotas;
+  /* El envío propio se paga FUERA de la plataforma, así que no es un cargo de
+     ML y no entra en cargosNetos (ni genera crédito fiscal: se toma neto de
+     IVA, igual que el COGS). Pero sí sale de la plata del vendedor, y
+     calcNEXUS ya lo descuenta de lo recibido. Toda reconstrucción "por
+     componentes" tiene que restarlo aparte o queda más alta que el agregado:
+     en v53 las identidades de control del informe fallaban por exactamente
+     este monto y el PDF no se generaba. */
+  const envioPropio = M.flexPropio || 0;
   const ivaCargos = fc.netFee < 1 ? cargosNetos * (1 / fc.netFee - 1) : 0;
   const recSinIva = M.recibidoML - M.ivaDebito;
-  const recPorComp = M.bruto - M.ivaDebito - cargosNetos + M.bonif - M.devol - M.impuestos;
+  const recPorComp = M.bruto - M.ivaDebito - cargosNetos - envioPropio + M.bonif - M.devol - M.impuestos;
   const nexusCascada = recSinIva - M.iibb + M.retACuenta - M.ads;
   const deposito = M.items.reduce((a, s) => a + (s.liquidez || 0), 0);
   const unidades = M.items.reduce((a, s) => a + (s.unidades || 0), 0);
@@ -1615,7 +1623,7 @@ function _cifrasControlIA() {
       ['  ISR retenido', $(M.retIsr), '2,5% de la base sin IVA con RFC, 20% sin RFC'],
       ['Ventas exentas o tasa 0% (sin IVA débito)', $(M.exentos), 'Ventas en las que ML no retuvo IVA'],
     ] : []),
-    ['Recibido de ML (incluye IVA débito)', $(M.recibidoML), 'Bruto + (cargos con signo + descuentos + devoluciones) × netFee + Impuestos'],
+    ['Recibido de ML (incluye IVA débito)', $(M.recibidoML), 'Bruto + (cargos con signo + descuentos + devoluciones) × netFee + Impuestos − envío propio. El envío propio se paga fuera de la plataforma y ya viene neto de IVA, así que no lleva netFee'],
     ['Recibido de ML sin IVA', $(recSinIva), 'Recibido de ML − IVA débito'],
     ['IIBB', $(M.iibb), 'Venta neta × alícuota de IIBB'],
     [fc.retModo === 'IVA_ISR' ? 'Retenciones computadas a cuenta de IVA e ISR' : 'Retenciones computadas a cuenta de IIBB', $(M.retACuenta),
@@ -1627,7 +1635,7 @@ function _cifrasControlIA() {
     ...(retBaseMX(fc, M.retACuenta) > 0 ? [['Base de márgenes: Recibido sin IVA + retenciones a cuenta', $(M.recSinIvaBase), 'México con RFC: las retenciones a cuenta vuelven a la base igual que al resultado']] : []),
     ['Margen antes de mercadería', P(M.recSinIvaBase > 0 ? M.nexus / M.recSinIvaBase : 0), fc.retModo === 'IVA_ISR' ? 'NEXUS ÷ (Recibido de ML sin IVA + retenciones a cuenta)' : 'NEXUS ÷ Recibido de ML sin IVA', true],
     ['El mismo resultado sobre venta neta', P(M.ventaNeta > 0 ? M.nexus / M.ventaNeta : 0), 'NEXUS ÷ Venta neta, para comparar con análisis que usan esa base', true],
-    ['Costos de canal %', P(M.ventaNeta > 0 ? M.costosCanal / M.ventaNeta : 0), '(Comisión + envío absorbido + cargo fijo + cuotas + Ads) ÷ Venta neta', true],
+    ['Costos de canal %', P(M.ventaNeta > 0 ? M.costosCanal / M.ventaNeta : 0), '(Comisión + envío absorbido + envío propio + cargo fijo + cuotas + Ads) ÷ Venta neta', true],
     ['Depósito de ML (columna Total)', $(deposito), 'No es base de ningún margen'],
     ['Recibido de ML − Depósito de ML', $(M.recibidoML - deposito), 'Principalmente el IVA de los cargos, más ajustes de ML que el reporte no desglosa'],
   ];
@@ -2573,7 +2581,8 @@ function generarInforme(){
   // IVA débito sumado por publicación: en MX excluye las ventas exentas o tasa 0% (v52.1)
   const _ivaDebTot = M.ivaDebito;
   const _cargosTot = M.comision + M.envioNeto + M.fijo + M.cuotas;
-  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot + M.bonif - M.devol - (M.impuestos || 0) + retBaseMX(M.fc, M.retACuenta);
+  const _propioTot = M.flexPropio || 0;   // envío propio: no es cargo de ML pero sale de la misma plata
+  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot - _propioTot + M.bonif - M.devol - (M.impuestos || 0) + retBaseMX(M.fc, M.retACuenta);
   /* Base de la porción con costo cargado: su propio recibido sin IVA, igual que
      la tarjeta Margen real final del dashboard. Hasta v51.1 se prorrateaban los
      cargos de todo el catálogo por facturación y los dos márgenes no coincidían. */
@@ -2638,7 +2647,8 @@ function generarInforme(){
   const _ivaDeb = M.ivaDebito || 0;
   const _retn   = M.impuestos || 0;
   const _cargos = M.comision + M.envioNeto + M.fijo + M.cuotas;
-  const _recSinIva = M.bruto - _ivaDeb - _cargos + M.bonif - M.devol - _retn;
+  const _propio = M.flexPropio || 0;      // envío propio, fuera de la plataforma
+  const _recSinIva = M.bruto - _ivaDeb - _cargos - _propio + M.bonif - M.devol - _retn;
   const _preCogs = _recSinIva - M.iibb + M.retACuenta - M.ads;
   const _resFinal = conCogs ? M.rentReal : _preCogs;
   const ER = _estadoResultados(M);
@@ -3004,7 +3014,7 @@ function generarInforme(){
   _chk('El tramo previo a mercadería no cierra contra NEXUS', _preCogs, M.nexus);
   if (conCogs) _chk('El resultado final no cierra contra NEXUS matcheado − COGS',
                     _resFinal, M.nexusMatch - M.cogsTot);
-  _chk('Recibido sin IVA mal compuesto', M.bruto - _ivaDeb - _cargos + M.bonif - M.devol - _retn, _recSinIva);
+  _chk('Recibido sin IVA mal compuesto', M.bruto - _ivaDeb - _cargos - _propio + M.bonif - M.devol - _retn, _recSinIva);
   _chk('Recibido sin IVA no cierra contra NEXUS', M.recibidoML - _ivaDeb, _recSinIva);
   if (Math.abs(ER.residuo) > Math.max(1, Math.abs(M.nexus) * 0.001))
     _fallas.push('El estado de resultados no cierra contra NEXUS por componentes: difiere ' + fmtCurrency(ER.residuo));
