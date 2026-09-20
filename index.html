@@ -1278,6 +1278,10 @@ const _GLOSARIO = [
   ['Hoja Contribución por sesión (export)','Contribución por visita, publicación por publicación','Misma lógica que el panel del Dashboard General: ASP, cargos reales, contribución bruta y contribución por sesión. Requiere el reporte de Rendimiento cargado.'],
   ['Formato del export','Fila 1 y columna A vacías · identidad PTI','Todas las hojas dejan la primera fila y la primera columna libres para que las tablas no queden pegadas al borde. Headers en violeta PTI, etiquetas sobre lavanda en negrita, y los valores con formato de moneda o porcentaje según el concepto. En hojas de etiqueta/valor el formato lo define la etiqueta de la fila, no la columna.'],
   ['Cuándo un valor sale en moneda','Por la etiqueta, con dos trampas resueltas en v52.2','El formato lo decide el texto del encabezado de columna o, en las hojas de etiqueta/valor, la etiqueta de la fila. Dos huecos que arrastraba v52.1: (1) la lista de palabras de dinero tenía "neto" pero no "neta", así que la columna <b>Venta neta</b> del Pareto de Revenue salía como número pelado; lo mismo pasaba con "retenido" frente a "retención", y con CPC, Presupuesto, Depósito e Importe, que no estaban. (2) Un "%" dentro del texto se tomaba siempre como unidad de la columna, aunque fuera una tasa mencionada al pasar: la fila <b>IIBB (4% de la venta neta)</b> del Resumen mostraba $146.924 como 14.692.423%, y las dos filas de retenciones de México caían igual. Ahora un % pegado a un número se lee como prosa y la fila se clasifica por el resto de su texto. Tercer arreglo: el Uplift del calendario es un multiplicador (2,5), no un porcentaje, y salía como 250%.'],
+  ['Columnas Familia y Condición (hoja Rentabilidad)','Para que un lector externo no vea catálogo duplicado','EVO ya calculaba las dos para sus alertas de desviación de costos, pero no las escribía en el export. Sin ellas, cualquier lector externo —una IA que audita el archivo, o un analista que lo abre sin el tablero al lado— ve ocho filas de la misma publicación con y sin cuotas (o Clásica y Premium) y las lee como catálogo duplicado. De ahí sale la recomendación de "consolidar" o "pausar una y dejar la otra", que además de equivocada es inejecutable: Mercado Ads agrupa las variantes bajo un único ID y la puja se acciona sobre el consolidado. Condición toma "Con cuotas"/"Sin cuotas" en AR y "Clásica"/"Premium" en MX y CL, "Mixta" cuando ninguna llega al 70% de la facturación del identificador, y queda vacía si el reporte de ventas no trae el dato.'],
+  ['Efecto sobre el Pareto','Un producto partido en variantes puede quedar fuera del núcleo','Ocho variantes de condición son ocho filas chicas en Pareto Revenue: ninguna alcanza el 80% acumulado y el producto más importante de la cuenta puede no aparecer en el núcleo. Con la columna Familia el lector puede sumar por unidad comercial antes de leer el Pareto. Es la razón principal por la que las dos columnas viajan al export.'],
+  ['Alertas de familia en el export','ENVÍO y COSTO DE CANAL, que antes sólo estaban en pantalla','La columna Alertas de la hoja Rentabilidad escribía únicamente BAJA RENT., aunque el glosario declaraba también la desviación de envío. El consultor las veía en el dashboard y desaparecían del archivo que se manda al cliente. Desde v52.3 se escriben ENVÍO +X% VS FAMILIA y COSTO DE CANAL +Xpp VS FAMILIA (sólo el nivel crítico). Las dos comparan contra la mediana de la familia del propio producto, no contra un umbral fijo.'],
+  ['Riesgo en tránsito en el Resumen','Estaba sólo en la hoja Forecast','El bloque de riesgo del Resumen mostraba el revenue en riesgo y el costo de demorar, pero no las publicaciones que están en cero esperando el ingreso a FULL. Como el Resumen es la primera hoja que se abre, desde ahí esas publicaciones parecían sanas. Ahora trae el costo por día, el techo, cuántas son y cuántas unidades vienen en camino, en línea con lo que ya mostraba Forecast 6w.'],
   ['Tipos declarados por hoja','Cuando la heurística no debería decidir','Las hojas donde el formato importa declaran el tipo columna por columna en vez de depender del texto. Desde v52.2 lo hacen también Pareto Revenue, Pareto Volumen, Calendario Comercial y Campañas SOV, además de las que ya lo hacían (Rentabilidad, Estado de resultados, Forecast 6w, Campañas PADS). La heurística por palabras sigue existiendo para el resto y siempre va a tener huecos: es la red, no el criterio.'],
   ['Hoja Mapa de Calor (export)','Matriz con el período y la métrica activos','El Excel exporta exactamente lo que se está viendo en la pestaña al momento de exportar: si está en YTD + Ventas, eso sale. Usa el mismo motor de cálculo que la vista, así el archivo y la pantalla no pueden divergir.'],
   ['Snapshot','Exportación del estado completo en JSON','Guarda datos parseados, COGS, condición fiscal, período del filtro de fechas y del mapa de calor para retomar el análisis sin volver a cargar los reportes. Desde v51.4 se reabre sobre el mismo período con que se guardó; los snapshots anteriores, que no lo traen, se alinean a la ventana de Ads. Los snapshots anteriores al fix de decimales del COGS quedan marcados para recargar el template.'],
@@ -1350,7 +1354,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v52.2';
+const EVO_VERSION = 'v52.3';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -9298,12 +9302,22 @@ function exportarExcel(){
   /* Riesgo por quiebre: son tres cifras que el cliente busca primero */
   try {
     const _Rr = (typeof calcRiesgoQuiebre === 'function') ? calcRiesgoQuiebre() : null;
-    if (_Rr && (_Rr.urgentes > 0 || _Rr.hoyRev > 0)) {
+    if (_Rr && (_Rr.urgentes > 0 || _Rr.hoyRev > 0 || _Rr.camRev > 0)) {
       resumenRows.push([], ['Riesgo por quiebre de stock','Valor']);
       _hdrRes.push(resumenRows.length - 1);
       resumenRows.push(['Reposición urgente', _Rr.urgentes]);
       resumenRows.push(['Revenue en riesgo hoy', _Rr.hoyRev]);
       resumenRows.push(['Costo de demorar (por día)', _Rr.porDia]);
+      /* El Resumen es la primera hoja que se abre: si el riesgo de lo que está
+         en cero esperando el ingreso a FULL sólo figura en Forecast 6w, desde
+         acá esas publicaciones parecen sanas. Son dos acciones distintas
+         —comprar vs. apurar el ingreso— y las dos valen plata por día. */
+      if (_Rr.camN > 0) {
+        resumenRows.push(['En riesgo con reposición en curso (por día)', _Rr.camPorDia]);
+        resumenRows.push(['En riesgo con reposición en curso (techo)', _Rr.camRev]);
+        resumenRows.push(['Publicaciones en cero esperando ingreso a FULL', _Rr.camN]);
+        resumenRows.push(['Unidades en camino al FULL', Math.round(_Rr.camU)]);
+      }
       if (_Rr.futRev > 0) resumenRows.push(['Revenue en riesgo · próximos quiebres', _Rr.futRev]);
     }
     const _Ap = (typeof calcApagadas === 'function') ? calcApagadas() : null;
@@ -9406,7 +9420,14 @@ function exportarExcel(){
      Excel contra $106.511,48 en pantalla: 23% de diferencia con la misma etiqueta.
      Ahora se comparte el cálculo y se explicita cada columna. */
   const _fcR = fiscalCfg();
-  const rentRows=[[idLabel,'Producto','Rev Bruto','Venta neta','Costos de canal %','Rev Neto','Margen%',
+  /* Familia y Condición de venta viajan al export desde v52.3.
+     EVO ya las calcula para las alertas de desviación de costos, pero no las
+     escribía: un lector externo veía 8 filas de la misma publicación con y sin
+     cuotas (o Clásica y Premium) y las leía como catálogo duplicado, con la
+     recomendación imposible de "consolidar" o "pausar una y dejar la otra" —
+     imposible porque Mercado Ads las agrupa bajo un único ID. Con estas dos
+     columnas la agrupación deja de ser una inferencia por título y precio. */
+  const rentRows=[[idLabel,'Producto','Familia','Condición','Rev Bruto','Venta neta','Costos de canal %','Rev Neto','Margen%',
                    'Comisión%','Envío Neto%','Impuestos%','Cuotas%','Depósito ML','Alertas']];
   const _rentCalc = s => {
     const bruto = s.ingresos_brutos || 0;
@@ -9435,11 +9456,23 @@ function exportarExcel(){
                       + Math.abs((s.costo_fijo||0)*_fcR.netFee) + Math.abs((s.cuotas||0)*_fcR.netFee) + adsX) / base;
     const alerts=[];
     if(c.margen<0.10) alerts.push('BAJA RENT.');
-    rentRows.push([s.id,titleFor(s.id)||'',c.bruto,c.ventaNeta,canalShare,c.neto,c.margen,
+    /* Las dos anomalías por familia existían en el dashboard y el glosario las
+       declaraba, pero el export sólo escribía BAJA RENT.: el consultor las veía
+       en pantalla y desaparecían del archivo que se manda al cliente. */
+    const _anEnv = (G._lastRender && G._lastRender.anomEnvio && G._lastRender.anomEnvio.get)
+      ? G._lastRender.anomEnvio.get(s.id) : null;
+    if (_anEnv) alerts.push('ENVÍO +' + Math.round(_anEnv.exceso*100) + '% VS FAMILIA');
+    const _anCan = (G._lastRender && G._lastRender.anomCanal && G._lastRender.anomCanal.get)
+      ? G._lastRender.anomCanal.get(s.id) : null;
+    if (_anCan && _anCan.nivel === 'crit') alerts.push('COSTO DE CANAL +' + Math.round(_anCan.exceso*100) + 'pp VS FAMILIA');
+    rentRows.push([s.id,titleFor(s.id)||'',
+                   (typeof familiaKey==='function' ? familiaKey(titleFor(s.id)) : '') || '',
+                   (typeof _condDominante==='function' ? _condDominante(s) : '') || '',
+                   c.bruto,c.ventaNeta,canalShare,c.neto,c.margen,
                    comShare+fijoShare,envioShare,impShare,cuotasShare,s.liquidez||0,alerts.join(', ')]);
   });
-  addSheet('Rentabilidad',rentRows,[25,42,16,16,15,16,12,12,12,12,12,16,18],
-    { tipos:['general','general','money','money','percent','money','percent','percent','percent','percent','percent','money','general'] });
+  addSheet('Rentabilidad',rentRows,[25,42,22,14,16,16,15,16,12,12,12,12,12,16,26],
+    { tipos:['general','general','general','general','money','money','percent','money','percent','percent','percent','percent','percent','money','general'] });
 
   const dormidos=calcDormidos(useML);
   const dormRows=[[idLabel,'Último Q activo','Revenue pico','Q sin ventas','Revenue perdido est.']];
