@@ -1286,11 +1286,15 @@ const _GLOSARIO = [
   ['Formato del export','Fila 1 y columna A vacías · identidad PTI','Todas las hojas dejan la primera fila y la primera columna libres para que las tablas no queden pegadas al borde. Headers en violeta PTI, etiquetas sobre lavanda en negrita, y los valores con formato de moneda o porcentaje según el concepto. En hojas de etiqueta/valor el formato lo define la etiqueta de la fila, no la columna.'],
   ['Cuándo un valor sale en moneda','Por la etiqueta, con dos trampas resueltas en v52.2','El formato lo decide el texto del encabezado de columna o, en las hojas de etiqueta/valor, la etiqueta de la fila. Dos huecos que arrastraba v52.1: (1) la lista de palabras de dinero tenía "neto" pero no "neta", así que la columna <b>Venta neta</b> del Pareto de Revenue salía como número pelado; lo mismo pasaba con "retenido" frente a "retención", y con CPC, Presupuesto, Depósito e Importe, que no estaban. (2) Un "%" dentro del texto se tomaba siempre como unidad de la columna, aunque fuera una tasa mencionada al pasar: la fila <b>IIBB (4% de la venta neta)</b> del Resumen mostraba $146.924 como 14.692.423%, y las dos filas de retenciones de México caían igual. Ahora un % pegado a un número se lee como prosa y la fila se clasifica por el resto de su texto. Tercer arreglo: el Uplift del calendario es un multiplicador (2,5), no un porcentaje, y salía como 250%.'],
   ['Columna Envío','Todo el envío que absorbe el vendedor','Suma el envío que informa ML y el envío propio que sale del template. Hasta v52.5 mostraba sólo el primero, así que una publicacion 100% Flex quedaba en $0 aunque el costo estuviera cargado y ya descontado del margen: el tooltip lo mostraba y la celda no. El tooltip abre las dos partes por separado.'],
-  ['Tarifas por zona y mezcla','Cuatro anillos, y el reparto lo declara el consultor','La tarifa de reparto propio sube por anillos alrededor del punto de despacho. El problema es que esos anillos están DENTRO de una misma provincia —un depósito en la capital reparte por la ciudad y el conurbano hasta el tercer cordón— y el reporte de ventas trae la provincia del comprador pero no la localidad. Así que la zona de cada venta no se puede inferir. La sonda pide las cuatro tarifas y qué porcentaje de los despachos cae en cada anillo, y calcula el promedio ponderado en vivo. La mezcla no tiene que sumar 100: se pondera sobre el total cargado. Una tarifa sin su porcentaje no participa.'],
-  ['Dos caminos que se probaron y no funcionan','Por qué la mezcla la pone el consultor','Mapear provincia a zona no sirve: las cuatro zonas están dentro de la misma provincia. Deducir la lejanía del costo que ML informa en Mercado Envíos tampoco: ese cargo depende más del tamaño del paquete que de la distancia, y medido en una cuenta real el índice quedó casi plano (0,85 a 1,55 después de normalizar por producto), con un ranking que ponía provincias del norte más cerca que la capital. Queda documentado para no volver a intentarlo.'],
-  ['Destinos del despacho propio','Contexto, y detector de ventas mal clasificadas','El modal lista los destinos del canal propio por volumen. No sirven para asignar zona, pero sí para detectar que "despacho propio" esté mezclando ventas que no lo son: si aparecen destinos donde el reparto propio no llega, esas ventas son otra forma de entrega que el reporte no informó y su costo no es una tarifa de reparto. Medido en una cuenta real, 3 destinos concentran el 92% de las unidades y el resto se reparte en 20 destinos donde no hay reparto propio.'],
+  ['Tarifas por zona y mezcla','Cuatro anillos, y el reparto lo calcula EVO','La tarifa de reparto propio sube por anillos alrededor del punto de despacho. Hasta v52.8 el reparto lo declaraba el consultor porque se creía que el reporte no traía la localidad del comprador. Sí la trae: en la sección Compradores vienen el domicilio, la localidad y el código postal, y en las ventas de despacho propio están completos el 100% de las veces. Ahora el consultor carga sólo las cuatro tarifas y EVO calcula qué porcentaje de los despachos cae en cada anillo. Los porcentajes quedan editables: si escribe uno, gana el suyo. La mezcla no tiene que sumar 100: se pondera sobre el total cargado.'],
+  ['Por qué el código postal y no el nombre','El nombre de la localidad lo escribe el comprador','La llave de la clasificación es el CP, no el nombre. Medido sobre 9.859 ventas Flex de una cuenta real, 213 de los 473 códigos postales traían más de un nombre para el mismo lugar: el CP 1650 aparecía como "billinghurst", "billingurst pdo.san martin", "general san martin", "loma hermosa", "san andres", "villa lynch" y tres más. El CP es estable y ML lo valida: el rango 1000-1499 coincidió exacto con las 2.470 ventas cuya provincia decía Capital Federal. En Chile el CP viene vacío (0% de cobertura) y no queda otra que usar el nombre de comuna, que ML sí normaliza contra un set cerrado de 52 valores.'],
+  ['Destinos del despacho propio','Contexto, y detector de ventas mal clasificadas','El modal lista los destinos del canal propio por volumen. Desde v52.9 la zona ya no se declara —sale del código postal— pero la lista sigue sirviendo para detectar que "despacho propio" esté mezclando ventas que no lo son: si aparecen destinos donde el reparto propio no llega, esas ventas son otra forma de entrega que el reporte no informó y su costo no es una tarifa de reparto. Medido en una cuenta real, 3 destinos concentran el 92% de las unidades y el resto se reparte en 20 destinos donde no hay reparto propio.'],
   ['Sonda de envío propio promedio','Botón apagado, a la izquierda del toggle UNIT','Aplica un costo único por unidad a todas las publicaciones de despacho propio que el template no declara. Sirve para ver de un saque cuánto mueve la aguja el envío propio antes de sentarse a cargar el detalle item por item. El botón va apagado como el de documentación interna porque es una herramienta de trabajo del consultor, no una función del tablero. El template siempre gana sobre el promedio: la estimación sólo cubre lo que no está declarado.'],
   ['Marca ENVÍO ESTIMADO','Distinta de ENVÍO S/ COSTO','Con el promedio aplicado el margen ya contempla el envío, pero con un número que no es el real. Se marca con un chip propio, separado del de dato faltante, para que una revisión preliminar no llegue a una reunión como si fuera definitiva. En Argentina la tarifa de Flex cambia por zona (CABA y cordones 1, 2 y 3) y sube con la distancia, así que un único promedio depende de a dónde despacha la cuenta.'],
+  ['Código postal de despacho','Lo que ancla los anillos','Los anillos se miden desde donde sale el paquete, que no siempre es donde está el vendedor: puede ser un depósito propio o la dirección de un 3PL. El campo toma ese CP y reordena la propuesta de anillos por distancia. Medido sobre una cuenta real, mueve mucho: despachando desde CABA el 31% de las unidades cae en zona cercana; desde Pilar, con las mismas ventas, sólo el 3%, y el 32% pasa a zona muy lejana.'],
+  ['Por qué el anillo se puede pisar a mano','La geografía no siempre es la tarifa','EVO propone el anillo por distancia, pero la propuesta no manda. Un vendedor en Tigre reparte geográficamente cerca a zona norte y sin embargo puede facturarlo como zona lejana, porque contrató un 3PL o una logística que cobra por sus propios anillos. Por eso la asignación es editable partido por partido y lo elegido gana sobre la distancia y sobrevive a un cambio de CP de origen. Es también la razón por la que la unidad es el partido y no el cordón: el segundo cordón contiene a Tigre y a Berazategui, que desde Tigre no están a la misma distancia ni parecido.'],
+  ['Cobertura de la clasificación de zonas','Lo que no se ubica no se reparte','Una venta sin código postal reconocible no entra en ninguna zona y se informa aparte. No se prorratea sobre las demás: hacerlo maquillaría el porcentaje y el promedio ponderado saldría de una base inventada. Sobre los reportes reales medidos la cobertura fue del 100%, pero el indicador queda porque un reporte futuro puede traer destinos nuevos.'],
+  ['Envío propio en el estado de resultados','Tiene línea propia desde v52.9','El envío propio se paga fuera de la plataforma, así que no está en el reporte y hasta v52.8 el estado de resultados no lo listaba. La plata estaba bien restada —calcNEXUS ya la descontaba— pero como no había línea, la diferencia se colaba por el cálculo de retenciones y salía impresa bajo "Retenciones de la plataforma": sobre un caso de $20.000 de envío propio, el estado mostraba $4.959 de costo logístico y $20.000 de retenciones inexistentes. El resultado final nunca cambió; la etiqueta, sí. Va en línea separada y no sumada al envío de ML porque son cosas distintas: uno es un cargo de la plataforma y el otro un pago a un tercero.'],
   ['Costo de envío por canal (tarjetas)','Una card por canal de despacho','En la cabecera de Rentabilidad, el costo de envío del período abierto por ME2, FULL y Flex/propio, con las unidades despachadas y cuánto pesa sobre la facturación de cada canal. Va ahí porque es la cifra que explica el margen de toda la pestaña: en cuentas reales el envío se lleva más que la comisión. Las tres no son comparables sin aclararlo, y por eso cada tarjeta declara su origen en el tooltip: ME2 y FULL salen del costo que informa ML venta por venta; Flex sale del template.'],
   ['Por qué Flex dice "sin medir" y no $0','Un cero diría que despachar por cuenta propia es gratis','Mientras falten publicaciones en el template, la tarjeta de Flex no muestra un importe: muestra cuántas publicaciones y cuántas unidades quedaron sin medir. Mostrar $0 sería la lectura más peligrosa del tablero. Al cargar el template pasa a mostrar el costo real y el detalle de unidades.'],
   ['Lentes por canal de envío','Consolidado · ME2 · FULL · Flex/propio','El panel NEXUS tiene una segunda barra de toggles, independiente de UNIT/P&L, que filtra por cómo se despachó cada venta. Existe porque el reporte de ventas informa el costo de envío de unos canales y de otros no: ME2 (Colecta, Correo y puntos de despacho, Places) y FULL lo traen; Flex, "Acuerdo con el comprador" y las ventas sin forma de entrega informada no, porque el vendedor le paga a su propio repartidor fuera de la plataforma. Medido en una cuenta real: ME2 40,6% de la facturación, Flex 35,8%, FULL 12,3%, sin dato 10,9%, o sea 47% despachado por canales sin costo en el reporte.'],
@@ -1377,7 +1381,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v52.8';
+const EVO_VERSION = 'v52.9';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1562,6 +1566,7 @@ function _cifrasControlIA() {
     ['Comisión, neta de IVA', $(M.comision), fc.isMX ? 'Σ |Cargo por venta e impuestos − retenciones de IVA e ISR| × netFee' : 'Σ |Cargo por venta| × netFee'],
     ['Envío neto con signo, neto de IVA', $(M.envioNeto), '−Σ (Costos de envío + Ingresos por envío) × netFee'],
     ['Envío absorbido, neto de IVA', $(M.envio), 'Σ por venta de max(0, −(Costos + Ingresos por envío)) × netFee'],
+    ['Envío propio, fuera de la plataforma', $(M.flexPropio), 'Σ por publicación de (tarifa de despacho propio × unidades despachadas por canal propio). No está en el reporte: sale del template o de las tarifas por zona'],
     ['Cargo fijo, neto de IVA', $(M.fijo), 'Σ |Cargo fijo| × netFee'],
     ['Cuotas, neto de IVA', $(M.cuotas), 'Σ |Cuotas| × netFee'],
     ['Cargos de ML netos de IVA', $(cargosNetos), 'Comisión + envío neto con signo + cargo fijo + cuotas'],
@@ -1634,14 +1639,22 @@ function _estadoResultados(M) {
   if (M.cuotas) add('Costo financiero de cuotas', -M.cuotas);
   // Envío neto del período: es el que cierra contra el resultado
   add(M.envioNeto >= 0 ? 'Costo logístico absorbido' : 'Envío: ingreso neto', -M.envioNeto);
+  /* El envío propio se paga fuera de la plataforma y no está en el reporte, así
+     que va en su propia línea: sumarlo al costo logístico informado por ML los
+     haría indistinguibles, y uno es un cargo de la plataforma y el otro un pago
+     a un tercero. Hasta v52.8 no figuraba: calcNEXUS ya lo restaba del
+     resultado, pero como el estado no lo listaba, la diferencia se colaba por
+     impSigned y salía impresa bajo "Retenciones de la plataforma". El resultado
+     final siempre fue correcto; la etiqueta, no. */
+  if (M.flexPropio) add('Envío propio (fuera de la plataforma)', -M.flexPropio);
   if (M.bonif)  add('Bonificaciones y reintegros de la plataforma', M.bonif);
   if (M.devol)  add('Costo neto de devoluciones y no entregas', -M.devol);
-  const costosPlat = -(M.comision + M.fijo + M.cuotas + M.envioNeto) + M.bonif - M.devol;
+  const costosPlat = -(M.comision + M.fijo + M.cuotas + M.envioNeto + M.flexPropio) + M.bonif - M.devol;
   add('Subtotal costos de plataforma y logística', costosPlat, 'subtotal');
   if (M.ads)  add('Publicidad en la plataforma', -M.ads);
   if (M.iibb) add('Ingresos Brutos (' + pctAlic(fc.iibbRate) + ' de las ventas netas)', -M.iibb);
   // Retenciones con signo: lo que queda de lo recibido fuera de los componentes
-  const impSigned = M.recibidoML - (M.bruto - M.comision - M.envioNeto - M.fijo - M.cuotas + M.bonif - M.devol);
+  const impSigned = M.recibidoML + M.flexPropio - (M.bruto - M.comision - M.envioNeto - M.fijo - M.cuotas + M.bonif - M.devol);
   /* Sólo la parte que NO es pago a cuenta es costo (v52.1): AR todo a cuenta de
      IIBB; MX con RFC, el IVA contra el débito y el ISR provisional; el resto resta. */
   const retCosto = impSigned + (M.retACuenta || 0);
@@ -1998,6 +2011,12 @@ function _infMetricas(){
 
   let bruto=0, ventaNeta=0, recibidoML=0, nexus=0, cogsTot=0, nexusMatch=0, brutoMatch=0, recibMatch=0;
   let comision=0, envio=0, envioNeto=0, fijo=0, cuotas=0, bonif=0, devol=0, retACuenta=0, impuestos=0, ads=0, nMatch=0;
+  /* Envío propio (Flex): se paga fuera de la plataforma, así que no está en
+     costo_envio. calcNEXUS ya lo resta del resultado, pero hasta v52.8 no lo
+     acumulaba nadie: el estado de resultados lo mostraba bajo Retenciones y
+     el KPI de costo logístico no lo veía. Se acumula aparte de envio/envioNeto
+     porque esos dos comparan lo que informa ML venta por venta. */
+  let flexPropio=0;
   // v52.1: IVA débito sumado por SKU (MX excluye exentos) y retenciones MX separadas
   let ivaDebito=0, ivaDebMatch=0, retACMatch=0, retIva=0, retIsr=0, exentos=0;
   const filas = [];
@@ -2011,6 +2030,7 @@ function _infMetricas(){
     recibidoML += n.recibidoML||0; nexus += n.recibidoNEXUS||0;
     comision += Math.abs((s.cargo_venta||0)*fc.netFee);
     envio    += n.envioAbsorbido||0;   // venta por venta, como el dashboard (v51.3)
+    flexPropio += n.flexTotal||0;      // envío propio, fuera de la plataforma
     /* Envío NETO con signo: hay cuentas donde el comprador paga más envío del
        que cuesta y el neto es ingreso. La versión con piso en cero sirve para
        el KPI de costo logístico, pero no cierra una cuenta de resultado. */
@@ -2037,12 +2057,12 @@ function _infMetricas(){
   ads += adsSinVenta; nexus -= adsSinVenta;
   nexusMatch -= adsSinVenta * cobertura;
   return { fc, esRI, items, filas, bruto, ventaNeta, recibidoML, nexus, cogsTot, nexusMatch, brutoMatch, recibMatch,
-           nMatch, cobertura, comision, envio, envioNeto, fijo, cuotas, bonif, devol, retACuenta, impuestos, ads, adsSinVenta, fiscalTot,
+           nMatch, cobertura, comision, envio, envioNeto, flexPropio, fijo, cuotas, bonif, devol, retACuenta, impuestos, ads, adsSinVenta, fiscalTot,
            ivaDebito, iibb, ivaDebMatch, retACMatch, retIva, retIsr, exentos,
            // Bases de márgenes sobre recibido sin IVA (MX con RFC: + retenciones a cuenta)
            recSinIvaBase: recibidoML - ivaDebito + retBaseMX(fc, retACuenta),
            recSinIvaMatchBase: recibMatch - ivaDebMatch + retBaseMX(fc, retACMatch),
-           costosCanal: comision+envio+fijo+cuotas+ads,
+           costosCanal: comision+envio+flexPropio+fijo+cuotas+ads,
            rentReal: nexusMatch - cogsTot,
            nVentas: R.nVentas||0 };
 }
@@ -3746,6 +3766,8 @@ function doExportSnapshot(accountName, sanitized) {
       flex_data: typeof FLEX_DATA !== 'undefined' ? FLEX_DATA : { byMLA: {}, bySKU: {}, loaded: false, count: 0 },
       flex_promedio: typeof FLEX_PROMEDIO !== 'undefined' ? FLEX_PROMEDIO : 0,
       flex_zonas: typeof FLEX_ZONAS !== 'undefined' ? FLEX_ZONAS : null,
+      zona_origen_cp: typeof ZONA_ORIGEN_CP !== 'undefined' ? ZONA_ORIGEN_CP : '',
+      zona_override: typeof ZONA_OVERRIDE !== 'undefined' ? ZONA_OVERRIDE : {},
       flex_mix: typeof FLEX_MIX !== 'undefined' ? FLEX_MIX : null,
       nexus_fiscal: typeof NEXUS_FISCAL !== 'undefined' ? NEXUS_FISCAL : 'RI',
       // Parámetros fiscales ajustables: IIBB e IVA de productos (AR), ISR retenido (MX)
@@ -3942,6 +3964,10 @@ function importSnapshotJSON(file) {
           if (snap.flex_mix)   FLEX_MIX[k]   = +snap.flex_mix[k]   || 0;
         });
       }
+      /* Punto de despacho y pisados de anillo: sin esto, reabrir un snapshot
+         volvía a proponer los anillos desde cero y perdía las correcciones. */
+      if (typeof ZONA_ORIGEN_CP !== 'undefined') ZONA_ORIGEN_CP = snap.zona_origen_cp || '';
+      if (typeof ZONA_OVERRIDE !== 'undefined') ZONA_OVERRIDE = snap.zona_override || {};
       if (typeof _invalidarZonas === 'function') _invalidarZonas();
 
       // Restaurar condición fiscal y parámetros (IIBB, IVA de productos, ISR MX)
@@ -7420,6 +7446,19 @@ function parsearArchivo(raw,filename){
   
   idx.estado = headersN.findIndex(h => h === 'estado');
   idx.provincia = headersN.findIndex((h, i) => i !== idx.estado && (h === 'estado' || h.includes('provincia')));
+
+  /* Localidad y código postal del comprador (sección "Compradores" del reporte).
+     Cada país la llama distinto: AR "Ciudad", CL "Comuna", MX "Municipio/Alcaldía".
+     Con esto la zona de reparto deja de ser un dato que tiene que declarar el
+     consultor: sale del reporte. El CP es la llave buena —el nombre lo escribe
+     el comprador y es texto libre: medido sobre 9.859 ventas Flex, 213 de 473
+     códigos postales traían más de un nombre para el mismo lugar ("billingurst
+     pdo.san martin", "maquinitas savio")—. En Chile el CP viene vacío y no
+     queda otra que ir por el nombre de comuna, que ML sí normaliza. */
+  idx.localidad = headersN.findIndex(h =>
+    h === 'ciudad' || h === 'comuna' || h.includes('municipio') || h.includes('alcaldía') || h.includes('alcaldia'));
+  idx.cp = headersN.findIndex(h =>
+    h.includes('código postal') || h.includes('codigo postal') || h === 'cp');
   
   idx.forma_entrega = headersN.findIndex(h => h === 'forma de entrega');
   if (idx.forma_entrega === -1) idx.forma_entrega = headersN.findIndex(h => h.includes('entrega') || h.includes('envío'));
@@ -7512,6 +7551,8 @@ function parsearArchivo(raw,filename){
         tienda:get(row,'tienda')||get(row,'canal')||'Mercado Libre',
         canal:get(row,'canal')||'Mercado Libre',
         prov:get(row,'provincia')||'SIN_ZONA',
+        localidad:get(row,'localidad')||'',
+        cpComprador:get(row,'cp')||'',
         fecha:get(row,'fecha'),
         forma_entrega: get(row,'forma_entrega')||'Sin Datos',
         cargo_venta:  parseNum(get(row,'cargo_venta')),
@@ -7610,6 +7651,8 @@ function parsearArchivo(raw,filename){
         tienda:get(row,'tienda')||carritoCtx.tienda,
         canal:get(row,'canal')||carritoCtx.canal,
         prov:get(row,'provincia')||carritoCtx.prov||'SIN_ZONA',
+        localidad:get(row,'localidad')||carritoCtx.localidad||'',
+        cpComprador:get(row,'cp')||carritoCtx.cpComprador||'',
         liquidez, unidades, devoluciones_unidades, esPubli,
         precio_unit:precio, fecha:parseMLDate(carritoCtx.fecha), fechaHora:parseMLDateTime(carritoCtx.fecha),
         id_venta:get(row,'id_venta')||carritoCtx.id_venta, estado,
@@ -7646,6 +7689,8 @@ function parsearArchivo(raw,filename){
     const fecha=parseMLDate(get(row,'fecha'));
     const fechaHora=parseMLDateTime(get(row,'fecha'));   // conserva la hora (Mapa de Calor)
     const prov=get(row,'provincia')||'SIN_ZONA';
+    const localidad = get(row,'localidad')||'';
+    const cpComprador = get(row,'cp')||'';
     const forma_entrega = get(row,'forma_entrega')||'Sin Datos';
 
     const ingresos_brutos = parseNum(get(row,'ingresos_brutos'));
@@ -7687,7 +7732,7 @@ function parsearArchivo(raw,filename){
       variante: normalizeVariante(get(row,'variante')),
       tienda:get(row,'tienda')||get(row,'canal')||'Mercado Libre',
       canal:get(row,'canal')||'Mercado Libre',
-      prov,liquidez,unidades,devoluciones_unidades,esPubli,precio_unit,fecha,fechaHora,esCarrito:false,esCanceled,costo_devolucion,
+      prov,localidad,cpComprador,liquidez,unidades,devoluciones_unidades,esPubli,precio_unit,fecha,fechaHora,esCarrito:false,esCanceled,costo_devolucion,
       id_venta:get(row,'id_venta'), estado,
       forma_entrega,
       condicion: _condVenta(get(row,'condicion')),
@@ -7852,7 +7897,7 @@ function aplicarFiltros(){
       if(to&&r.fecha&&r.fecha>to) continue;
 
       const id=getID(r)||(useML?'SIN_ID':'SIN_SKU');
-      const{liquidez,unidades,esPubli,tienda,prov,esCarrito,precio_unit,
+      const{liquidez,unidades,esPubli,tienda,prov,localidad,cpComprador,esCarrito,precio_unit,
             ingresos_brutos,cargo_venta,costo_fijo,cuotas,
             ing_envio,costo_envio,impuestos,descuentos,anulaciones,
             forma_entrega, devoluciones_unidades, esCanceled}=r;
@@ -7953,6 +7998,16 @@ function aplicarFiltros(){
         if (_ce === 'FLEX') {
           S.flexProvU = S.flexProvU || {};
           S.flexProvU[prov] = (S.flexProvU[prov] || 0) + unidades;
+          /* Celda geográfica del comprador (v52.9). Se guarda la CELDA y no el
+             anillo: el anillo depende del CP de origen y de los pisados del
+             consultor, que cambian sin volver a parsear el reporte. La clave
+             lleva el cordón pegado para poder agrupar la vista sin rebuscar.
+             Una venta que no se puede ubicar entra con celda vacía y cuenta
+             contra la cobertura en vez de desaparecer del total. */
+          const _g = (typeof geoCelda === 'function') ? geoCelda(cpComprador, localidad) : null;
+          const _k = _g ? (_g.celda + '|' + _g.cordon) : '|';
+          S.flexCeldaU = S.flexCeldaU || {};
+          S.flexCeldaU[_k] = (S.flexCeldaU[_k] || 0) + unidades;
         }
         const _verif = (costo_envio || 0) < 0 || CANALES_CON_COSTO.indexOf(_ce) >= 0;
         if (_verif) S.ibEnvioVerif = (S.ibEnvioVerif || 0) + ingresos_brutos;
@@ -8177,6 +8232,11 @@ function calcPriceBuckets(filteredRecords){
 /* ═══════════ RENDER ═══════════ */
 function renderDashboard(renderData){
   if(G) G._lastRender=renderData;
+  /* La mezcla de zonas se deduce del rango filtrado, así que se invalida acá y
+     no en renderNEXUS: renderRentKPIs también la consume y puede correr antes,
+     y con la caché del render anterior el promedio ponderado saldría del
+     período equivocado. */
+  if (typeof _invalidarZonas === 'function') _invalidarZonas();
   /* Mapa SKU → publicaciones (MLA) del período. Lo usa getEnrichment para sumar
      la pauta de TODAS las publicaciones que agrupa un SKU en vista SKU. */
   if (G) {
@@ -8997,6 +9057,7 @@ function resetDashboard(){
   FLEX_DATA={byMLA:{}, bySKU:{}, loaded:false, count:0};
   FLEX_PROMEDIO=0;
   FLEX_ZONAS={cercana:0, media:0, lejana:0, muyLejana:0};
+  ZONA_ORIGEN_CP=''; ZONA_OVERRIDE={};
   FLEX_MIX={cercana:0, media:0, lejana:0, muyLejana:0};
   if (typeof _invalidarZonas==='function') _invalidarZonas();
   NEXUS_CANAL='TODO';
@@ -10656,6 +10717,7 @@ function subItemPorCanal(s, canal) {
   const share = (s.ingresos_brutos > 0) ? (C.ingresos_brutos / s.ingresos_brutos) : 0;
   const sub = Object.assign({}, s, C);
   sub.flexProvU = s.flexProvU;        // el destino no está en el subtotal del canal
+  sub.flexCeldaU = s.flexCeldaU;
   sub._canal = canal;
   sub._shareCanal = share;
   sub.porCanal = null;            // evita que una lente se anide en otra
@@ -11571,42 +11633,413 @@ const _ZONA_LABEL = { cercana:'Zona cercana', media:'Zona media', lejana:'Zona l
 
 /* ═══════════ ZONAS DE DISTANCIA DEL DESPACHO PROPIO ═══════════
    La tarifa de Flex sube con la distancia, en anillos alrededor del punto de
-   despacho. El problema es que esos anillos viven ADENTRO de una provincia: un
-   depósito en la capital reparte por la ciudad y el conurbano hasta el tercer
-   cordón, y en otras ciudades Flex cubre el ejido urbano y poco más. El reporte
-   de ventas trae la PROVINCIA del comprador pero no la localidad, así que no
-   hay forma de saber en qué anillo cayó cada venta.
+   despacho, y esos anillos viven ADENTRO de una provincia: un depósito en la
+   capital reparte por la ciudad y el conurbano hasta el tercer cordón.
 
-   Se probaron dos caminos y los dos fallan:
-     · Mapear provincia → zona. No sirve: las cuatro zonas están todas dentro de
-       la misma provincia.
+   Durante varias versiones esto se consideró imposible de calcular, con dos
+   intentos fallidos documentados:
+     · Mapear PROVINCIA → zona. No sirve: las cuatro zonas están todas dentro de
+       la misma provincia. Sigue siendo cierto.
      · Deducir la lejanía del costo que ML informa en Mercado Envíos. Tampoco:
        ese cargo depende más del tamaño del paquete que de la distancia, y el
        ranking resultante ponía provincias del norte más cerca que la capital.
+       Sigue siendo cierto: no reintentar por ahí.
 
-   Entonces la distancia no se infiere: la aporta el consultor como MEZCLA. Se
-   cargan las cuatro tarifas y qué porcentaje de los despachos cae en cada
-   anillo, y EVO calcula el promedio ponderado. Es un dato que el vendedor
-   conoce —sabe a dónde reparte— y que el reporte no puede reconstruir.
+   Lo que había fallado era la llave, no el problema. El reporte trae el CÓDIGO
+   POSTAL del comprador —no sólo la provincia— y con eso la zona se resuelve:
+   probado contra 19.829 unidades de despacho propio de tres reportes reales,
+   ubicó el 100%. Ver GEOGRAFÍA DEL DESPACHO PROPIO más abajo.
+
+   DESACTUALIZADO desde v52.9: el reporte sí trae la localidad y el código postal
+   del comprador, así que la zona de cada venta se calcula. Ver GEOGRAFÍA DEL
+   DESPACHO PROPIO más abajo. FLEX_MIX sobrevive como el pisado manual del
+   consultor, que gana sobre lo calculado campo por campo.
 
    Los nombres son genéricos porque EVO corre en Argentina, México y Chile y
    cada país llama distinto a sus anillos de reparto. */
 let FLEX_MIX = { cercana: 0, media: 0, lejana: 0, muyLejana: 0 };   // participación %, no tiene que sumar 100
 
+/* ═══════════ GEOGRAFÍA DEL DESPACHO PROPIO (v52.9) ═══════════
+   Hasta v52.8 EVO pedía la mezcla de zonas al consultor porque "el reporte trae
+   la provincia pero no la localidad". Eso dejó de ser cierto: el reporte trae,
+   en la sección Compradores, el domicilio, la localidad y el código postal, y
+   en las ventas Flex vienen completos el 100% de las veces (medido sobre 9.859
+   ventas Flex de una cuenta real y 473 de otra).
+
+   El modelo tiene DOS CAPAS y es importante no volver a fusionarlas:
+
+     1. GEOGRAFÍA — dónde vive el comprador. Sale del reporte, es objetiva y es
+        la misma para todos los vendedores. CP → partido / comuna / municipio.
+
+     2. ANILLO TARIFARIO — cuánto cuesta llegar ahí. Depende del vendedor: de
+        dónde despacha Y con quién. Un vendedor en Tigre reparte "cerca" a zona
+        norte, pero si usa un 3PL o una logística con tarifas fijas por anillo,
+        esa misma venta le puede facturar como zona lejana. Por eso el anillo
+        NO se deduce: se propone por distancia desde el CP de origen y el
+        consultor lo puede pisar celda por celda.
+
+   La granularidad es el PARTIDO y no el cordón justamente por el caso de Tigre:
+   el segundo cordón contiene a Tigre y a Berazategui, que desde Tigre no están
+   ni cerca de la misma distancia.
+
+   Los cordones se usan sólo para agrupar la vista y para el reparto por defecto.
+   No son un estándar oficial: el INDEC define los 24 partidos del GBA y los
+   agrupa por criterio socioeconómico, no en anillos concéntricos. La división en
+   primer / segundo / tercer cordón es de uso corriente y tiene variantes, así
+   que la tabla es editable a propósito. */
+
+/* CP → partido. [desde, hasta, partido, cordón] · cordón: 0 CABA · 1/2/3 cordones
+   · 4 fuera de los cordones (RMBA y alrededores). Los rangos no se solapan y
+   están ordenados. Construida contra los CP que aparecen en reportes reales:
+   cada entrada quedó validada por el nombre de localidad que la acompaña. */
+const GEO_AR_CP = [
+  [1000,1499,'CABA',0],
+  [1602,1606,'Vicente López',1],
+  [1607,1607,'San Isidro',1],
+  [1608,1608,'Tigre',2],
+  [1609,1609,'San Isidro',1],
+  [1610,1611,'Tigre',2],
+  [1612,1616,'Malvinas Argentinas',2],
+  [1617,1618,'Tigre',2],
+  [1619,1620,'Escobar',3],
+  [1621,1622,'Tigre',2],
+  [1623,1623,'Escobar',3],
+  [1624,1624,'Tigre',2],
+  [1625,1628,'Escobar',3],
+  [1629,1635,'Pilar',3],
+  [1636,1638,'Vicente López',1],
+  [1640,1643,'San Isidro',1],
+  [1644,1646,'San Fernando',1],
+  [1648,1648,'Tigre',2],
+  [1650,1655,'General San Martín',1],
+  [1657,1657,'Tres de Febrero',1],
+  [1660,1660,'José C. Paz',2],
+  [1661,1663,'San Miguel',2],
+  [1664,1664,'Pilar',3],
+  [1665,1666,'José C. Paz',2],
+  [1669,1669,'Pilar',3],
+  [1670,1671,'Tigre',2],
+  [1672,1672,'General San Martín',1],
+  [1674,1678,'Tres de Febrero',1],
+  [1682,1685,'Tres de Febrero',1],
+  [1686,1686,'Hurlingham',2],
+  [1687,1687,'Tres de Febrero',1],
+  [1688,1688,'Hurlingham',2],
+  [1689,1691,'Tres de Febrero',1],
+  [1702,1703,'Tres de Febrero',1],
+  [1704,1704,'La Matanza',1],
+  [1706,1712,'Morón',1],
+  [1713,1715,'Ituzaingó',2],
+  [1716,1724,'Merlo',2],
+  [1727,1727,'Marcos Paz',3],
+  [1736,1746,'Moreno',2],
+  [1748,1749,'General Rodríguez',3],
+  [1751,1754,'La Matanza',1],
+  [1755,1759,'La Matanza',2],
+  [1761,1761,'Merlo',2],
+  [1763,1766,'La Matanza',2],
+  [1768,1772,'La Matanza',1],
+  [1774,1774,'La Matanza',2],
+  [1776,1776,'La Matanza',1],
+  [1778,1778,'La Matanza',2],
+  [1785,1786,'La Matanza',1],
+  [1801,1804,'Ezeiza',2],
+  [1805,1807,'Esteban Echeverría',2],
+  [1812,1812,'Ezeiza',2],
+  [1814,1816,'Cañuelas',4],
+  [1821,1821,'Lomas de Zamora',1],
+  [1822,1826,'Lanús',1],
+  [1827,1828,'Lomas de Zamora',1],
+  [1832,1836,'Lomas de Zamora',1],
+  [1837,1837,'Berazategui',2],
+  [1838,1839,'Esteban Echeverría',2],
+  [1840,1840,'Quilmes',2],
+  [1841,1842,'Esteban Echeverría',2],
+  [1843,1859,'Almirante Brown',2],
+  [1860,1861,'Berazategui',2],
+  [1862,1863,'Presidente Perón',3],
+  [1864,1865,'San Vicente',3],
+  [1868,1875,'Avellaneda',1],
+  [1876,1883,'Quilmes',2],
+  [1884,1886,'Berazategui',2],
+  [1887,1891,'Florencio Varela',2],
+  [1892,1892,'Presidente Perón',3],
+  [1893,1893,'Berazategui',2],
+  [1894,1922,'La Plata',4],
+  [1923,1924,'Berisso',4],
+  [1925,1931,'Ensenada',4],
+  [2800,2803,'Zárate',4],
+  [2804,2813,'Campana',4],
+  [2814,2816,'Exaltación de la Cruz',4],
+  [6700,6712,'Luján',4]
+];
+
+/* Centroide aproximado de cada partido, para ordenar por distancia al punto de
+   despacho. No se usa para cobrar nada: sólo propone el reparto inicial en
+   anillos, que después el consultor corrige. */
+const GEO_AR_CENTRO = {
+  'CABA':[-34.6037,-58.3816], 'Avellaneda':[-34.6625,-58.3645], 'Lanús':[-34.7069,-58.3925],
+  'Lomas de Zamora':[-34.7611,-58.4014], 'La Matanza':[-34.6764,-58.5614], 'Morón':[-34.6534,-58.6198],
+  'Tres de Febrero':[-34.5997,-58.5656], 'General San Martín':[-34.5725,-58.5361],
+  'Vicente López':[-34.5264,-58.4786], 'San Isidro':[-34.4708,-58.5125], 'San Fernando':[-34.4414,-58.5586],
+  'Tigre':[-34.4264,-58.5797], 'Malvinas Argentinas':[-34.5011,-58.7003], 'San Miguel':[-34.5433,-58.7119],
+  'José C. Paz':[-34.5178,-58.7639], 'Hurlingham':[-34.5883,-58.6392], 'Ituzaingó':[-34.6583,-58.6669],
+  'Merlo':[-34.6653,-58.7278], 'Moreno':[-34.6383,-58.7911], 'Esteban Echeverría':[-34.8083,-58.4767],
+  'Ezeiza':[-34.8533,-58.5231], 'Almirante Brown':[-34.8000,-58.3897], 'Quilmes':[-34.7203,-58.2544],
+  'Berazategui':[-34.7644,-58.2119], 'Florencio Varela':[-34.8206,-58.2761], 'Escobar':[-34.3483,-58.7936],
+  'Pilar':[-34.4586,-58.9142], 'General Rodríguez':[-34.5983,-58.9531], 'Marcos Paz':[-34.7772,-58.8383],
+  'Presidente Perón':[-34.9256,-58.3856], 'San Vicente':[-35.0231,-58.4222], 'Cañuelas':[-35.0511,-58.7561],
+  'La Plata':[-34.9215,-57.9545], 'Berisso':[-34.8736,-57.8886], 'Ensenada':[-34.8603,-57.9114],
+  'Zárate':[-34.0961,-59.0294], 'Campana':[-34.1631,-58.9592], 'Exaltación de la Cruz':[-34.2939,-59.0125],
+  'Luján':[-34.5703,-59.1050]
+};
+
+/* Chile · el CP viene vacío en el reporte (0% de las ventas Flex lo traían), así
+   que la llave es el nombre de comuna, que ML normaliza contra un set cerrado y
+   oficial de 52 comunas en la Región Metropolitana. El "cordón" acá es: 0 centro
+   y pericentro, 1 resto de las 32 comunas de la provincia de Santiago, 2 comunas
+   conurbadas de las provincias vecinas, 3 RM periférica. Flex sólo opera en el
+   área metropolitana: las 473 ventas Flex medidas cayeron todas dentro. */
+const GEO_CL_COMUNA = {
+  'santiago':0,'nunoa':0,'providencia':0,'las condes':0,'vitacura':0,'la reina':0,'macul':0,
+  'san miguel':0,'independencia':0,'recoleta':0,'estacion central':0,'quinta normal':0,
+  'san joaquin':0,'pedro aguirre cerda':0,'lo prado':0,'cerrillos':0,'la cisterna':0,
+  'maipu':1,'la florida':1,'penalolen':1,'quilicura':1,'renca':1,'cerro navia':1,'pudahuel':1,
+  'conchali':1,'huechuraba':1,'el bosque':1,'la granja':1,'la pintana':1,'san ramon':1,
+  'lo espejo':1,'lo barnechea':1,
+  'puente alto':2,'san bernardo':2,'padre hurtado':2,'colina':2,'lampa':2,'calera de tango':2,
+  'penaflor':2,'talagante':2,'pirque':2,'san jose de maipo':2,'buin':2,
+  'melipilla':3,'til til':3,'tiltil':3,'paine':3,'isla de maipo':3,'el monte':3,'curacavi':3,
+  'maria pinto':3,'alhue':3,'san pedro':3
+};
+/* Centroides de las comunas con más volumen. Las que falten caen al centro de
+   Santiago, que sólo afecta el orden propuesto y no el porcentaje calculado. */
+const GEO_CL_CENTRO = {
+  'Santiago':[-33.4489,-70.6693], 'Providencia':[-33.4314,-70.6093], 'Ñuñoa':[-33.4569,-70.5975],
+  'Las Condes':[-33.4103,-70.5680], 'Vitacura':[-33.3899,-70.5836], 'La Reina':[-33.4450,-70.5364],
+  'Macul':[-33.4870,-70.5975], 'San Miguel':[-33.4969,-70.6522], 'Recoleta':[-33.4103,-70.6431],
+  'Independencia':[-33.4147,-70.6642], 'Estacion Central':[-33.4614,-70.6889],
+  'Quinta Normal':[-33.4344,-70.7011], 'Cerrillos':[-33.4967,-70.7147], 'La Cisterna':[-33.5333,-70.6667],
+  'Maipu':[-33.5111,-70.7581], 'La Florida':[-33.5425,-70.5836], 'Penalolen':[-33.4889,-70.5444],
+  'Quilicura':[-33.3672,-70.7292], 'Renca':[-33.4028,-70.7264], 'Cerro Navia':[-33.4222,-70.7392],
+  'Pudahuel':[-33.4408,-70.7639], 'Conchali':[-33.3833,-70.6750], 'Huechuraba':[-33.3697,-70.6403],
+  'Lo Barnechea':[-33.3500,-70.5167], 'Lo Prado':[-33.4444,-70.7222], 'El Bosque':[-33.5622,-70.6750],
+  'Puente Alto':[-33.6167,-70.5758], 'San Bernardo':[-33.5925,-70.6994], 'Colina':[-33.2019,-70.6747],
+  'Padre Hurtado':[-33.5731,-70.8153], 'Lampa':[-33.2833,-70.8783], 'Penaflor':[-33.6094,-70.8783],
+  'Talagante':[-33.6642,-70.9289], 'Buin':[-33.7333,-70.7414], 'Melipilla':[-33.6889,-71.2156]
+};
+
+/* México · el AMG oficial son 7 municipios (Guadalajara, Zapopan, Tlajomulco de
+   Zúñiga, San Pedro Tlaquepaque, Tonalá, El Salto y Juanacatlán). El CP viene
+   completo al 100%, así que la llave es el CP y el nombre queda de respaldo.
+   ATENCIÓN: esta tabla está SIN CALIBRAR. Los reportes de México disponibles al
+   2026-09-20 no tienen una sola venta Flex —son Full y Correo, con distribución
+   nacional— así que los anillos de abajo son el AMG oficial, no una medición.
+   Hay que contrastarlos contra un reporte con despacho propio antes de confiar
+   en el porcentaje que produzcan. */
+const GEO_MX_CP = [
+  [44100,44999,'Guadalajara',0],
+  [45000,45299,'Zapopan',0],
+  [45400,45409,'Tonalá',1],
+  [45500,45639,'San Pedro Tlaquepaque',1],
+  [45640,45679,'Tlajomulco de Zúñiga',1],
+  [45680,45699,'El Salto',2]
+];
+const GEO_MX_CENTRO = {
+  'Guadalajara':[20.6597,-103.3496], 'Zapopan':[20.7214,-103.3918],
+  'San Pedro Tlaquepaque':[20.6409,-103.2938], 'Tonalá':[20.6247,-103.2336],
+  'Tlajomulco de Zúñiga':[20.4757,-103.4437], 'El Salto':[20.5186,-103.1787],
+  'Juanacatlán':[20.5100,-103.1700]
+};
+
+const GEO_CORDON_LABEL = {
+  AR: ['CABA', 'Primer cordón', 'Segundo cordón', 'Tercer cordón', 'Fuera de los cordones'],
+  CL: ['Centro y pericentro', 'Resto de la provincia de Santiago', 'Comunas conurbadas', 'RM periférica', 'Fuera del área metropolitana'],
+  MX: ['Guadalajara y Zapopan', 'Resto del AMG', 'Periferia del AMG', 'Interior de Jalisco', 'Fuera del AMG']
+};
+
+/* Normalizador compartido: minúsculas, sin tildes, espacios colapsados. */
+function _geoNorm(t) {
+  return String(t == null ? '' : t).trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ');
+}
+/* AR usa 4 dígitos (el CPA agrega una letra adelante y cuatro atrás, y el
+   reporte a veces manda uno u otro); MX y CL usan 5. */
+function _geoCPNum(cp) {
+  const d = String(cp == null ? '' : cp).replace(/\D/g, '');
+  if (!d) return 0;
+  const fc = (typeof fiscalCfg === 'function') ? fiscalCfg() : {};
+  const largo = (fc.isMX || fc.isCL) ? 5 : 4;
+  return parseInt(d.slice(0, largo), 10) || 0;
+}
+function _geoBuscarCP(tabla, n) {
+  for (let i = 0; i < tabla.length; i++) {
+    if (n >= tabla[i][0] && n <= tabla[i][1]) return { celda: tabla[i][2], cordon: tabla[i][3] };
+  }
+  return null;
+}
+function _geoPais() {
+  const fc = (typeof fiscalCfg === 'function') ? fiscalCfg() : {};
+  return fc.isMX ? 'MX' : (fc.isCL ? 'CL' : 'AR');
+}
+
+/* Celda geográfica de una venta. Devuelve null cuando no se puede ubicar, que es
+   un resultado legítimo y se informa como cobertura: preferible a inventar una
+   zona y meterla en el promedio. */
+function geoCelda(cp, localidad) {
+  const pais = _geoPais();
+  if (pais === 'CL') {
+    const k = _geoNorm(localidad);
+    if (k && GEO_CL_COMUNA[k] !== undefined) return { celda: String(localidad).trim(), cordon: GEO_CL_COMUNA[k] };
+    return null;
+  }
+  const n = _geoCPNum(cp);
+  if (!n) return null;
+  return _geoBuscarCP(pais === 'MX' ? GEO_MX_CP : GEO_AR_CP, n);
+}
+function _geoCentros() {
+  const pais = _geoPais();
+  return pais === 'MX' ? GEO_MX_CENTRO : (pais === 'CL' ? GEO_CL_CENTRO : GEO_AR_CENTRO);
+}
+
+/* Distancia en km entre dos puntos (haversine). Sólo para ordenar por cercanía. */
+function _geoKm(a, b) {
+  if (!a || !b) return Infinity;
+  const R = 6371, rad = Math.PI / 180;
+  const dLat = (b[0] - a[0]) * rad, dLon = (b[1] - a[1]) * rad;
+  const s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+/* Centroide del punto de despacho, a partir del CP que carga el consultor. */
+function _geoCentroOrigen() {
+  const g = geoCelda(ZONA_ORIGEN_CP, '');
+  if (!g) return null;
+  return _geoCentros()[g.celda] || null;
+}
+
+/* ═══════════ CAPA 2 · ANILLO TARIFARIO ═══════════
+   La geografía es un hecho; el anillo es una decisión comercial. Acá vive la
+   segunda, que es la que el consultor controla.
+
+     ZONA_ORIGEN_CP   CP desde donde despacha la cuenta. Puede ser el depósito
+                      propio o la dirección del 3PL: lo que importa es desde
+                      dónde sale el paquete.
+     ZONA_OVERRIDE    celda → anillo, pisado a mano. Gana siempre sobre la
+                      propuesta por distancia. Es lo que resuelve el caso de la
+                      logística con tarifas fijas, donde la cercanía geográfica
+                      no tiene nada que ver con lo que se factura. */
+let ZONA_ORIGEN_CP = '';
+let ZONA_OVERRIDE = {};
+
+/* Anillo propuesto para una celda, por distancia al punto de despacho. Sin CP de
+   origen cargado se cae al cordón, que es el reparto correcto cuando se despacha
+   desde el centro —el caso más común— y una aproximación razonable si no.
+   Los cortes en km son generosos a propósito: sirven para ordenar, no para
+   cobrar, y el consultor corrige lo que no le cierre. */
+function _zonaPropuesta(celda, cordon) {
+  const centroOrigen = _geoCentroOrigen();
+  if (centroOrigen) {
+    const destino = _geoCentros()[celda];
+    if (destino) {
+      const km = _geoKm(centroOrigen, destino);
+      if (km <= 12) return 'cercana';
+      if (km <= 28) return 'media';
+      if (km <= 55) return 'lejana';
+      return 'muyLejana';
+    }
+  }
+  return _ZONA_ORDEN[Math.min(cordon, 3)];
+}
+
+/* Anillo efectivo de una celda: lo que dijo el consultor, o la propuesta. */
+function zonaDeCelda(celda, cordon) {
+  if (celda && ZONA_OVERRIDE[celda]) return ZONA_OVERRIDE[celda];
+  return _zonaPropuesta(celda, cordon);
+}
+
+/* ═══════════ MEZCLA CALCULADA DESDE EL REPORTE ═══════════
+   Recorre las unidades de despacho propio, las ubica y arma el reparto por
+   anillo. Devuelve también la cobertura: qué parte del volumen se pudo ubicar.
+   Lo que no se ubica NO se reparte —no se prorratea sobre el resto— porque eso
+   maquillaría el porcentaje; se informa y se ve.
+
+   Las ventas que caen fuera de los cordones (en una cuenta real: La Plata,
+   Zárate, Campana y Luján, 7,4% del Flex) van al anillo más caro. Es una
+   decisión del consultor, no una deducción: son los destinos más caros de
+   repartir y no tienen anillo propio. */
+let _MEZCLA_CACHE = null;
+function mezclaZonasCalculada(force) {
+  if (_MEZCLA_CACHE && !force) return _MEZCLA_CACHE;
+  const m = (G && G._lastRender && G._lastRender.skuMap) || {};
+  const porZona = { cercana:0, media:0, lejana:0, muyLejana:0 };
+  const porCelda = {};
+  let ubicadas = 0, total = 0;
+  Object.values(m).forEach(s => {
+    Object.entries(s.flexCeldaU || {}).forEach(([clave, u]) => {
+      if (!(u > 0)) return;
+      total += u;
+      // clave = "celda|cordon"; sin celda quiere decir que no se pudo ubicar
+      const cut = clave.lastIndexOf('|');
+      const celda = cut > 0 ? clave.slice(0, cut) : '';
+      const cordon = cut > 0 ? (parseInt(clave.slice(cut + 1), 10) || 0) : -1;
+      if (!celda) return;
+      ubicadas += u;
+      const z = zonaDeCelda(celda, cordon);
+      porZona[z] = (porZona[z] || 0) + u;
+      if (!porCelda[celda]) porCelda[celda] = { celda, cordon, u: 0, zona: z };
+      porCelda[celda].u += u;
+      porCelda[celda].zona = z;
+    });
+  });
+  const pct = {};
+  _ZONA_ORDEN.forEach(k => { pct[k] = ubicadas > 0 ? (porZona[k] / ubicadas) * 100 : 0; });
+  _MEZCLA_CACHE = {
+    pct, unidades: porZona, ubicadas, total,
+    cobertura: total > 0 ? ubicadas / total : 0,
+    celdas: Object.values(porCelda).sort((a, b) => b.u - a.u),
+    hay: ubicadas > 0
+  };
+  return _MEZCLA_CACHE;
+}
+function _invalidarMezcla() { _MEZCLA_CACHE = null; }
+
+/* Mezcla efectiva: la que escribió el consultor gana sobre la calculada, campo
+   por campo. Así se cumple lo pedido —cargar sólo las cuatro tarifas— sin
+   perder el control cuando la tabla clasifica mal un destino. */
+function mezclaZonasEfectiva() {
+  const calc = mezclaZonasCalculada();
+  const out = {}, origen = {};
+  _ZONA_ORDEN.forEach(k => {
+    const manual = FLEX_MIX[k] || 0;
+    if (manual > 0) { out[k] = manual; origen[k] = 'manual'; }
+    else if (calc.hay && calc.pct[k] > 0) { out[k] = calc.pct[k]; origen[k] = 'calculado'; }
+    else { out[k] = 0; origen[k] = 'vacio'; }
+  });
+  return { mix: out, origen, calc };
+}
+
+
 /* Promedio ponderado de las tarifas por zona según la mezcla declarada.
    Devuelve 0 si falta alguna de las dos mitades. */
 function _flexPromedioZonas() {
+  /* La mezcla ya no la declara sólo el consultor: sale del reporte y él la puede
+     pisar campo por campo (ver mezclaZonasEfectiva). Con las cuatro tarifas
+     cargadas y ninguna mezcla escrita a mano, el promedio se arma solo. */
+  const E = (typeof mezclaZonasEfectiva === 'function') ? mezclaZonasEfectiva().mix : FLEX_MIX;
   let peso = 0, tot = 0;
   _ZONA_ORDEN.forEach(k => {
-    const t = FLEX_ZONAS[k] || 0, m = FLEX_MIX[k] || 0;
+    const t = FLEX_ZONAS[k] || 0, m = E[k] || 0;
     if (t > 0 && m > 0) { peso += m; tot += t * m; }
   });
   return peso > 0 ? tot / peso : 0;
 }
 
-/* Destinos del despacho propio, por volumen. No sirven para asignar zona —son
-   provincias, no anillos— pero sí para dimensionar de qué se está hablando y
-   para detectar el caso en que "despacho propio" esconde algo que no es Flex:
+/* Destinos del despacho propio, por volumen. La zona ya no sale de acá —desde
+   v52.9 se calcula por código postal, ver geoCelda— pero esta lista sigue
+   sirviendo para dimensionar de qué se está hablando y, sobre todo, para
+   detectar el caso en que "despacho propio" esconde algo que no es Flex:
    si aparecen destinos donde Flex no llega, esas ventas son otra cosa (una
    forma de entrega que el reporte no informó) y su costo no es una tarifa de
    reparto propio. */
@@ -11625,7 +12058,7 @@ function _zonasEnvio(force) {
   _ZONAS_CACHE = { lista, totU, hayRef: lista.length > 0 };
   return _ZONAS_CACHE;
 }
-function _invalidarZonas() { _ZONAS_CACHE = null; }
+function _invalidarZonas() { _ZONAS_CACHE = null; _invalidarMezcla(); }
 let NEXUS_FISCAL = 'RI';  // Condición fiscal: 'RI' (Responsable de IVA / con RFC en MX) | 'MONO' (Monotributo, exento, sin RFC)
 
 /* Parámetros fiscales ajustables desde la barra de filtros (v52.1). Se guardan
@@ -12623,6 +13056,7 @@ function renderRentKPIs(skuMap) {
       impuestos = 0, costoFijo = 0, cuotas = 0, descuentos = 0, devol = 0, recibidoML = 0;
   // MX (v52.1): retenciones separadas de la comisión y ventas sin IVA débito
   let retIva = 0, retIsr = 0, retIsrSinRfc = 0, exentos = 0;
+  let flexPropioTot = 0;   // envío propio (Flex), que el reporte no trae
 
   Object.values(skuMap).forEach(s => {
     revBruto    += s.ingresos_brutos || 0;
@@ -12638,6 +13072,10 @@ function renderRentKPIs(skuMap) {
     retIsr      += s.ret_isr || 0;
     retIsrSinRfc+= s.ret_isr_sinrfc || 0;
     exentos     += s.ingresos_exentos || 0;
+    /* Envío propio: mismas funciones que usa calcNEXUS, para que la tarjeta y el
+       informe no puedan divergir. Sin esto el margen de pantalla salía más alto
+       que el impreso en cuanto había una tarifa de despacho propio cargada. */
+    flexPropioTot += (typeof _flexUnitDe === 'function' ? _flexUnitDe(s) * _flexUnidadesDe(s) : 0);
   });
   
   // FIX: Calcular envío REAL recorriendo registros uno por uno (no agregado)
@@ -12687,7 +13125,7 @@ function renderRentKPIs(skuMap) {
   const factorIva = revBruto > 0 ? ivaDebito / revBruto : _fcA.factorIva;
 
   // Recibido ML con fees NETOS de IVA (costo real para RI)
-  recibidoML = revBruto + (cargoVenta + costoEnvio + ingEnvio + costoFijo + cuotas + descuentos + devol) * netFee + impuestos;
+  recibidoML = revBruto + (cargoVenta + costoEnvio + ingEnvio + costoFijo + cuotas + descuentos + devol) * netFee + impuestos - flexPropioTot;
 
   const iibbTotal = ventaNetaTotal * iibbRate;
   /* Retenciones a cuenta: AR contra IIBB; MX con RFC, IVA contra el débito e ISR
@@ -12718,7 +13156,9 @@ function renderRentKPIs(skuMap) {
   // Costos (efectivos, netos de IVA para RI) sobre venta neta
   const comisionAbs = Math.abs(cargoVenta) * netFee;
   const costoFijoAbs = Math.abs(costoFijo) * netFee;
-  const costoEnvioAbs = envioRealSeller * netFee;
+  /* Costo logístico total: lo que informa ML más el despacho propio, que se
+     paga fuera de la plataforma. La tarjeta medía sólo el primero. */
+  const costoEnvioAbs = envioRealSeller * netFee + flexPropioTot;
   const impuestosAbs = Math.abs(impuestos);
   const cuotasAbs = Math.abs(cuotas) * netFee;
   /* Costos totales = Ingresos por productos − NEXUS, así la tarjeta cierra exacto
@@ -15658,6 +16098,7 @@ function abrirFlexPromedio() {
   const prev = document.getElementById('flexprom-overlay');
   if (prev) prev.remove();
   const Z = _zonasEnvio(true);
+  const MZ = mezclaZonasCalculada(true);
 
   let pubs = 0;
   try {
@@ -15674,12 +16115,19 @@ function abrirFlexPromedio() {
     + 'oninput="_flexRecalc()" style="width:' + (w || 110) + 'px;padding:7px 9px;background:var(--surface2);'
     + 'border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;">';
 
-  const filaZona = k =>
-      '<tr><td style="padding:5px 10px 5px 0;font-family:var(--mono);font-size:10px;color:var(--muted);'
+  const pct1 = v => v.toFixed(1).replace('.', ',');
+
+  /* El campo de la mezcla ya no arranca vacío: muestra como placeholder el
+     porcentaje que sale del reporte. Escribir encima lo pisa, y sólo ese. */
+  const filaZona = k => {
+    const calc = MZ.hay ? MZ.pct[k] : 0;
+    const ph = MZ.hay ? pct1(calc) : '%';
+    return '<tr><td style="padding:5px 10px 5px 0;font-family:var(--mono);font-size:10px;color:var(--muted);'
     + 'text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">' + _ZONA_LABEL[k] + '</td>'
     + '<td style="padding:5px 8px;">' + num('flexz-' + k, FLEX_ZONAS[k], 'tarifa') + '</td>'
-    + '<td style="padding:5px 8px;">' + num('flexm-' + k, FLEX_MIX[k], '%', 80) + '</td>'
+    + '<td style="padding:5px 8px;">' + num('flexm-' + k, FLEX_MIX[k], ph, 80) + '</td>'
     + '<td id="flexap-' + k + '" style="padding:5px 0 5px 8px;font-family:var(--mono);font-size:10px;color:var(--muted);"></td></tr>';
+  };
 
   /* Contexto de destinos: no sirve para asignar zona, pero sí para detectar que
      "despacho propio" esté mezclando ventas que no son de reparto propio. */
@@ -15689,11 +16137,53 @@ function abrirFlexPromedio() {
       + (Z.lista.length > 6 ? ' · +' + (Z.lista.length - 6) + ' destinos' : '')
     : 'sin ventas de despacho propio en el período';
 
+  const pais = _geoPais();
+  const etiquetas = GEO_CORDON_LABEL[pais] || GEO_CORDON_LABEL.AR;
+  const nombreCelda = pais === 'CL' ? 'comuna' : (pais === 'MX' ? 'municipio' : 'partido');
+
+  /* Asignación celda por celda: agrupada por cordón para que se pueda leer, con
+     un select por fila para corregir lo que la distancia proponga mal. Es la
+     única forma de contemplar una logística que cobra por sus propios anillos. */
+  let detalle = '';
+  if (MZ.celdas.length) {
+    const grupos = {};
+    MZ.celdas.forEach(c => { (grupos[c.cordon] = grupos[c.cordon] || []).push(c); });
+    const orden = Object.keys(grupos).map(Number).sort((a, b) => a - b);
+    detalle = orden.map(cor => {
+      const filas = grupos[cor].map(c => {
+        const opts = _ZONA_ORDEN.map(z =>
+          '<option value="' + z + '"' + (c.zona === z ? ' selected' : '') + '>' + _ZONA_LABEL[z] + '</option>').join('');
+        const pisado = !!ZONA_OVERRIDE[c.celda];
+        return '<tr><td style="padding:3px 8px 3px 0;font-size:11.5px;color:var(--text);">' + c.celda
+          + (pisado ? ' <span style="color:var(--accent);font-size:9px;">·fijado</span>' : '') + '</td>'
+          + '<td style="padding:3px 8px;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right;">'
+          + NUM(c.u) + ' u · ' + pct1(MZ.ubicadas > 0 ? c.u / MZ.ubicadas * 100 : 0) + '%</td>'
+          + '<td style="padding:3px 0 3px 8px;"><select onchange="_zonaOverrideCambio(this,\'' + String(c.celda).replace(/'/g, "\\'") + '\')" '
+          + 'style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);'
+          + 'font-family:var(--mono);font-size:10.5px;padding:3px 5px;">' + opts + '</select></td></tr>';
+      }).join('');
+      const uGrupo = grupos[cor].reduce((a, b) => a + b.u, 0);
+      return '<div style="margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--muted);'
+        + 'text-transform:uppercase;letter-spacing:1px;">' + (etiquetas[cor] || ('Grupo ' + cor))
+        + ' · ' + pct1(MZ.ubicadas > 0 ? uGrupo / MZ.ubicadas * 100 : 0) + '%</div>'
+        + '<table style="width:100%;border-collapse:collapse;">' + filas + '</table>';
+    }).join('');
+  }
+
+  const cobertura = MZ.total > 0
+    ? (MZ.cobertura >= 0.9995
+        ? '<span style="color:var(--ok)">Se ubicaron las ' + NUM(MZ.total) + ' unidades de despacho propio.</span>'
+        : '<span style="color:var(--warn)">Se ubicaron ' + NUM(MZ.ubicadas) + ' de ' + NUM(MZ.total)
+          + ' unidades (' + pct1(MZ.cobertura * 100) + '%). El resto no tiene '
+          + (pais === 'CL' ? 'comuna reconocida' : 'código postal reconocido')
+          + ' y queda fuera del porcentaje, no repartido entre las zonas.</span>')
+    : 'Sin ventas de despacho propio en el período filtrado.';
+
   const ov = document.createElement('div');
   ov.id = 'flexprom-overlay';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(5,5,10,.8);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px;';
   const box = document.createElement('div');
-  box.style.cssText = 'background:#15151e;border:1px solid var(--border);border-radius:12px;padding:26px 30px;max-width:640px;width:100%;max-height:88vh;overflow:auto;';
+  box.style.cssText = 'background:#15151e;border:1px solid var(--border);border-radius:12px;padding:26px 30px;max-width:660px;width:100%;max-height:88vh;overflow:auto;';
   box.innerHTML =
       '<div style="font-family:Syne,sans-serif;font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px;">Costo de envío propio estimado</div>'
     + '<div style="color:var(--muted);font-size:12px;line-height:1.65;margin-bottom:6px;">'
@@ -15702,24 +16192,40 @@ function abrirFlexPromedio() {
     + 'Todo lo que se calcule con esto queda marcado <span style="color:var(--accent2)">ESTIMADO</span> '
     + 'y no debería salir en un entregable.'
     + '</div>'
-    + '<div style="color:var(--muted);font-size:11.5px;line-height:1.6;margin-bottom:16px;padding:10px 12px;'
+    + '<div style="color:var(--muted);font-size:11.5px;line-height:1.6;margin-bottom:14px;padding:10px 12px;'
     + 'background:rgba(96,165,250,.06);border-left:2px solid var(--accent2);border-radius:0 6px 6px 0;">'
-    + 'La tarifa sube por anillos alrededor del punto de despacho, y esos anillos están <b>dentro</b> de una misma '
-    + 'provincia. El reporte de ventas trae la provincia del comprador pero no la localidad, así que EVO no puede '
-    + 'saber en qué anillo cayó cada venta: la mezcla la ponés vos, que sabés a dónde repartís.'
+    + 'El reparto entre zonas <b>sale del reporte</b>: trae el ' + nombreCelda + ' del comprador en cada venta. '
+    + 'Vos cargás las cuatro tarifas. El anillo de cada destino se propone por distancia al punto de despacho, '
+    + 'pero la propuesta es sólo eso: si despachás con un tercero o con una logística de tarifas fijas, '
+    + 'lo que se factura no sigue la geografía. Corregí lo que haga falta en la lista de abajo.'
     + '</div>'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+    + '<label style="flex:0 0 190px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">Código postal de despacho</label>'
+    + '<input id="zona-origen-cp" type="text" value="' + (ZONA_ORIGEN_CP || '') + '" placeholder="1636" '
+    + 'oninput="_zonaOrigenCambio()" style="width:110px;padding:7px 9px;background:var(--surface2);'
+    + 'border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;">'
+    + '<span id="zona-origen-eco" style="font-family:var(--mono);font-size:10px;color:var(--muted);flex:1;"></span></div>'
     + '<table style="width:100%;border-collapse:collapse;">'
     + '<thead><tr style="border-bottom:1px solid var(--border);">'
     + ['Zona','Tarifa por unidad','% de despachos','Aporta'].map((h, i) =>
         '<th style="text-align:left;padding:4px 8px 6px ' + (i === 0 ? '0' : '8px') + ';font-family:var(--mono);font-size:9px;'
         + 'color:var(--muted);text-transform:uppercase;letter-spacing:1px;">' + h + '</th>').join('')
     + '</tr></thead><tbody>' + _ZONA_ORDEN.map(filaZona).join('') + '</tbody></table>'
+    + '<div style="font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:8px;line-height:1.6;">'
+    + 'El % lo calcula EVO desde el reporte (es el número gris). Si escribís uno, gana el tuyo.</div>'
     + '<div id="flexprom-calc" style="margin-top:14px;padding:11px 13px;background:var(--surface2);border-radius:8px;'
     + 'font-family:var(--mono);font-size:12px;color:var(--text);"></div>'
+    + '<div style="margin-top:12px;font-family:var(--mono);font-size:10px;line-height:1.6;">' + cobertura + '</div>'
+    + (detalle
+        ? '<details style="margin-top:12px;"><summary style="cursor:pointer;font-family:var(--mono);font-size:10px;'
+          + 'color:var(--accent2);text-transform:uppercase;letter-spacing:1px;">Asignación por ' + nombreCelda
+          + ' (' + MZ.celdas.length + ')</summary>'
+          + '<div style="max-height:260px;overflow:auto;margin-top:6px;">' + detalle + '</div></details>'
+        : '')
     + '<div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">'
     + '<label style="flex:0 0 190px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">Promedio directo (alternativa)</label>'
     + num('flexprom-val', FLEX_PROMEDIO, '6300')
-    + '<span style="font-family:var(--mono);font-size:10px;color:var(--muted);flex:1;">se usa sólo si no cargás la mezcla</span></div>'
+    + '<span style="font-family:var(--mono);font-size:10px;color:var(--muted);flex:1;">se usa sólo si no hay tarifas por zona</span></div>'
     + '<div style="font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:14px;padding-top:10px;border-top:1px solid var(--border);line-height:1.7;">'
     + 'Alcanza a ' + pubs + ' publicaciones · ' + NUM(Z.totU) + ' unidades de despacho propio<br>'
     + 'Destinos: ' + ctx
@@ -15737,30 +16243,69 @@ function abrirFlexPromedio() {
   ov.appendChild(box);
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
   document.body.appendChild(ov);
+  _zonaOrigenCambio();
   _flexRecalc();
   const f = document.getElementById('flexz-cercana');
   if (f) f.focus();
-  box.querySelectorAll('input').forEach(i =>
+  box.querySelectorAll('input[type=number]').forEach(i =>
     i.addEventListener('keydown', e => { if (e.key === 'Enter') setFlexPromedio(); }));
 }
 
+/* El CP de despacho reordena los anillos propuestos. Se aplica en vivo para que
+   se vea el efecto antes de aceptar: cambiar el origen puede mover buena parte
+   del volumen de una zona a otra. */
+function _zonaOrigenCambio() {
+  const el = document.getElementById('zona-origen-cp');
+  if (!el) return;
+  ZONA_ORIGEN_CP = String(el.value || '').trim();
+  const eco = document.getElementById('zona-origen-eco');
+  if (eco) {
+    const g = ZONA_ORIGEN_CP ? geoCelda(ZONA_ORIGEN_CP, '') : null;
+    eco.innerHTML = !ZONA_ORIGEN_CP
+      ? 'sin cargar: los anillos se proponen por cordón'
+      : (g ? '<span style="color:var(--ok)">despacha desde ' + g.celda + '</span>'
+           : '<span style="color:var(--warn)">código postal fuera de la tabla: se usa el cordón</span>');
+  }
+  _invalidarMezcla();
+  _flexRecalc();
+}
+
+/* Pisado de anillo por celda. Elegir el anillo que la distancia ya proponía
+   igual queda registrado: es una decisión del consultor, no una casualidad, y
+   tiene que sobrevivir a un cambio de CP de origen. */
+function _zonaOverrideCambio(sel, celda) {
+  if (!sel || !celda) return;
+  ZONA_OVERRIDE[celda] = sel.value;
+  _invalidarMezcla();
+  _flexRecalc();
+}
+
 /* Promedio ponderado en vivo: sin verlo, cargar cuatro tarifas y cuatro
-   porcentajes es a ciegas. Muestra también el aporte de cada zona al total. */
+   porcentajes es a ciegas. Muestra también el aporte de cada zona al total.
+   La mezcla que usa es la efectiva: lo calculado desde el reporte, con lo que
+   el consultor haya escrito encima ganando campo por campo. */
 function _flexRecalc() {
   const val = id => { const el = document.getElementById(id);
     const v = el ? parseFloat(String(el.value).replace(',', '.')) : 0;
     return (isFinite(v) && v > 0) ? v : 0; };
+  const MZ = mezclaZonasCalculada();
   let peso = 0, tot = 0;
   const partes = [];
   _ZONA_ORDEN.forEach(k => {
-    const t = val('flexz-' + k), m = val('flexm-' + k);
+    const t = val('flexz-' + k);
+    const manual = val('flexm-' + k);
+    const m = manual > 0 ? manual : (MZ.hay ? MZ.pct[k] : 0);
     const cel = document.getElementById('flexap-' + k);
-    if (t > 0 && m > 0) { peso += m; tot += t * m; partes.push({ k, t, m }); }
+    if (t > 0 && m > 0) { peso += m; tot += t * m; partes.push({ k, t, m, manual: manual > 0 }); }
     if (cel) cel.textContent = (t > 0 && m > 0) ? '—' : '';
+    // el placeholder sigue al cálculo cuando cambia el origen o un pisado
+    const inp = document.getElementById('flexm-' + k);
+    if (inp && MZ.hay) inp.placeholder = MZ.pct[k].toFixed(1).replace('.', ',');
   });
   partes.forEach(p => {
     const cel = document.getElementById('flexap-' + p.k);
-    if (cel) cel.textContent = fmtCurrency(p.t * p.m / peso) + ' (' + (p.m / peso * 100).toFixed(0) + '%)';
+    if (cel) cel.textContent = fmtCurrency(p.t * p.m / peso) + ' (' + (p.m / peso * 100).toFixed(0) + '%)'
+      + (p.manual ? ' ·manual' : '');
   });
   const out = document.getElementById('flexprom-calc');
   if (!out) return;
@@ -15770,8 +16315,8 @@ function _flexRecalc() {
       + ' <span style="color:var(--muted);font-size:11px;">por unidad de despacho propio</span>'
       + (Math.abs(peso - 100) > 0.5 ? '<br><span style="color:var(--muted);font-size:10px;">La mezcla suma ' + peso.toFixed(0) + '%; se pondera igual, sobre ese total.</span>' : '');
   } else {
-    out.innerHTML = '<span style="color:var(--muted);font-size:11px;">Cargá al menos una tarifa con su porcentaje para ver el costo ponderado. '
-      + 'Si no, se usa el promedio directo de abajo.</span>';
+    out.innerHTML = '<span style="color:var(--muted);font-size:11px;">Cargá al menos una tarifa para ver el costo ponderado. '
+      + 'El reparto entre zonas ya sale del reporte; si tampoco hay tarifas, se usa el promedio directo de abajo.</span>';
   }
 }
 
@@ -15782,9 +16327,14 @@ function setFlexPromedio(forzar) {
   if (forzar === 0) {
     FLEX_PROMEDIO = 0;
     _ZONA_ORDEN.forEach(k => { FLEX_ZONAS[k] = 0; FLEX_MIX[k] = 0; });
+    ZONA_ORIGEN_CP = ''; ZONA_OVERRIDE = {};
+    _invalidarMezcla();
   } else {
     FLEX_PROMEDIO = num('flexprom-val');
     _ZONA_ORDEN.forEach(k => { FLEX_ZONAS[k] = num('flexz-' + k); FLEX_MIX[k] = num('flexm-' + k); });
+    const _cpEl = document.getElementById('zona-origen-cp');
+    if (_cpEl) ZONA_ORIGEN_CP = String(_cpEl.value || '').trim();
+    _invalidarMezcla();
   }
   const ov = document.getElementById('flexprom-overlay');
   if (ov) ov.remove();
