@@ -1170,6 +1170,7 @@ const _GLOSARIO = [
  ['Columnas de señales', [
   ['Alertas','Marcas automáticas de la fila','En Rentabilidad: BAJA RENT. cuando el margen queda por debajo del 10%, y ENVÍO +X% VS FAMILIA cuando el costo logístico se desvía de productos comparables. En Publicidad e Inversión Sin Retorno: la acción recomendada.'],
   ['Situación','Por qué una publicación entra al panel de Inversión Sin Retorno','Distingue tres casos: sin ninguna venta en el período, vendió pero sin venta atribuida a Ads, o tiene ventas marcadas por sesión de Ads pero el reporte de Anuncios no le atribuye ingresos (típico de venta indirecta).'],
+  ['Estado en Inversión Sin Retorno','Columna propia y los activos primero','Pausar lo que ya está pausado no es una acción. El panel ordena por estado antes que por cualquier otro criterio: arriba los anuncios ACTIVOS, que son los únicos donde frenar el gasto cambia algo, y al final, atenuados, los pausados, movidos o deshabilitados, cuyo gasto ya es historia del período. La primera alerta del panel es cuánta plata está gastando HOY la pauta activa sin retorno, que es lo accionable; el resto del monto expuesto se declara aparte.'],
   ['Impacto','Prioridad de una oportunidad o accionable','Ordena por cuánto mueve la aguja, no por urgencia temporal.'],
   ['Reporte de stock FULL · hoja Resumen','Es la fuente completa, no un índice','La hoja Resumen trae Tamaño, Estado de la publicación, Unidades en camino a Full, Tiempo hasta agotar stock, las cuatro categorías de acción y las ventas en unidades. Las hojas por categoría son un detalle de esa misma información. El parser usa Resumen como base y las otras como respaldo. Antes se excluía Resumen y por eso faltaban tamaño, unidades en camino y tiempo hasta agotar.'],
   ['Agrupador de variantes','Es la clave de agrupación, no el # de publicación','Un mismo agrupador reúne los talles o colores de un producto, y ahí es donde tiene sentido el quiebre parcial: una variante en cero mientras sus hermanas tienen stock. Agrupando por publicación los grupos quedaban de a uno y ningún quiebre parcial podía detectarse. Ojo: los quiebres parciales que se veían antes del arreglo eran falsos, producto de un identificador corrupto que agrupaba todo el catálogo bajo una publicación inexistente.'],
@@ -1186,7 +1187,13 @@ const _GLOSARIO = [
   ['Columna Última venta','Reemplaza a Cat. L1','La categoría inferida no aportaba a la decisión de reposición. La fecha de última venta sí: indica desde cuándo la publicación está apagada, y marca en ámbar las que superan los 45 días.'],
   ['Stock compartido entre publicaciones','No se suma: se toma el máximo','Cuando varias publicaciones caen en el mismo SKU suelen ser distintas condiciones de venta del MISMO stock físico, no inventarios separados. Sumarlas duplica el disponible. Se toma el máximo, que es el pool real. Las variantes genuinas de color o modelo llevan SKU propio y no se ven afectadas.'],
   ['Publicaciones con reposición en el listado','Siempre visibles','El filtro de publicaciones accionables ocultaba las que tienen stock cero y poca rotación, que son justamente las que ya quebraron. Ahora todo lo que necesita reposición se muestra, sin importar el filtro.'],
-  ['Revenue en riesgo por quiebre','ASP bruto × ritmo diario × días de apagón','Los días de apagón son el lead time MENOS los días que todavía cubre el stock: una publicación puede estar marcada urgente (su fecha de pedido venció) y conservar inventario. Usar el lead time completo sobreestima hasta 2,3× en esos casos. Sólo entran publicaciones con rotación. Es un PISO: asume que el pedido se cursa hoy y que ninguna venta perdida se recupera, sin factor alguno, porque cualquier valor sería inventado y este número va a un entregable. La pérdida real es mayor: un quiebre además degrada la posición de la publicación.'],
+  ['Unidades en camino al FULL','Se cruzan contra la reposición sugerida','El reporte de stock general informa las unidades despachadas al FULL que todavía no ingresaron ("pendientes" más "en transferencia"). No son stock disponible —no se pueden vender hoy y no cuentan para el DOH— pero sí son reposición EN CURSO. Hasta v52.1 el forecast las ignoraba: una publicación en cero con mercadería viajando aparecía como quiebre urgente y disparaba una orden de compra por algo que ya está en camino. Ahora la proyección corre sobre el stock efectivo (disponible + en camino), la cantidad sugerida ya las descuenta y las publicaciones que quedan totalmente cubiertas salen de la alerta con la marca EN CAMINO en vez de URGENTE. Se muestran igual, con su stock real y las unidades en tránsito, porque esconderlas dejaba sin explicación por qué una publicación en cero no figura en ningún lado. Si el ingreso al depósito de ML demora más que el lead time, vuelven a ser quiebre.'],
+  ['Cruce de las unidades en camino','Por publicación y por SKU, una fila por producto','Una fila del reporte de FULL puede listar varias publicaciones del mismo producto en "Publicaciones con este producto", y el forecast trabaja con # de publicación, con SKU o con identificadores compuestos según la vista. Se prueban todas las claves y cada fila de FULL se cuenta UNA sola vez aunque matcheen varias, para no duplicar el tránsito. En vista SKU con varios grupos de stock, el tránsito se imputa al grupo que lo espera y no al SKU entero.'],
+  ['Dónde aparece el tránsito','Dashboard, PDF, tabla de mail y Excel','Columna "En camino" en la Reposición Sugerida del dashboard, en la tabla de la alerta por mail, en la tabla del informe PDF y en las hojas Forecast 6w y Reposición Sugerida del export. Además hay una tarjeta de KPI con el total de unidades en tránsito y cuántas publicaciones quedan cubiertas por ellas.'],
+  ['En riesgo con reposición en curso','El tránsito evita la compra, NO la venta perdida','Que no haya que emitir una orden no quiere decir que no se pierda plata. Una publicación en CERO con mercadería viajando al FULL no vende hasta que ML procesa el ingreso, y esa facturación se pierde igual. Por eso el riesgo de las publicaciones con la góndola vacía se parte en dos tarjetas, porque son dos acciones distintas: "Revenue en riesgo hoy" son las que están en cero sin nada en camino y hay que comprar YA; "En riesgo con reposición en curso" son las que están en cero esperando el ingreso, donde la acción es reclamar o apurar el ingreso, no volver a comprar. Ninguna de las dos es cero: hasta v52.1 el forecast no distinguía el caso y, al tomar el tránsito como stock, el riesgo de las segundas quedaba en cero, que es falso.'],
+  ['Cómo se mide el apagón','Sobre el stock DISPONIBLE, nunca sobre el efectivo','Los días que cubre el inventario se cuentan con las unidades que están hoy en la góndola. Las que vienen en camino sirven para decidir cuándo pedir —por eso la reposición sugerida sí las descuenta— pero no para decidir si la publicación está vendiendo: hasta que no ingresan no se pueden vender. Mezclar las dos cosas es lo que hacía desaparecer el riesgo de publicaciones que están perdiendo plata hoy mismo.'],
+  ['Techo vs. estimación','El monto del riesgo en tránsito es un máximo','La tarjeta muestra el costo por día, que es el número defendible, y declara como techo lo que se perdería si el ingreso tardara todo el lead time del canal. No es una estimación: el reporte de stock no informa fecha estimada de ingreso, así que la recuperación no se puede fechar y cualquier número intermedio sería inventado.'],
+  ['Revenue en riesgo por quiebre','ASP bruto × ritmo diario × días de apagón','Los días de apagón son el lead time MENOS los días que todavía cubre el stock DISPONIBLE (las unidades en camino al FULL no cuentan como cobertura): una publicación puede estar marcada urgente (su fecha de pedido venció) y conservar inventario. Usar el lead time completo sobreestima hasta 2,3× en esos casos. Sólo entran publicaciones con rotación. Es un PISO: asume que el pedido se cursa hoy y que ninguna venta perdida se recupera, sin factor alguno, porque cualquier valor sería inventado y este número va a un entregable. La pérdida real es mayor: un quiebre además degrada la posición de la publicación.'],
   ['Costo de demorar','Σ (ASP × ritmo) de las publicaciones en cero','Lo que se pierde por cada día adicional sin reponer. No proyecta nada: es el ritmo actual por el precio, sobre las que YA están sin stock. Convierte el diagnóstico en urgencia sin agregar supuestos.'],
   ['Lead time por defecto','PROPIO 14 días · FULL 21 días','Se aplica cuando el equipo no cargó el plazo real del proveedor. El informe declara sobre cuántas publicaciones se usó el default, porque el revenue en riesgo vale lo que vale ese input.'],
   ['Vista guardada en el snapshot','SKU o # Publicación','El snapshot no guardaba la vista activa y siempre se reabría en SKU. Como los inputs de stock se indexan según el identificador vigente al importarlos, quedaban contra el identificador opuesto y no cruzaban: en una cuenta real, 566 inputs sin usar y el forecast reducido a 5 publicaciones. Ahora la vista se guarda y se restaura antes de aplicar filtros, y la resolución de inputs prueba ambos identificadores sumando el stock de las publicaciones que caen en el mismo destino.'],
@@ -1195,6 +1202,31 @@ const _GLOSARIO = [
   ['Ventas 30 días · unidades vs pesos','Dos columnas que empiezan igual','El reporte trae "Ventas últimos 30 días (u.)" y "Ventas últimos 30 días ($)" una al lado de la otra. Leer la de pesos como unidades multiplicaba el run rate por el precio: una publicación con 46 ventas mostraba 46.680 y sugería reponer 46.680 unidades. El mapeo exige la marca de unidades y descarta explícitamente la de importes.'],
   ['Rev 30d','Facturación de los últimos 30 días','Ventana fija del reporte de Stock FULL. No respeta el filtro de fechas del reporte de ventas.'],
   ['Tamaño','Clasificación de volumen del producto en FULL','La informa ML y condiciona la tarifa de almacenamiento y de envío.'],
+ ]],
+ ['Campañas de publicidad', [
+  ['Qué resuelve','Qué anuncio se come el presupuesto de la campaña','En una campaña con 168 anuncios no hay forma de ver cuál consume el gasto. El panel lista, dentro de cada campaña, sus anuncios ACTIVOS con CTR, CVR, ventas por publicidad y el porcentaje del presupuesto de la campaña que se lleva cada uno. Un anuncio que toma el 30% del presupuesto y no recupera la inversión salta a la vista sin cruzar nada a mano.'],
+  ['Fuente','Sólo el reporte por anuncios','Todas las cifras son la suma de las filas del reporte por anuncios (report-pads). El reporte por campañas NO alimenta este panel: trae los totales ya agregados por ML y, al mezclarlo, los porcentajes de presupuesto dejaban de cerrar contra la suma de los anuncios. Así cada número es reproducible fila por fila.'],
+  ['Dos vistas','POR AD y CONSOLIDADO','El mismo toggle que el resto del tablero. POR AD abre la tabla de anuncios activos de la campaña. CONSOLIDADO muestra la campaña como unidad: inversión total, ingresos totales, ventas totales (con el desglose entre directas e indirectas), ROAS, ACOS, CTR, CVR, CPC y cantidad de anuncios. La vista elegida vale para todas las campañas.'],
+  ['Campañas contraídas por defecto','Se despliega la que interesa','Son cientos de filas: el valor está en abrir una campaña, no en scrollear todas. Los enlaces del encabezado despliegan o contraen todo de una vez. La cabecera de cada campaña ya muestra inversión, ROAS y cuántos anuncios activos tiene, así que se puede priorizar sin abrir nada.'],
+  ['% de la campaña','Inversión del anuncio ÷ inversión TOTAL de la campaña','El denominador incluye a los anuncios no activos, porque su gasto también es plata de esa campaña. Medido en una cuenta real: en una campaña los activos explican sólo el 42,7% del gasto. Usar sólo los activos como denominador haría parecer dueño de todo el presupuesto a un anuncio de una campaña que gasta el triple en pausados.'],
+  ['% de los ingresos','La contracara del % de presupuesto','Tooltip en la celda de Ingresos de cada anuncio: qué parte de los ingresos de la campaña aporta ese ad. Ver consumo y aporte juntos es lo que convierte la tabla en una decisión. Un anuncio que consume 26,5% del presupuesto y aporta 48,4% de los ingresos sostiene al resto de la campaña; uno que consume 13% y aporta 0% se está financiando con los demás. El tooltip dice explícitamente cuál de los dos casos es.'],
+  ['Todos los anuncios, con el estado marcado','Activos primero','Se listan TODOS los anuncios de la campaña, con un chip de estado y un separador que corta entre lo accionable y lo que ya no admite decisión de puja. Los no activos van al final y atenuados. Mostrar sólo los activos escondía a dónde había ido el resto del presupuesto —en una campaña real, el 57%— y obligaba a explicar por qué los porcentajes no cerraban contra el total. Un mismo anuncio puede tener varias filas en el reporte (una por bucket de tiempo y por campaña) con estados distintos: se toma el más vivo.'],
+  ['Estados del anuncio','Activo · Pausado · Movido · Deshabilitado','Activo: en circulación, el único sobre el que accionar la puja cambia algo. Pausado: fuera de circulación pero reactivable. Movido: pasó a otra campaña, y ML informa por separado lo que hizo en cada una. Deshabilitado: la publicación está inactiva (falta de stock u otro motivo) y no se puede accionar. El chip es del estado DENTRO de esa campaña, que puede diferir del estado global del anuncio que muestra el resto del tablero.'],
+  ['Orden de las campañas','Las que tienen anuncios activos primero','Una campaña sin ningún anuncio activo gastó, pero hoy no tiene puja sobre la que accionar: va al final del listado con la marca SIN ACTIVOS, aunque haya gastado más que las de arriba. Dentro de cada orden, por inversión.'],
+  ['Reparto por estado','Fila al pie de la vista consolidada','Cuánto del presupuesto de la campaña fue a cada estado. Responde si la campaña está viva: una que gasta el 57% en anuncios que ya no circulan no es la misma que una que lo gasta todo en circulación, y el ROAS solo no las distingue.'],
+  ['Anuncios movidos entre campañas','Se cuentan en cada campaña donde estuvieron','ML informa por separado los resultados de un anuncio en cada campaña en la que estuvo. El panel respeta esa separación; el resto del tablero, que agrega por publicación, no puede distinguirla.'],
+  ['CTR · CVR','Clics ÷ impresiones · Ventas por publicidad ÷ clics','Se recalculan desde los acumulados del período y no se promedian los porcentajes de las filas: promediar porcentajes de filas con volúmenes distintos da un número que no reproduce ninguna división.'],
+  ['Ventas por publicidad','Directas + indirectas','Directas son las del producto cuyo anuncio se clickeó; indirectas, las que el comprador cerró sobre otro producto después de entrar por ese anuncio. El consolidado muestra las dos por separado.'],
+  ['Filtro de fechas','Prorratea igual que el resto de la pestaña','Cada fila del reporte aporta la fracción de sus días que cae dentro del rango filtrado, con la misma regla que usa el TACOS y el Resumen. Si el rango de Ads y el del reporte de ventas no coinciden, el aviso de la pestaña lo advierte.'],
+  ['Alerta SIN RETORNO','Umbral atado a los compañeros de campaña, no a un % fijo','Un 10% del presupuesto no significa lo mismo en una campaña de 5 anuncios que en una de 168, así que un umbral fijo marca de más en unas y de menos en otras. Lo que sí es comparable es el resto del pelotón: se toma el promedio de presupuesto que consumen los anuncios de ESA campaña que SÍ venden, y se marca en rojo al que consume lo mismo o más sin una sola venta atribuida. La lectura es directa: está ocupando el lugar de uno que rinde. Se admite un 10% de tolerancia hacia abajo para captar los casos "similares" (un ad al 9,9% contra un promedio de 10% no se escapa). El encabezado de la columna declara el promedio usado, para que la marca sea reproducible.'],
+  ['Activos vs. histórico en la alerta','El titular es siempre lo frenable','La marca se aplica a cualquier anuncio que gastó sin vender, pero los contadores del panel cuentan sólo los ACTIVOS: sobre un pausado el gasto ya está consumado y no hay puja que tocar. Los no activos con alerta se listan igual, atenuados y al final, con la aclaración de que su gasto es histórico del período. Mismo criterio que el panel de Inversión Sin Retorno.'],
+  ['Campañas donde no vende nadie','El reparto parejo es la referencia','Si en la campaña no vende ningún anuncio no hay con qué comparar, así que la referencia pasa a ser el reparto parejo entre los que gastan (100 ÷ cantidad). Ahí la campaña entera está en cuestión y lo accionable es el que más consume. El tooltip lo aclara en lugar de mostrar un promedio inexistente.'],
+  ['Relación con Inversión Sin Retorno','Dos criterios distintos, a propósito','El panel de Inversión Sin Retorno mira la cuenta entera y compara la inversión contra el precio del producto (ACOS proyectado). La alerta de campaña compara cada anuncio contra sus compañeros de campaña. Un anuncio puede estar bien para uno y mal para el otro: son preguntas distintas.'],
+  ['Campañas sin actividad','No se listan, se cuentan','Una campaña que figura en el reporte pero no registra inversión ni un solo clic en el período no tiene nada que leer y empuja hacia abajo a las que sí gastan. Se declara cuántas quedaron ocultas en el encabezado del panel. En una cuenta real, 3 de 11 campañas del reporte estaban en ese estado.'],
+  ['Control de consistencia','La suma del panel reproduce la inversión de la pestaña','Como todo sale del mismo reporte por anuncios, la suma de las campañas tiene que dar exactamente la inversión total de Ads. Verificado sobre una cuenta real: $354.735 en el panel y $354.735 en el KPI de cabecera. Si alguna vez no coincide, es que se filtró otra fuente al cálculo.'],
+  ['Snapshot','Las filas por campaña viajan en el JSON','Los snapshots anteriores a v52.2 no las traen: el panel queda oculto hasta volver a cargar el reporte de anuncios. El resto de la pestaña de Publicidad funciona igual, porque se alimenta de ADS_DATA, que sí está guardado.'],
+  ['Hoja Campañas PADS (export)','El panel completo, con sus dos vistas','El Excel trae una hoja con el consolidado por campaña arriba y el detalle anuncio por anuncio abajo, compartiendo columnas para que se pueda filtrar como una tabla. Incluye % de presupuesto, % de ingresos aportados, la alerta SIN RETORNO con el promedio contra el que se comparó, y un bloque final "Cómo leer esta hoja": el archivo se manda por mail sin el dashboard al lado y el criterio de la alerta no se adivina mirando los números. Las filas con alerta van resaltadas.'],
+  ['Campañas PADS vs Campañas SOV','Dos hojas, dos fuentes, no se mezclan','Campañas PADS sale del reporte por ANUNCIOS y cada cifra es la suma de sus anuncios. Campañas SOV sale del reporte por CAMPAÑAS de ML, con los totales ya agregados por la plataforma y con métricas que el otro reporte no trae (share of voice, presupuesto). Mezclarlas haría que los porcentajes de presupuesto dejaran de cerrar contra la suma de los anuncios, que es justamente lo que hace auditable al panel.'],
  ]],
  ['Módulos opcionales', [
   ['Oportunidades','Reporte de Oportunidades de ML','Publicaciones donde la plataforma detectó caída de ventas o de visitas, con su motivo. EVO las cruza con el catálogo propio para priorizar por facturación en riesgo, no por el orden en que las lista ML.'],
@@ -1245,6 +1277,8 @@ const _GLOSARIO = [
   ['Comisión% en NEXUS','Comisión ÷ venta neta','Ojo al reconstruir importes desde ese porcentaje: la base es la venta neta, no el revenue bruto. Multiplicarlo por el bruto infla la comisión exactamente un 16% en México (o el IVA que corresponda) y hace parecer que hay dos comisiones distintas conviviendo. No las hay: EVO toma el cargo tal como lo informa el reporte.'],
   ['Hoja Contribución por sesión (export)','Contribución por visita, publicación por publicación','Misma lógica que el panel del Dashboard General: ASP, cargos reales, contribución bruta y contribución por sesión. Requiere el reporte de Rendimiento cargado.'],
   ['Formato del export','Fila 1 y columna A vacías · identidad PTI','Todas las hojas dejan la primera fila y la primera columna libres para que las tablas no queden pegadas al borde. Headers en violeta PTI, etiquetas sobre lavanda en negrita, y los valores con formato de moneda o porcentaje según el concepto. En hojas de etiqueta/valor el formato lo define la etiqueta de la fila, no la columna.'],
+  ['Cuándo un valor sale en moneda','Por la etiqueta, con dos trampas resueltas en v52.2','El formato lo decide el texto del encabezado de columna o, en las hojas de etiqueta/valor, la etiqueta de la fila. Dos huecos que arrastraba v52.1: (1) la lista de palabras de dinero tenía "neto" pero no "neta", así que la columna <b>Venta neta</b> del Pareto de Revenue salía como número pelado; lo mismo pasaba con "retenido" frente a "retención", y con CPC, Presupuesto, Depósito e Importe, que no estaban. (2) Un "%" dentro del texto se tomaba siempre como unidad de la columna, aunque fuera una tasa mencionada al pasar: la fila <b>IIBB (4% de la venta neta)</b> del Resumen mostraba $146.924 como 14.692.423%, y las dos filas de retenciones de México caían igual. Ahora un % pegado a un número se lee como prosa y la fila se clasifica por el resto de su texto. Tercer arreglo: el Uplift del calendario es un multiplicador (2,5), no un porcentaje, y salía como 250%.'],
+  ['Tipos declarados por hoja','Cuando la heurística no debería decidir','Las hojas donde el formato importa declaran el tipo columna por columna en vez de depender del texto. Desde v52.2 lo hacen también Pareto Revenue, Pareto Volumen, Calendario Comercial y Campañas SOV, además de las que ya lo hacían (Rentabilidad, Estado de resultados, Forecast 6w, Campañas PADS). La heurística por palabras sigue existiendo para el resto y siempre va a tener huecos: es la red, no el criterio.'],
   ['Hoja Mapa de Calor (export)','Matriz con el período y la métrica activos','El Excel exporta exactamente lo que se está viendo en la pestaña al momento de exportar: si está en YTD + Ventas, eso sale. Usa el mismo motor de cálculo que la vista, así el archivo y la pantalla no pueden divergir.'],
   ['Snapshot','Exportación del estado completo en JSON','Guarda datos parseados, COGS, condición fiscal, período del filtro de fechas y del mapa de calor para retomar el análisis sin volver a cargar los reportes. Desde v51.4 se reabre sobre el mismo período con que se guardó; los snapshots anteriores, que no lo traen, se alinean a la ventana de Ads. Los snapshots anteriores al fix de decimales del COGS quedan marcados para recargar el template.'],
   ['Selector de identificador','# Publicación vs SKU','El # de publicación lo asigna la plataforma y es confiable; el SKU lo carga el vendedor y suele ser inconsistente. Para publicidad, EVO cruza siempre por # de publicación.'],
@@ -1316,7 +1350,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v52.1';
+const EVO_VERSION = 'v52.2';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -2257,8 +2291,11 @@ function abrirFormRepo(){
   if (!filas.length){ alert('No hay publicaciones que requieran reposición en este período.'); return; }
   const el = document.getElementById('repo-form');
   el.querySelector('#repo-cliente').value = (G.cuentaNombre) || '';
+  const _cam = filas.filter(f=>f.urgencia==='EN CAMINO').length;
   el.querySelector('#repo-resumen').textContent =
-    filas.length + ' publicaciones a reponer · ' + filas.filter(f=>f.urgencia==='URGENTE').length + ' urgentes';
+    filas.filter(f=>f.urgencia!=='EN CAMINO').length + ' publicaciones a reponer · '
+    + filas.filter(f=>f.urgencia==='URGENTE').length + ' urgentes'
+    + (_cam ? ' · ' + _cam + ' ya cubiertas por unidades en camino al FULL' : '');
   const av = document.getElementById('repo-aviso'); if (av) av.textContent='';
   el.classList.add('open');
   setTimeout(()=>el.querySelector('#repo-mail').focus(), 60);
@@ -2275,22 +2312,27 @@ function _repoFilas(){
     const M=['ene','feb','mar','abr','may','jun','jul','ago','sept','oct','nov','dic'];
     return String(D.getDate()).padStart(2,'0')+' de '+M[D.getMonth()]+' de '+D.getFullYear();
   };
+  /* Las publicaciones cuyo quiebre ya está cubierto por unidades en camino al
+     FULL viajan en la misma tabla, pero con cantidad cero y urgencia EN CAMINO:
+     el cliente tiene que ver que la publicación está en cero y que la
+     reposición ya salió, no recibir una orden de compra duplicada. */
   return (fc.items||[])
-    .filter(i => i.reposicion && i.reposicion.necesita && (i.reposicion.cantidad||0) > 0)
+    .filter(i => (i.reposicion && i.reposicion.necesita && (i.reposicion.cantidad||0) > 0) || i.enCaminoCubre)
     .sort((a,b) => {
-      const ua = a.reposicion.urgente?0:1, ub = b.reposicion.urgente?0:1;
-      return ua-ub || (a.doh||999)-(b.doh||999);
+      const t = i => i.reposicion && i.reposicion.urgente ? 0 : (i.enCaminoCubre ? 2 : 1);
+      return t(a)-t(b) || (a.doh||999)-(b.doh||999);
     })
     .map(i => ({
       id: i.sku, canal: i.canal || '—', producto: String(i.producto||'—').slice(0,52),
       stock: Math.round(i.stock||0),
+      enCamino: Math.round(i.enCamino||0),
       doh: (i.doh>=999) ? '—' : Math.round(i.doh||0),
       diasQuiebre: (i.reposicion.diasQuiebre!=null) ? Math.round(i.reposicion.diasQuiebre) : '',
-      fechaQuiebre: dd(i.reposicion.fechaQuiebre),
+      fechaQuiebre: i.reposicion.necesita ? dd(i.reposicion.fechaQuiebre) : '—',
       lead: Math.round(i.reposicion.leadTime||0),
-      fechaPedido: dd(i.reposicion.fechaPedido),
-      cantidad: Math.round(i.reposicion.cantidad||0),
-      urgencia: i.reposicion.urgente ? 'URGENTE' : 'PROGRAMAR'
+      fechaPedido: i.reposicion.necesita ? dd(i.reposicion.fechaPedido) : '—',
+      cantidad: i.reposicion.necesita ? Math.round(i.reposicion.cantidad||0) : 0,
+      urgencia: i.reposicion.urgente ? 'URGENTE' : (i.enCaminoCubre ? 'EN CAMINO' : 'PROGRAMAR')
     }));
 }
 
@@ -2307,33 +2349,40 @@ function _repoTablaHTML(filas, cliente, periodo){
      + '<div style="font-size:17px;font-weight:700">Alerta de reposición de stock</div>'
      + '<div style="font-size:12px;opacity:.92;margin-top:3px">'+(cliente||'')+(periodo?' · '+periodo:'')+'</div></div>';
   const urg = filas.filter(f=>f.urgencia==='URGENTE').length;
+  const cam = filas.filter(f=>f.urgencia==='EN CAMINO').length;
+  const uCam = filas.reduce((t,f)=>t+(f.enCamino||0),0);
   h += '<div style="background:'+L+';padding:11px 18px;font-size:13px;color:'+V+';font-weight:600;'
      + 'border-left:1px solid '+B+';border-right:1px solid '+B+'">'
-     + filas.length+' publicaciones requieren reposición'
-     + (urg? ' &middot; <span style="color:#C0392B">'+urg+' urgentes</span>' : '')+'</div>';
+     + (filas.length-cam)+' publicaciones requieren reposición'
+     + (urg? ' &middot; <span style="color:#C0392B">'+urg+' urgentes</span>' : '')
+     + (cam? ' &middot; <span style="color:'+M+'">'+cam+' ya cubiertas por stock en camino al FULL</span>' : '')
+     + '</div>';
   /* Anchos fijos: sin esto la columna de producto se estira y comprime el resto.
      Los clientes de correo ignoran table-layout, así que el ancho va por <col>. */
   h += '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;'
      + 'border:1px solid '+B+'">'
-     + '<colgroup><col style="width:13%"><col style="width:7%"><col style="width:26%"><col style="width:7%">'
-     + '<col style="width:5%"><col style="width:7%"><col style="width:12%"><col style="width:6%">'
-     + '<col style="width:12%"><col style="width:6%"><col style="width:9%"></colgroup>'
+     + '<colgroup><col style="width:12%"><col style="width:6%"><col style="width:23%"><col style="width:6%">'
+     + '<col style="width:7%"><col style="width:5%"><col style="width:7%"><col style="width:11%"><col style="width:5%">'
+     + '<col style="width:11%"><col style="width:6%"><col style="width:9%"></colgroup>'
      + '<thead><tr>'
-     + th('# Publicación')+th('Canal')+th('Producto')+th('Stock Actual')+th('DOH')+th('Días al Quiebre')
+     + th('# Publicación')+th('Canal')+th('Producto')+th('Stock Actual')+th('En Camino')+th('DOH')+th('Días al Quiebre')
      + th('Fecha Quiebre')+th('Lead Time')+th('Fecha Pedido Sugerida')+th('Cantidad')+th('Urgencia')
      + '</tr></thead><tbody>';
   filas.forEach((f,i)=>{
-    const bg = f.urgencia==='URGENTE' ? '#FDF6F6' : (i%2 ? '#FAF8FE' : '#FFFFFF');
+    const bg = f.urgencia==='URGENTE' ? '#FDF6F6' : (f.urgencia==='EN CAMINO' ? '#F6F2FD' : (i%2 ? '#FAF8FE' : '#FFFFFF'));
     const num = 'text-align:right;background:'+bg;
+    const urgClr = f.urgencia==='URGENTE' ? '#C0392B' : (f.urgencia==='EN CAMINO' ? M : G2);
     h += '<tr>'
       + td(f.id,'font-weight:600;background:'+bg)
       + td(f.canal,'background:'+bg)
       + td(f.producto,'background:'+bg)
-      + td(f.stock,num) + td(f.doh,num) + td(f.diasQuiebre,num)
+      + td(f.stock,num)
+      + td(f.enCamino ? '<span style="color:'+M+'">'+f.enCamino+'</span>' : '&mdash;',num)
+      + td(f.doh,num) + td(f.diasQuiebre,num)
       + td(f.fechaQuiebre,'background:'+bg) + td(f.lead,num)
       + td(f.fechaPedido,'background:'+bg)
-      + td('<b>'+f.cantidad+'</b>',num)
-      + td('<span style="color:'+(f.urgencia==='URGENTE'?'#C0392B':G2)+';font-weight:600">'+f.urgencia+'</span>','background:'+bg)
+      + td(f.cantidad ? '<b>'+f.cantidad+'</b>' : '<span style="color:'+G2+'">no pedir</span>',num)
+      + td('<span style="color:'+urgClr+';font-weight:600">'+f.urgencia+'</span>','background:'+bg)
       + '</tr>';
   });
   h += '</tbody></table>';
@@ -2341,7 +2390,9 @@ function _repoTablaHTML(filas, cliente, periodo){
      + '<b>DOH</b>: días de cobertura con el stock actual al ritmo de venta del período. '
      + '<b>Fecha Pedido Sugerida</b>: descuenta el lead time desde la fecha estimada de quiebre; '
      + 'las marcadas como urgentes ya pasaron esa fecha. '
-     + '<b>Cantidad</b>: unidades para cubrir el horizonte de reposición.</div>';
+     + '<b>Cantidad</b>: unidades para cubrir el horizonte de reposición, ya descontado lo que está en camino. '
+     + '<b>En Camino</b>: unidades despachadas al FULL pendientes de ingreso o en transferencia; no se pueden vender hoy, '
+     + 'pero la reposición ya salió. Las marcadas <b>EN CAMINO</b> quedan cubiertas por ese tránsito y no requieren un nuevo pedido.</div>';
   h += '<div style="font-size:11px;color:'+G2+';padding-top:8px;border-top:1px solid '+B+'">'
      + '<b style="color:'+V+'">PTI CONSULTING PARTNER</b> &middot; ACCELERATE YOUR BUSINESS</div></div>';
   return h;
@@ -2358,7 +2409,7 @@ async function copiarAlertaRepo(){
   const dd = d => d ? String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear() : '';
   const periodo = (f.from&&f.to) ? dd(f.from)+' al '+dd(f.to) : '';
   const html = _repoTablaHTML(filas, cliente, periodo);
-  const texto = filas.map(x=>[x.id,x.canal,x.producto,x.stock,x.doh,x.diasQuiebre,x.fechaQuiebre,
+  const texto = filas.map(x=>[x.id,x.canal,x.producto,x.stock,x.enCamino,x.doh,x.diasQuiebre,x.fechaQuiebre,
                               x.lead,x.fechaPedido,x.cantidad,x.urgencia].join('\t')).join('\n');
   const aviso = document.getElementById('repo-aviso');
   try{
@@ -2390,8 +2441,9 @@ function abrirMailRepo(){
   const cliente = document.getElementById('repo-cliente').value.trim();
   const filas = _repoFilas();
   const urg = filas.filter(f=>f.urgencia==='URGENTE').length;
+  const aPedir = filas.filter(f=>f.urgencia!=='EN CAMINO').length;
   const asunto = 'Alerta de reposición de stock' + (cliente ? ' · '+cliente : '')
-    + ' · ' + filas.length + ' publicaciones' + (urg ? ' ('+urg+' urgentes)' : '');
+    + ' · ' + aPedir + ' publicaciones' + (urg ? ' ('+urg+' urgentes)' : '');
   const cuerpo = 'Hola,\n\nTe compartimos el detalle de las publicaciones que requieren reposición '
     + 'según el análisis del período.\n\n[Pegá acá la tabla con Ctrl+V]\n\n'
     + 'Quedamos a disposición para revisar prioridades.\n\nPTI Consulting Partner\n';
@@ -2656,18 +2708,29 @@ function generarInforme(){
 
   /* ── Reposición · sólo si hay forecast calculado ── */
   if (typeof FORECAST_DATA!=='undefined' && FORECAST_DATA.calculated && FORECAST_DATA.items && FORECAST_DATA.items.length){
-    const rep = FORECAST_DATA.items.filter(i=>i.reposicion && i.reposicion.necesita)
-      .sort((a,b)=>(a.doh||999)-(b.doh||999)).slice(0,10);
+    const rep = FORECAST_DATA.items.filter(i=>(i.reposicion && i.reposicion.necesita) || i.enCaminoCubre)
+      .sort((a,b)=>{
+        // Lo que ya viaja va al final: es aviso, no pedido
+        const t = i => (i.reposicion && i.reposicion.necesita) ? 0 : 1;
+        return t(a)-t(b) || (a.doh||999)-(b.doh||999);
+      }).slice(0,10);
+    const _uCam = FORECAST_DATA.items.reduce((t,i)=>t+(i.enCamino||0),0);
+    const _nCam = FORECAST_DATA.items.filter(i=>i.enCaminoCubre).length;
     if (rep.length){
       H.push(SEC('Riesgo de quiebre y reposición sugerida'));
       /* Las tarjetas van antes de la tabla porque la tabla se recorta al top 10
          y no deja ver el tamaño total del problema. */
       const _Rp = (typeof calcRiesgoQuiebre === 'function') ? calcRiesgoQuiebre() : null;
-      if (_Rp && (_Rp.urgentes > 0 || _Rp.hoyRev > 0)) {
+      if (_Rp && (_Rp.urgentes > 0 || _Rp.hoyRev > 0 || _Rp.camRev > 0)) {
         const _fs = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
         let kr = K('Reposición urgente', NUM(_Rp.urgentes), 'Publicaciones cuya fecha de pedido ya venció');
         kr += K('Revenue en riesgo hoy', fmtCurrency(_Rp.hoyRev), _Rp.hoyN + ' publicaciones sin stock');
         kr += K('Costo de demorar', fmtCurrency(_Rp.porDia) + ' /día', 'Se suma por cada día que se posterga el pedido');
+        /* El tránsito evita la compra, no la venta perdida: si esto no se
+           declara, el informe parece decir que esas publicaciones están bien. */
+        if (_Rp.camN > 0)
+          kr += K('En riesgo con reposición en curso', fmtCurrency(_Rp.camPorDia) + ' /día',
+                  _Rp.camN + ' publicaciones en cero esperando el ingreso a FULL');
         if (_Rp.futN > 0 && _Rp.semanas.length)
           kr += K('Próximo quiebre', fmtCurrency(_Rp.semanas[0].monto),
                   _Rp.semanas[0].n + ' publicaciones · semana del ' + _fs(new Date(_Rp.semanas[0].ini)));
@@ -2684,8 +2747,20 @@ function generarInforme(){
             + 'y contarlas sería sobreestimar. La cifra es una tasa mensual, no un acumulado histórico.</p>'
             + '<div class="acc">Acción: revisar si conviene reactivar estas publicaciones o consolidar su demanda en las activas.</div></div>');
         }
+        if (_Rp.camN > 0) {
+          H.push('<div class="rp-box"><div class="t">Reposición en curso: la orden ya salió, la venta se pierde igual</div><p>'
+            + _Rp.camN + ' publicaciones están SIN STOCK con ' + NUM(Math.round(_Rp.camU))
+            + ' unidades ya despachadas al FULL, pendientes de ingreso o en transferencia. No requieren una nueva '
+            + 'orden de compra —por eso no figuran en la tabla de reposición— pero cada día que ML demora el ingreso '
+            + 'cuesta <b>' + fmtCurrency(_Rp.camPorDia) + '</b>. Si el ingreso tardara todo el lead time del canal, '
+            + 'la pérdida llegaría a ' + fmtCurrency(_Rp.camRev) + '.</p>'
+            + '<p style="font-size:8.4pt">Ese monto es un techo, no una estimación: el reporte de stock no informa '
+            + 'fecha estimada de ingreso, así que la recuperación no se puede fechar.</p>'
+            + '<div class="acc">Acción: reclamar o apurar el ingreso a FULL. Volver a comprar duplicaría el pedido.</div></div>');
+        }
         H.push('<div class="rp-nota">Revenue en riesgo = precio promedio de venta × ritmo diario × días sin stock, '
-          + 'siendo los días sin stock el lead time menos los que todavía cubre el inventario. '
+          + 'siendo los días sin stock el lead time menos los que todavía cubre el inventario DISPONIBLE '
+          + '(las unidades en camino no cuentan como cobertura: no se pueden vender hasta que ingresen). '
           + 'Es un piso: asume que el pedido se cursa hoy y que ninguna venta perdida se recupera. '
           + 'La pérdida real es mayor, porque un quiebre también degrada la posición de la publicación. '
           + (_Rp.ltDefault > 0
@@ -2693,22 +2768,37 @@ function generarInforme(){
                 + '(14 días en depósito propio, 21 en FULL); con el plazo real del proveedor el número cambia.'
               : 'Todas las publicaciones tienen lead time declarado.') + '</div>');
       }
-      H.push('<table><colgroup><col style="width:16%"><col style="width:27%"><col style="width:9%"><col style="width:11%">'
-        + '<col style="width:11%"><col style="width:14%"><col style="width:12%"></colgroup>'
+      if (_uCam > 0) {
+        H.push('<div class="rp-nota" style="margin-bottom:2mm">Hay ' + NUM(_uCam) + ' unidades en camino al FULL '
+          + '(despachadas y pendientes de ingreso o en transferencia). No son stock disponible y no cuentan para la '
+          + 'cobertura, pero sí son reposición en curso: la cantidad a reponer ya las descuenta y '
+          + (_nCam > 0
+              ? _nCam + ' publicaci' + (_nCam>1?'ones quedan':'ón queda') + ' totalmente cubierta' + (_nCam>1?'s':'')
+                + ' por ese tránsito, marcada' + (_nCam>1?'s':'') + ' <b>En camino</b> en lugar de pedir de nuevo.'
+              : 'ninguna publicación queda totalmente cubierta por ese tránsito.')
+          + '</div>');
+      }
+      H.push('<table><colgroup><col style="width:15%"><col style="width:24%"><col style="width:8%"><col style="width:11%">'
+        + '<col style="width:10%"><col style="width:10%"><col style="width:11%"><col style="width:11%"></colgroup>'
         + '<thead><tr><th>SKU</th><th>Producto</th><th>Canal</th><th>Prioridad</th><th class="num">Cobertura</th>'
-        + '<th class="num">Quiebre est.</th><th class="num">Reponer</th></tr></thead><tbody>'
+        + '<th class="num">En camino</th><th class="num">Quiebre est.</th><th class="num">Reponer</th></tr></thead><tbody>'
         + rep.map(i=>{
-            const q = i.reposicion && i.reposicion.fechaQuiebre ? i.reposicion.fechaQuiebre : null;
+            const nec = !!(i.reposicion && i.reposicion.necesita);
+            const q = nec && i.reposicion.fechaQuiebre ? i.reposicion.fechaQuiebre : null;
             const qt = q ? (String(new Date(q).getDate()).padStart(2,'0')+'/'+String(new Date(q).getMonth()+1).padStart(2,'0')) : '—';
             /* La marca de urgencia va en su propia columna: metida dentro de
                "Canal" desbordaba la celda y rompía la grilla. */
             const urg = i.reposicion && i.reposicion.urgente;
-            return '<tr'+(urg?' style="background:#FDF7F6"':'')+'><td>'+_wrapId(i.sku)+'</td><td>'
+            const cam = i.enCamino || 0;
+            const prio = urg ? 'Urgente' : (nec ? 'Programar' : 'En camino');
+            const prioClr = urg ? '#C0392B' : (nec ? '#8B8B95' : '#8E2DE2');
+            return '<tr'+(urg?' style="background:#FDF7F6"':(nec?'':' style="background:#F7F3FD"'))+'><td>'+_wrapId(i.sku)+'</td><td>'
               + String(i.producto||'—').slice(0,30)+'</td><td>'+i.canal+'</td>'
-              + '<td style="color:'+(urg?'#C0392B':'#8B8B95')+';font-weight:'+(urg?'600':'400')+'">'
-              + (urg?'Urgente':'Programar')+'</td>'
+              + '<td style="color:'+prioClr+';font-weight:'+(urg||!nec?'600':'400')+'">'+prio+'</td>'
               + '<td class="num">'+(i.doh>=999?'—':NUM(Math.round(i.doh))+' d')+'</td>'
-              + '<td class="num">'+qt+'</td><td class="num">'+NUM(i.reposicion.cantidad||0)+' u</td></tr>';
+              + '<td class="num">'+(cam>0?NUM(cam)+' u':'—')+'</td>'
+              + '<td class="num">'+qt+'</td>'
+              + '<td class="num">'+(nec?NUM(i.reposicion.cantidad||0)+' u':'no pedir')+'</td></tr>';
           }).join('')+'</tbody></table>');
     }
   }
@@ -3615,6 +3705,7 @@ function doExportSnapshot(accountName, sanitized) {
       currency_code: CURRENCY_CODE,
       forecast_inputs: FORECAST_INPUTS || {},
       ads_data: typeof ADS_DATA !== 'undefined' ? ADS_DATA : {},
+      ads_campanas: typeof ADS_CAMPANAS !== 'undefined' ? ADS_CAMPANAS : { rows: [], loaded: false },
       rend_data: typeof REND_DATA !== 'undefined' ? REND_DATA : {},
       opor_data: typeof OPOR_DATA !== 'undefined' ? OPOR_DATA : {},
       mofu_data: typeof MOFU_DATA !== 'undefined' ? MOFU_DATA : null,
@@ -3738,6 +3829,18 @@ function importSnapshotJSON(file) {
         }
       }
       
+      /* Filas por campaña: igual que ADS_DATA, las fechas viajan como texto en
+         el JSON y hay que revivirlas o el prorrateo por rango no recorta nada.
+         Los snapshots anteriores a v52.2 no las traen: el panel por campaña
+         queda oculto hasta que se vuelva a cargar el reporte de anuncios. */
+      if (typeof ADS_CAMPANAS !== 'undefined') {
+        const _ac = snap.ads_campanas;
+        ADS_CAMPANAS = (_ac && Array.isArray(_ac.rows))
+          ? { rows: _ac.rows.map(r => ({ ...r, desde: reviveDate(r.desde), hasta: reviveDate(r.hasta) })),
+              loaded: !!_ac.loaded }
+          : { rows: [], loaded: false };
+      }
+
       if (typeof REND_DATA !== 'undefined' && snap.rend_data) {
         Object.keys(REND_DATA).forEach(k => delete REND_DATA[k]);
         Object.assign(REND_DATA, snap.rend_data);
@@ -5851,6 +5954,41 @@ function sugerirReposicion(stock, leadTime, proyeccion) {
   };
 }
 
+/* ═══════════ UNIDADES EN CAMINO AL FULL ═══════════
+   El reporte de stock general trae "Unidades en camino a FULL pendientes" y
+   "en transferencia": mercadería ya despachada que todavía no ingresó al
+   depósito de ML. No es stock disponible —no se puede vender hoy— pero SÍ es
+   reposición en curso, y el forecast la ignoraba: una publicación en cero con
+   200 unidades en tránsito aparecía como quiebre urgente y disparaba un pedido
+   por algo que ya está viajando.
+
+   Se cruza contra las claves de la publicación porque una fila de FULL puede
+   listar varias publicaciones del mismo producto ("Publicaciones con este
+   producto", separadas por "|") y el forecast trabaja con identificadores
+   compuestos, con SKU o con # de publicación según la vista. Cada fila de FULL
+   se cuenta una sola vez aunque matcheen varias de sus claves. */
+function _enCaminoFULL(claves){
+  if (typeof FULL_DATA === 'undefined' || !FULL_DATA.loaded || !FULL_DATA.items) return 0;
+  const num = v => String(v == null ? '' : v).toUpperCase().replace(/^ML[A-Z]+0*/, '').replace(/\D/g, '');
+  const nums = new Set(), skus = new Set();
+  (Array.isArray(claves) ? claves : [claves]).forEach(k => {
+    if (!k) return;
+    const base = (typeof splitVariantId === 'function') ? splitVariantId(String(k)).baseId : String(k);
+    const n = num(base); if (n) nums.add(n);
+    const t = String(base).trim(); if (t) skus.add(t);
+  });
+  if (!nums.size && !skus.size) return 0;
+  let total = 0;
+  for (const i of FULL_DATA.items) {
+    if (!(i.enCamino > 0)) continue;
+    const pubs = (i.pubs && i.pubs.length) ? i.pubs : [i.id_pub];
+    const match = pubs.some(p => { const n = num(p); return n && nums.has(n); })
+               || (i.sku && skus.has(String(i.sku).trim()));
+    if (match) total += i.enCamino;   // una fila de FULL = un producto: no se duplica
+  }
+  return total;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    7. recalcularForecast() — Función principal disparada por el botón
    ─────────────────────────────────────────────────────────────────────────
@@ -6079,8 +6217,19 @@ function recalcularForecast(opts) {
           const proyeccion = forecastSKU(baseline, SEMANAS, pais, bucket);
           const totalProyectado = proyeccion.reduce((s, p) => s + p.unidades, 0);
           const stock = stockCanal != null ? stockCanal : 0;
+          /* Unidades ya despachadas al FULL que todavía no ingresaron. Sólo
+             aplica a ese canal: en depósito propio el reporte no informa nada
+             equivalente. La proyección corre sobre el stock EFECTIVO
+             (disponible + en camino) para no pedir de nuevo algo que ya está
+             viajando, y el DOH se mantiene sobre el disponible, que es lo que
+             realmente cubre las ventas de hoy. */
+          const enCamino = canal === 'FULL' ? _enCaminoFULL(miembrosRec) : 0;
           const doh = calcDOH(stock, baseline.daily);
-          const reposicion = sugerirReposicion(stock, leadTimeCanal, proyeccion);
+          const reposicion = sugerirReposicion(stock + enCamino, leadTimeCanal, proyeccion);
+          // Lo que se habría pedido ignorando el tránsito: sirve para explicar la marca
+          const repoSinCamino = enCamino > 0
+            ? sugerirReposicion(stock, leadTimeCanal, proyeccion)
+            : reposicion;
           // Grupo de stock que quiebra antes que el SKU: manda su reposición
           let repoFinal = reposicion, grupoQuiebre = null;
           gruposSku.forEach((g, p) => {
@@ -6088,7 +6237,9 @@ function recalcularForecast(opts) {
             if (stG == null) return;
             const recsG = recs.filter(r => g.pubs.has(r.id_pub));
             if (!recsG.length) return;
-            const repoG = sugerirReposicion(stG, leadTimeCanal, forecastSKU(computeBaselineDaily(recsG), SEMANAS, pais, bucket));
+            // El tránsito se imputa al grupo que lo espera, no al SKU entero
+            const camG = canal === 'FULL' ? _enCaminoFULL([...g.pubs]) : 0;
+            const repoG = sugerirReposicion(stG + camG, leadTimeCanal, forecastSKU(computeBaselineDaily(recsG), SEMANAS, pais, bucket));
             if (repoG.necesita && (!repoFinal.necesita || repoG.fechaQuiebre < repoFinal.fechaQuiebre)) {
               repoFinal = repoG;
               grupoQuiebre = { grupo: p, stock: stG,
@@ -6117,10 +6268,24 @@ function recalcularForecast(opts) {
           const margenUnit = (cogs != null && precioProm > 0) ? (precioProm - cogs) : null;
           const margenTotal = (margenUnit != null) ? margenUnit * totalProyectado : null;
 
+          /* Marca de "reposición en curso": sin el tránsito la publicación
+             entraría al listado de quiebre, y con el tránsito ya no hace falta
+             pedir nada. Se muestra igual, pero como aviso y no como alerta.
+             Entra también el caso de quiebre justo al borde del horizonte, que
+             deja necesita=true con cantidad cero: pedir cero no es una acción. */
+          const enCaminoCubre = enCamino > 0 && repoSinCamino.necesita
+            && (!repoFinal.necesita || (repoFinal.cantidad || 0) <= 0);
+          /* Se neutraliza la reposición para que TODO lo que lee este campo
+             —riesgo por quiebre, KPIs, informe, mail, export— la trate igual y
+             no haya un lugar donde la publicación siga apareciendo como pedido. */
+          if (enCaminoCubre) repoFinal = { ...repoFinal, necesita: false, urgente: false, cantidad: 0 };
+
           items.push({
             sku, producto, bucket, canal, compartidas,
             categoryML,  // Categoría real de ML (vacía si no se cargó reporte de Publicaciones)
             stock, cogs, leadTime: leadTimeCanal,
+            enCamino, enCaminoCubre,
+            urgenteSinCamino: !!(enCamino > 0 && repoSinCamino.urgente),
             /* Se registra si el lead time vino cargado por el equipo o es el
                default del canal (PROPIO 14 / FULL 21). El informe lo declara,
                porque el revenue en riesgo vale lo que vale ese input. */
@@ -6136,8 +6301,10 @@ function recalcularForecast(opts) {
 
       // Ordenar por urgencia, después por canal (PROPIO antes), después por revenue
       items.sort((a, b) => {
-        const aUrg = a.reposicion.urgente ? 0 : (a.reposicion.necesita ? 1 : 2);
-        const bUrg = b.reposicion.urgente ? 0 : (b.reposicion.necesita ? 1 : 2);
+        // Lo cubierto por tránsito va después de lo que hay que pedir y antes de lo que está OK
+        const _t = i => i.reposicion.urgente ? 0 : (i.reposicion.necesita ? 1 : (i.enCaminoCubre ? 2 : 3));
+        const aUrg = _t(a);
+        const bUrg = _t(b);
         if (aUrg !== bUrg) return aUrg - bUrg;
         if (a.sku !== b.sku) return b.revenue30d - a.revenue30d;
         // Mismo SKU: PROPIO antes que FULL
@@ -6260,7 +6427,13 @@ function renderForecastKPIs() {
   const totalMargen = itemsConMargen.reduce((s, i) => s + i.margenTotal, 0);
   const urgentes = items.filter(i => i.reposicion.urgente).length;
   const reposicion = items.filter(i => i.reposicion.necesita && !i.reposicion.urgente).length;
-  const sinReposicion = items.filter(i => !i.reposicion.necesita).length;
+  /* Las cubiertas por unidades en camino al FULL no son "stock OK": quedaron
+     fuera de la alerta porque la reposición ya está despachada. Mezclarlas con
+     el resto hacía desaparecer del tablero una decisión que sigue viva (si el
+     ingreso demora, vuelven a ser quiebre). */
+  const enCaminoCubiertas = items.filter(i => i.enCaminoCubre);
+  const sinReposicion = items.filter(i => !i.reposicion.necesita && !i.enCaminoCubre).length;
+  const uEnCamino = items.reduce((t, i) => t + (i.enCamino || 0), 0);
   /* El promedio de cobertura no dice nada: mezcla un producto que quiebra
      mañana con otro que tiene stock para tres años, y el promedio queda en
      decenas de miles de días. Se usa la MEDIANA sobre las publicaciones que
@@ -6312,11 +6485,35 @@ function renderForecastKPIs() {
             + (_R.ltDefault > 0 ? '\n\nLead time por defecto en ' + _R.ltDefault + ' de ' + _R.ltTotal
                 + ' publicaciones (PROPIO 14 días, FULL 21). Con el lead time real del proveedor el número cambia.' : '');
           let out = kpiCardForecast('Revenue en riesgo hoy', ARS(_R.hoyRev),
-            `${_R.hoyN} publicaciones sin stock`, _R.hoyRev > 0 ? 'var(--danger)' : 'var(--ok)', _tip);
+            `${_R.hoyN} publicaciones sin stock${_R.camN > 0 ? ' · sin contar las que tienen reposición viajando' : ''}`,
+            _R.hoyRev > 0 ? 'var(--danger)' : 'var(--ok)',
+            _tip + (_R.camN > 0
+              ? '\n\nNo incluye las ' + _R.camN + ' publicaciones que están en cero con unidades en camino al FULL: '
+                + 'esas van en su propia tarjeta porque la acción es otra (apurar el ingreso, no comprar).'
+              : ''));
           out += kpiCardForecast('Costo de demorar', ARS(_R.porDia) + ' /día',
             'Se suma por cada día que se posterga el pedido', _R.porDia > 0 ? 'var(--warn)' : 'var(--ok)',
             'Lo que se pierde por cada día adicional sin reponer, sobre las publicaciones que ya están en cero. '
             + 'No proyecta: es el ritmo actual multiplicado por el precio.');
+          /* El tránsito NO anula el riesgo: la publicación está en cero hoy y
+             deja de facturar hasta que ML procese el ingreso. Lo único que
+             cambia es la acción: no hay que comprar, hay que apurar el ingreso.
+             Sin esta tarjeta, sacar del listado de reposición a las cubiertas
+             hacía desaparecer plata que se sigue perdiendo. */
+          if (_R.camN > 0) {
+            out += kpiCardForecast('En riesgo con reposición en curso',
+              ARS(_R.camPorDia) + ' /día',
+              `${_R.camN} publicación${_R.camN > 1 ? 'es' : ''} en cero · ${NUM(Math.round(_R.camU))} u en camino · techo ${ARS(_R.camRev)}`,
+              'var(--warn)',
+              'Publicaciones que están SIN STOCK hoy pero ya tienen mercadería viajando al FULL.\n\n'
+              + 'No necesitan una orden de compra —la reposición ya salió— pero la venta se pierde igual '
+              + 'mientras no ingrese al depósito de ML. El número grande es lo que cuesta cada día de demora '
+              + 'en el ingreso: ASP bruto × ritmo diario, sobre las publicaciones con rotación.\n\n'
+              + 'El "techo" es lo que se perdería si el ingreso tardara todo el lead time del canal ('
+              + ARS(_R.camRev) + '). Es un máximo, no una estimación: el reporte de ML no informa fecha '
+              + 'estimada de ingreso, así que no se puede fechar la recuperación.\n\n'
+              + 'Acción: reclamar o apurar el ingreso a FULL, no volver a comprar.');
+          }
           if (_R.futN > 0) {
             const _s0 = _R.semanas[0];
             const _f = d => String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
@@ -6355,6 +6552,18 @@ function renderForecastKPIs() {
             !isFinite(dohMediana) ? 'var(--muted)' : dohMediana < 14 ? 'var(--danger)' : dohMediana < 30 ? 'var(--warn)' : 'var(--ok)')}
         ${kpiCardForecast('Reposición urgente', urgentes, urgentes > 0 ? `PROPIO ${urgPropio} · FULL ${urgFull}` : 'OK', urgentes > 0 ? 'var(--danger)' : 'var(--ok)')}
         ${kpiCardForecast('Reposición programada', reposicion, '', reposicion > 0 ? 'var(--warn)' : 'var(--muted)')}
+        ${uEnCamino > 0 ? kpiCardForecast('En camino al FULL', NUM(Math.round(uEnCamino)),
+            enCaminoCubiertas.length > 0
+              ? enCaminoCubiertas.length + ' publicaci' + (enCaminoCubiertas.length > 1 ? 'ones' : 'ón') + ' ya cubierta' + (enCaminoCubiertas.length > 1 ? 's' : '')
+              : 'unidades pendientes de ingreso',
+            'var(--accent)',
+            'Unidades despachadas al FULL que todavía no ingresaron (pendientes o en transferencia), según el reporte de stock general.\n\n'
+            + 'No son stock disponible: no se pueden vender hoy y no cuentan para el DOH. Pero sí son reposición en curso, '
+            + 'así que la cantidad sugerida las descuenta y las publicaciones que quedan totalmente cubiertas salen de la alerta '
+            + 'con la marca EN CAMINO en lugar de URGENTE.\n\n'
+            + 'OJO: que no haya que comprar no quiere decir que no haya riesgo. Las que están en CERO '
+            + 'esperando el ingreso siguen perdiendo venta todos los días, y eso se mide en la tarjeta '
+            + '"En riesgo con reposición en curso".') : ''}
         ${kpiCardForecast('Sin reposición', sinReposicion, 'stock OK', 'var(--ok)')}
       </div>
     </div>
@@ -6397,7 +6606,12 @@ function _chipCompartido(i) {
 }
 
 function renderForecastReposicion() {
-  const items = FORECAST_DATA.items.filter(i => i.reposicion.necesita);
+  /* Entran también las publicaciones cuyo quiebre ya está cubierto por unidades
+     en camino al FULL: no hay que pedir nada, pero esconderlas dejaba sin
+     explicación por qué una publicación en cero no figura en ningún lado. */
+  const items = FORECAST_DATA.items.filter(i => i.reposicion.necesita || i.enCaminoCubre);
+  const enTransito = items.filter(i => (i.enCamino || 0) > 0);
+  const aPedir = items.filter(i => i.reposicion.necesita);
   const useML = G._lastRender.useML;
   const idLabel = useML ? '# Publicación' : 'SKU';
 
@@ -6417,10 +6631,17 @@ function renderForecastReposicion() {
   let rows = '';
   for (const i of items) {
     const r = i.reposicion;
-    const urgentBg = r.urgente ? 'background:rgba(248,113,113,.06);' : '';
+    const cam = i.enCamino || 0;
+    const urgentBg = r.urgente ? 'background:rgba(248,113,113,.06);'
+      : (i.enCaminoCubre ? 'background:rgba(168,85,247,.05);' : '');
     const urgenteBadge = r.urgente
       ? '<span style="background:var(--danger);color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px;">URGENTE</span>'
-      : '';
+      : (i.enCaminoCubre
+        ? '<span title="Sin contar el tránsito esta publicación entraría como '
+          + (i.urgenteSinCamino ? 'reposición URGENTE' : 'reposición programada')
+          + ', pero las ' + NUM(cam) + ' unidades en camino al FULL cubren el horizonte. No hay que pedir nada: hay que esperar el ingreso." '
+          + 'style="background:rgba(168,85,247,.15);color:var(--accent);padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px;cursor:help;white-space:nowrap">EN CAMINO</span>'
+        : '');
 
     const prodShort = (i.producto || '').slice(0, 40) + ((i.producto || '').length > 40 ? '…' : '');
 
@@ -6440,13 +6661,18 @@ function renderForecastReposicion() {
       <td style="padding:8px 12px;text-align:center;">${canalBadge}</td>
       <td style="padding:8px 12px;font-size:11px;color:var(--muted);">${prodShort}</td>
       <td style="padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--accent2);">${catDisplayR}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text);">${i.grupoQuiebre
+      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:${i.stock > 0 ? 'var(--text)' : 'var(--danger)'};">${i.grupoQuiebre
         ? i.grupoQuiebre.stock + '<div style="font-size:9px;color:var(--muted)">de ' + i.stock + ' del SKU</div>'
         : i.stock}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : 'var(--warn)'};">${r.diasHastaQuiebre}d</td>
-      <td style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : 'var(--text)'};">${fmtFecha(r.fechaQuiebre)}</td>
-      <td style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : 'var(--text)'};">${fmtFecha(r.fechaPedido)}</td>
-      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--ok);font-weight:700;">${NUM(r.cantidad)} u</td>
+      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:${cam > 0 ? 'var(--accent)' : 'var(--muted)'};"${cam > 0
+        ? ' title="Unidades ya despachadas al FULL, pendientes de ingreso o en transferencia. No se pueden vender hoy, pero la reposición sugerida ya las descuenta."'
+        : ''}>${cam > 0 ? NUM(cam) + ' u' : '—'}</td>
+      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : (i.enCaminoCubre ? 'var(--muted)' : 'var(--warn)')};">${r.necesita ? r.diasHastaQuiebre + 'd' : '—'}</td>
+      <td style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : 'var(--text)'};">${r.necesita ? fmtFecha(r.fechaQuiebre) : '—'}</td>
+      <td style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:11px;color:${r.urgente ? 'var(--danger)' : 'var(--text)'};">${r.necesita ? fmtFecha(r.fechaPedido) : '—'}</td>
+      <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:11px;color:${r.necesita ? 'var(--ok)' : 'var(--accent)'};font-weight:700;">${r.necesita
+        ? NUM(r.cantidad) + ' u'
+        : '<span style="font-weight:400;font-size:10px">no pedir</span>'}</td>
     </tr>`;
   }
 
@@ -6454,7 +6680,12 @@ function renderForecastReposicion() {
     <div class="panel grid-full" id="fc-reposicion">
       <div class="panel-header">
         <span class="panel-title">Reposición Sugerida</span>
-        <span class="panel-subtitle">${items.length} SKUs · Ordenados por urgencia</span>
+        <span class="panel-subtitle">${aPedir.length} a reponer · Ordenados por urgencia${
+          enTransito.length
+            ? ' · <span style="color:var(--accent)" title="Publicaciones con unidades ya despachadas al FULL y pendientes de ingreso. La cantidad sugerida las descuenta; las que quedan totalmente cubiertas se marcan EN CAMINO y no requieren pedido.">'
+              + enTransito.length + ' con ' + NUM(enTransito.reduce((t, x) => t + (x.enCamino || 0), 0))
+              + ' u en camino al FULL</span>'
+            : ''}</span>
       </div>
       <div class="panel-body" style="padding:0;max-height:50vh;overflow:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:11px;">
@@ -6465,6 +6696,7 @@ function renderForecastReposicion() {
               <th style="text-align:left;padding:10px 12px;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Producto</th>
               <th style="text-align:center;padding:10px 12px;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;" title="Fecha de la última venta registrada. Indica desde cuándo la publicación está apagada.">Última venta</th>
               <th style="text-align:right;padding:10px 12px;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Stock</th>
+              <th style="text-align:right;padding:10px 12px;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;" title="Unidades en camino al FULL: despachadas y pendientes de ingreso o en transferencia. No son stock disponible, pero la reposición sugerida ya las descuenta.">En camino</th>
               <th style="text-align:right;padding:10px 12px;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">DOH</th>
               <th style="text-align:center;padding:10px 12px;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Quiebre est.</th>
               <th style="text-align:center;padding:10px 12px;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Pedir el</th>
@@ -6644,9 +6876,21 @@ function calcApagadas(){
    días de apagón = lead time − días hasta el quiebre
    Es un PISO: asume pedido hoy y ninguna venta recuperada. Sin factor de
    recuperación, porque cualquier valor sería inventado y va a un entregable. */
+/* El apagón se mide sobre el stock REAL, nunca sobre el efectivo.
+   Las unidades en camino al FULL evitan tener que emitir otra orden de compra,
+   pero NO evitan la venta perdida: mientras no ingresen al depósito de ML la
+   publicación está en cero y no vende. Tomarlas como stock dejaba en cero el
+   revenue en riesgo de publicaciones que están perdiendo plata hoy mismo.
+   Por eso el riesgo de las que ya tienen la góndola vacía se parte en dos:
+     · hoyRev  → en cero y sin nada en camino: hay que emitir la orden YA.
+     · camRev  → en cero pero con mercadería viajando: la orden ya salió y la
+                 pérdida corre igual hasta que ML procese el ingreso.
+   Son dos acciones distintas (comprar vs. apurar el ingreso), así que no se
+   suman en la misma tarjeta, pero ninguna de las dos es cero. */
 function calcRiesgoQuiebre(){
   const vacio = { hoyRev:0, hoyN:0, porDia:0, futRev:0, futN:0, proxFecha:null, proxRev:0,
-                  semanas:[], urgentes:0, ltDefault:0, ltTotal:0, total:0 };
+                  semanas:[], urgentes:0, ltDefault:0, ltTotal:0, total:0,
+                  camRev:0, camN:0, camPorDia:0, camU:0 };
   if (typeof FORECAST_DATA === 'undefined' || !FORECAST_DATA.calculated || !FORECAST_DATA.items) return vacio;
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const r = Object.assign({}, vacio, { semanas: [] });
@@ -6654,28 +6898,46 @@ function calcRiesgoQuiebre(){
 
   FORECAST_DATA.items.forEach(i => {
     const rep = i.reposicion;
-    if (!rep || !rep.necesita) return;
-    r.total++;
-    if (rep.urgente) r.urgentes++;
+    if (!rep) return;
+    // Las cubiertas por tránsito ya no piden reposición, pero siguen en riesgo
+    if (!rep.necesita && !i.enCaminoCubre) return;
+    if (rep.necesita) {
+      r.total++;
+      if (rep.urgente) r.urgentes++;
+    }
     const asp   = i.precioProm || 0;
     const daily = (i.baseline && i.baseline.daily) || 0;
     if (asp <= 0 || daily <= 0) return;          // sin rotación no hay riesgo
 
     const lt = i.leadTime || (i.canal === 'FULL' ? 21 : 14);
-    r.ltTotal++;
-    if (!i.leadTimeDeclarado) r.ltDefault++;
+    if (rep.necesita) {
+      r.ltTotal++;
+      if (!i.leadTimeDeclarado) r.ltDefault++;
+    }
 
-    const dq = Math.max(0, rep.diasHastaQuiebre || 0);
+    /* Días que cubre el stock DISPONIBLE. rep.diasHastaQuiebre contempla el
+       tránsito —correcto para decidir cuándo pedir— pero acá hace falta saber
+       cuándo se vacía la góndola, que es lo que corta la venta. */
+    const dq = Math.max(0, Math.floor((i.stock || 0) / daily));
     const apagon = Math.max(0, lt - dq);
     if (apagon <= 0) return;
 
     const monto = asp * daily * apagon;
-    if (dq <= 0) {
-      // Ya sin stock: el apagón está corriendo
+    if (dq <= 0 && (i.enCamino || 0) > 0) {
+      /* En cero con reposición viajando. El monto es un TECHO: supone que el
+         ingreso tarda todo el lead time, cuando la mercadería ya salió. El
+         reporte de ML no informa fecha estimada de ingreso, así que el número
+         defendible de esta tarjeta es el costo por día. */
+      r.camRev += monto;
+      r.camN++;
+      r.camPorDia += asp * daily;
+      r.camU += i.enCamino || 0;
+    } else if (dq <= 0) {
+      // Ya sin stock y sin nada en camino: el apagón está corriendo
       r.hoyRev += monto;
       r.hoyN++;
       r.porDia += asp * daily;                   // costo de cada día de demora
-    } else {
+    } else if (rep.necesita) {
       r.futRev += monto;
       r.futN++;
       const q = new Date(rep.fechaQuiebre);
@@ -8597,6 +8859,7 @@ function showError(msg){
 function resetDashboard(){
   G=null;
   REND_DATA={}; OPOR_DATA={}; ADS_DATA={};
+  ADS_CAMPANAS={rows:[], loaded:false};
   FULL_DATA={items:[], loaded:false};
   MOFU_DATA={daily:[], totals:{}};
   BIZ_DATA={daily:[], priceBuckets:[], buyerTypes:[]};
@@ -8711,11 +8974,21 @@ function exportarExcel(){
      que quedaban sin formato de moneda en el archivo. */
   const detectColType = (header) => {
     const h = String(header || '').toLowerCase().trim();
+    /* Un "%" en la etiqueta puede ser dos cosas muy distintas:
+         · la UNIDAD de la columna → "Margen%", "% Venta neta", "TACOS %"
+         · una tasa mencionada al pasar dentro del texto de una fila que lleva
+           un IMPORTE → "IIBB (4% de la venta neta)", "IVA retenido (8% de la
+           base con RFC, 16% sin RFC)"
+       Sólo el primer caso es un porcentaje. La regla: si el % viene pegado a un
+       número es prosa, no unidad, y la fila se clasifica por el resto de su
+       texto. Sin esto los $146.924 de IIBB salían del Excel como 14.692.423%
+       y las dos filas de retenciones de México, igual. */
+    const hu = h.replace(/\d+(?:[.,]\d+)?\s*%/g, ' ');
     // Porcentaje primero: es más específico
-    if (h.includes('%') || h.includes('share') || h.includes('porcent') ||
+    if (hu.includes('%') || h.includes('share') || h.includes('porcent') ||
         h.includes('tasa') || h.includes('acumul') || h.includes('conversion') ||
         h.includes('conversión') || h === 'acos' || h === 'tacos' || h === 'conv.' ||
-        h.includes('uplift') || h.includes('cobertura') || h.includes('margen unit %') ||
+        h.includes('cobertura') || h.includes('margen unit %') ||
         h.includes('margen final')) {
       return 'percent';
     }
@@ -8727,6 +9000,9 @@ function exportarExcel(){
         h === 'unidades' || h === 'visitas' || h === 'ventas' || h === 'clics' ||
         h === 'impresiones' || h.includes('roas') || h.includes('días') ||
         h.includes('dias') || h.includes('stock') || h.includes('cantidad') ||
+        /* "detectadas por título y precio" es un conteo de publicaciones, no un
+           precio: sin esto la palabra "precio" del final lo volvía moneda. */
+        h.includes('detectad') || h.includes('uplift') ||
         h.includes('run rate') || h.includes('publicaciones') || h.includes('lead ')) {
       return 'general';
     }
@@ -8735,13 +9011,18 @@ function exportarExcel(){
         h.includes('orgánico') || h.includes('organico') || h.includes('atribuid') ||
         h.includes('revenue') || h.includes('inversi') || h.includes('ingreso') ||
         h.includes('cogs') || h.includes('margen') || h.includes('total') ||
-        h.includes('bruto') || h.includes('neto') || h.includes('ars') ||
+        h.includes('bruto') || /net[oa]s?\b/.test(h) || h.includes('ars') ||
         h.includes('precio') || h.includes('valor') || h.includes('ticket') ||
         h.includes('cac') || h.includes('ltv') || h.includes('aov') || h === 'asp' ||
         h.includes('facturac') || h.includes('envío') || h.includes('envio') ||
         h.includes('comisión') || h.includes('comision') || h.includes('recibido') ||
         h.includes('nexus') || h.includes('break even') || h.includes('contrib') ||
         h.includes('cuotas') || h.includes('costo') || h.includes('impuesto') ||
+        /* "retenido" y "retención" son la misma plata con distinta palabra: las
+           filas de retenciones de México usan la primera y quedaban sin formato. */
+        /reten(ci|id)/.test(h) || h.includes('iibb') || h === 'cpc' ||
+        h.includes('presupuesto') || h.includes('presup') ||
+        /dep[oó]sito/.test(h) || h.includes('importe') || h.includes('riesgo') ||
         h.includes('capital') || h.includes('promedio')) {
       return 'money';
     }
@@ -9108,11 +9389,15 @@ function exportarExcel(){
 
   const factRows=[[idLabel,'Producto','Venta neta','% Venta neta','Acumulado','Top 80% Rev','Top 80% Vol','Etiqueta']];
   arrFact.forEach(i=>{const inVol=coreVolIds.has(i.id);factRows.push([i.id,titleFor(i.id)||'',i.venta_neta,totVN>0?i.venta_neta/totVN:0,i.acumulado,i.esCore80?'Sí':'No',inVol?'Sí':'No',i.esCore80?(inVol?'REV+VOL':'TOP REV'):(inVol?'FALSO HÉROE':'')]);});
-  addSheet('Pareto Revenue',factRows,[25,45,18,14,14,14,14,14]);
+  /* Tipos declarados: "Venta neta" es la columna de dinero de esta hoja y la
+     heurística por texto no tiene por qué acertarla sola. */
+  addSheet('Pareto Revenue',factRows,[25,45,18,14,14,14,14,14],
+    { tipos:['general','general','money','percent','percent','general','general','general'] });
 
   const volRows=[[idLabel,'Producto','Unidades','% Unidades','Acumulado','Top 80% Vol','Top 80% Rev','Etiqueta']];
   arrVol.forEach(i=>{const inF=coreFactIds.has(i.id);volRows.push([i.id,titleFor(i.id)||'',i.unidades,i.unidades/totUni,i.acumulado,i.esCore80?'Sí':'No',inF?'Sí':'No',(i.esCore80&&!inF)?'FALSO HÉROE':(i.esCore80&&inF)?'REV+VOL':'']);});
-  addSheet('Pareto Volumen',volRows,[25,45,14,14,14,14,14,14]);
+  addSheet('Pareto Volumen',volRows,[25,45,14,14,14,14,14,14],
+    { tipos:['general','general','general','percent','percent','general','general','general'] });
 
   /* Hoja Rentabilidad: usa EXACTAMENTE la misma definición que la tabla del
      dashboard. Antes tomaba s.liquidez (la columna Total del reporte, o sea el
@@ -9246,6 +9531,113 @@ function exportarExcel(){
   addSheet('NEXUS P&L',nexusPLRows, cogsOn ? [25,45,12,10,16,12,14,16,10,16,16,14,12,18,20,14] : [25,45,12,10,16,12,14,16,10,16,16,14]);
   if(tacosRows.length>1) addSheet('TACOS',tacosRows,[25,45,16,18,12,10]);
 
+  /* ═══════════ Campañas PADS ═══════════
+     Espejo exacto del panel desplegable de la pestaña Publicidad, con sus dos
+     vistas en la misma hoja: arriba el consolidado por campaña y abajo el
+     detalle anuncio por anuncio. Sale del reporte por ANUNCIOS (report-pads);
+     la hoja "Campañas SOV" es otra cosa: la arma el reporte por campañas de ML,
+     con sus totales ya agregados. Tenerlas separadas es deliberado: mezclarlas
+     haría que los porcentajes de presupuesto dejaran de cerrar contra la suma
+     de los anuncios, que es lo que hace auditable a este panel.
+     Las dos partes comparten columnas para que un solo juego de formatos valga
+     para ambas y se puedan filtrar como una tabla. */
+  if (typeof ADS_CAMPANAS !== 'undefined' && ADS_CAMPANAS.loaded && typeof _campanasAgg === 'function') {
+    const _cps = _campanasAgg();
+    if (_cps.length) {
+      const _invCta = _cps.reduce((t, c) => t + c.inv, 0);
+      const _ingCta = _cps.reduce((t, c) => t + c.ing, 0);
+      const HDR = ['Campaña','# Publicación','Estado','Título','Inversión','% del presupuesto',
+                   '% de los ingresos','Impresiones','Clics','CTR%','CVR%','CPC','Ventas Ads',
+                   'V. directas','V. indirectas','Ingresos','ACOS%','ROAS','Anuncios','Alerta'];
+      const cpRows = [];
+      const _tit = new Set(), _hdr = new Set(), _alerta = new Set();
+
+      _tit.add(cpRows.length);
+      cpRows.push(['CAMPAÑAS · CONSOLIDADO (reporte por anuncios)']);
+      _hdr.add(cpRows.length);
+      cpRows.push(HDR);
+      _cps.forEach(c => {
+        cpRows.push([
+          c.nombre, 'TOTAL CAMPAÑA',
+          c.activos.length + ' de ' + c.nAds + ' activos', '',
+          Math.round(c.inv),
+          _invCta > 0 ? c.inv / _invCta : 0,
+          _ingCta > 0 ? c.ing / _ingCta : 0,
+          Math.round(c.impr), Math.round(c.clics),
+          c.ctr / 100, c.cvr / 100, Math.round(c.cpc),
+          Math.round(c.vpub), Math.round(c.vDir), Math.round(c.vInd),
+          Math.round(c.ing), c.acos / 100, +c.roas.toFixed(2), c.nAds,
+          c.quemaActivos.length
+            ? c.quemaActivos.length + ' activos sin retorno · ' + Math.round(c.invQuemaActivos)
+              + (c.quema.length > c.quemaActivos.length
+                  ? ' · otros ' + (c.quema.length - c.quemaActivos.length) + ' ya no activos · '
+                    + Math.round(c.invQuema - c.invQuemaActivos) : '')
+            : (c.quema.length ? c.quema.length + ' sin retorno, ninguno activo · ' + Math.round(c.invQuema) : '')
+        ]);
+      });
+
+      cpRows.push([]);
+      _tit.add(cpRows.length);
+      cpRows.push(['CAMPAÑAS · DETALLE POR ANUNCIO · activos primero']);
+      _hdr.add(cpRows.length);
+      cpRows.push(HDR);
+      _cps.forEach(c => {
+        c.ads.forEach(a => {
+          /* La alerta es relativa a la campaña, no a un umbral fijo: se declara
+             el promedio contra el que se comparó para que sea reproducible. */
+          // Se resalta lo que todavía se puede frenar; lo histórico queda marcado en la columna Alerta
+          if (a.quema && a.activo) _alerta.add(cpRows.length);
+          cpRows.push([
+            c.nombre, a.id, a.estado || '', String(a.titulo || '').slice(0, 90),
+            Math.round(a.inv),
+            a.peso / 100, a.aporte / 100,
+            Math.round(a.impr), Math.round(a.clics),
+            a.ctr / 100, a.cvr / 100,
+            a.clics > 0 ? Math.round(a.inv / a.clics) : 0,
+            Math.round(a.vpub), Math.round(a.vDir), Math.round(a.vInd),
+            Math.round(a.ing),
+            a.ing > 0 ? a.inv / a.ing : 0,
+            a.inv > 0 ? +a.roas.toFixed(2) : 0, '',
+            a.quema
+              ? 'SIN RETORNO · ' + (a.activo ? 'SIGUE GASTANDO · ' : 'histórico, ya no activo · ')
+                + 'consume ' + a.peso.toFixed(1).replace('.', ',')
+                + '% del presupuesto sin ventas (los que venden consumen '
+                + c.refPeso.toFixed(1).replace('.', ',') + '% en promedio)'
+              : (a.inv > 0 && !a.vendio ? 'Sin ventas atribuidas' : '')
+          ]);
+        });
+      });
+
+      /* Nota metodológica al pie: la hoja se manda por mail sin el dashboard al
+         lado y el criterio de la alerta no se adivina mirando los números. */
+      cpRows.push([]);
+      _tit.add(cpRows.length);
+      cpRows.push(['CÓMO LEER ESTA HOJA']);
+      _hdr.add(cpRows.length);
+      cpRows.push(['Concepto', 'Definición']);
+      [
+        ['Fuente', 'Reporte por anuncios (report-pads). La hoja Campañas SOV sale del reporte por campañas y no alimenta estos números.'],
+        ['% del presupuesto', 'En el detalle: inversión del anuncio ÷ inversión total de SU campaña, incluidos los anuncios no activos. En el consolidado: inversión de la campaña ÷ inversión total de la cuenta.'],
+        ['% de los ingresos', 'Contracara del anterior: qué parte de los ingresos de la campaña aporta ese anuncio. Un anuncio que aporta menos de lo que consume se financia con el resto de la campaña.'],
+        ['Alerta SIN RETORNO', 'El anuncio consume tanto o más presupuesto que el promedio de los que SÍ venden en su propia campaña, sin una sola venta atribuida. El umbral sale de cada campaña, no de un porcentaje fijo: 10% no significa lo mismo en una campaña de 5 anuncios que en una de 168. Se admite 10% de tolerancia hacia abajo para captar los casos "similares".'],
+        ['SIGUE GASTANDO vs. histórico', 'Sólo se resaltan las filas de anuncios ACTIVOS con alerta: son las únicas donde pausar o ajustar la puja cambia algo hoy. Un anuncio pausado con alerta queda marcado en la columna Alerta pero sin resaltar, porque su gasto ya está consumado.'],
+        ['Orden', 'Campañas con anuncios activos primero, después por inversión. Dentro de cada campaña, los anuncios activos primero y después por inversión: sobre un anuncio pausado, movido o deshabilitado no hay decisión de puja que tomar.'],
+        ['Estados', 'Activo: en circulación. Pausado: fuera de circulación, reactivable. Movido: pasó a otra campaña, y ML informa por separado lo que hizo en cada una. Deshabilitado: la publicación está inactiva y no se puede accionar.'],
+        ['Ventas Ads', 'Directas (el comprador clickeó el anuncio de ESE producto) más indirectas (llegó por el anuncio de otro producto). Se abren en sus dos columnas.'],
+        ['Período', 'Cada fila del reporte aporta la fracción de sus días que cae dentro del filtro de fechas del dashboard, con la misma regla de prorrateo que el TACOS.'],
+        ['Campañas ocultas', 'Las que no registran inversión ni un solo clic en el período no se listan: no hay nada que leer en ellas.']
+      ].forEach(f => cpRows.push(f));
+
+      addSheet('Campañas PADS', cpRows,
+        [34,20,18,50,16,16,16,14,10,10,10,12,12,12,14,16,10,10,10,52],
+        { tipos: ['general','general','general','general','money','percent','percent','general','general',
+                  'percent','percent','money','general','general','general','money','percent','general',
+                  'general','general'],
+          filasTituloBloque: _tit, filasHeaderBloque: _hdr, mergeTituloHasta: 8,
+          filasResaltadas: _alerta, colorResaltado: 'FADBD8' });
+    }
+  }
+
   // Campañas SOV
   if(typeof CAMPAIGNS_DATA !== 'undefined' && CAMPAIGNS_DATA.loaded && CAMPAIGNS_DATA.campaigns.length>0){
     const campRows=[['Campaña','Estado','SOV %','SOV perd. presup.%','SOV perd. ranking%','Impresiones','Clics','CTR%','CVR%','CPC','Ventas','Ingresos','Inversión','ACOS%','ROAS','Presupuesto','ROAS objetivo']];
@@ -9255,7 +9647,9 @@ function exportarExcel(){
         Math.round(c.ventas), Math.round(c.ingresos), Math.round(c.inversion), c.acos/100||0, c.roas||0,
         Math.round(c.presupuesto||0), c.roasObjetivo||0]);
     });
-    if(campRows.length>1) addSheet('Campañas SOV',campRows,[40,12,10,16,16,14,10,10,10,12,10,16,16,10,10,14,12]);
+    if(campRows.length>1) addSheet('Campañas SOV',campRows,[40,12,10,16,16,14,10,10,10,12,10,16,16,10,10,14,12],
+      { tipos:['general','general','percent','percent','percent','general','general','percent','percent',
+               'money','general','money','money','percent','general','money','general'] });
   }
 
   // Oportunidades
@@ -9272,7 +9666,7 @@ function exportarExcel(){
 
   // FULL Stock
   if(FULL_DATA.loaded && FULL_DATA.items.length>0){
-    const fullRows=[[idLabel,'Producto','Tamaño','Ventas 30d','Stock Aptas','En Camino','Run Rate/día','Días Inv.','Sugerencia 30d','Tiempo']];
+    const fullRows=[[idLabel,'Producto','Tamaño','Ventas 30d','Stock Aptas','En Camino a FULL','Run Rate/día','Días Inv.','Sugerencia 30d','Tiempo']];
     FULL_DATA.items.forEach(i=>{
       const repo=Math.max(0,Math.ceil((i.runRateDaily*30)-i.aptas));
       fullRows.push([i.sku||i.id_pub,i.producto,i.tamano,i.v30,i.aptas,i.enCamino||0,
@@ -9287,15 +9681,17 @@ function exportarExcel(){
   if (FORECAST_DATA && FORECAST_DATA.calculated && FORECAST_DATA.items && FORECAST_DATA.items.length > 0) {
     
     // Hoja 1: Forecast 6 semanas detallado (con canal)
-    let fcRows = [[idLabel,'Canal','Producto','Categoría ML','Última venta','Confianza','Stock','COGS','Lead Time',
+    let fcRows = [[idLabel,'Canal','Producto','Categoría ML','Última venta','Confianza','Stock','En Camino','COGS','Lead Time',
                      'Ventas 30d','Daily Avg','Sem 1','Sem 2','Sem 3','Sem 4','Sem 5','Sem 6',
                      'Total 6w','Revenue Proy. $','Margen Estimado $','DOH','Reposición']];
     FORECAST_DATA.items.forEach(i => {
       const sems = i.proyeccion.map(p => Math.round(p.unidades || 0));
       while (sems.length < 6) sems.push(0);
-      const repoStr = i.reposicion.necesita 
+      /* "En camino" cubre el quiebre: la reposición ya salió y pedir de nuevo
+         duplica la orden. Se distingue de "No necesita", que es stock propio. */
+      const repoStr = i.reposicion.necesita
         ? (i.reposicion.urgente ? 'URGENTE - ' : 'Programada - ') + i.reposicion.cantidad + 'u'
-        : 'No necesita';
+        : (i.enCaminoCubre ? 'Cubierta por ' + (i.enCamino||0) + 'u en camino al FULL' : 'No necesita');
       fcRows.push([
         /* Se quita la columna "bucket": la categoría inferida no aporta al
            export, la real ya viene en categoryML y el bucket sigue usándose
@@ -9304,7 +9700,7 @@ function exportarExcel(){
         (function(){ const u = (typeof _ultVentaDe === 'function') ? _ultVentaDe(i.sku) : null;
           return u ? String(u.getDate()).padStart(2,'0')+'/'+String(u.getMonth()+1).padStart(2,'0')+'/'+u.getFullYear() : ''; })(),
         i.baseline.confidence,
-        i.stock || '', i.cogs || '', i.leadTime || 14,
+        i.stock || '', i.enCamino || '', i.cogs || '', i.leadTime || 14,
         i.ventas30d || 0, +(i.baseline.daily || 0).toFixed(2),
         ...sems.slice(0,6),
         Math.round(i.totalProyectado || 0),
@@ -9323,10 +9719,14 @@ function exportarExcel(){
         ['Reposición urgente', _Rx.urgentes, 'publicaciones cuya fecha de pedido ya venció'],
         ['Revenue en riesgo hoy', _Rx.hoyRev, _Rx.hoyN + ' publicaciones sin stock'],
         ['Costo de demorar (por día)', _Rx.porDia, 'se suma por cada día que se posterga el pedido'],
+        ['En riesgo con reposición en curso (por día)', _Rx.camPorDia,
+         _Rx.camN + ' publicaciones en cero con ' + Math.round(_Rx.camU) + ' u en camino al FULL · la orden ya salió, la venta se pierde igual'],
+        ['En riesgo con reposición en curso (techo)', _Rx.camRev,
+         'si el ingreso a FULL tardara todo el lead time · techo, no estimación: el reporte no informa fecha de ingreso'],
         ['Revenue en riesgo · próximos quiebres', _Rx.futRev, _Rx.futN + ' publicaciones con stock pero pedido vencido'],
         ['Lead time por defecto', _Rx.ltDefault, 'de ' + _Rx.ltTotal + ' publicaciones · PROPIO 14d, FULL 21d'],
-        ['Base del cálculo','ASP bruto × ritmo diario × (lead time − días hasta el quiebre)',
-         'Piso sin factor de recuperación: asume pedido hoy y ninguna venta recuperada'],
+        ['Base del cálculo','ASP bruto × ritmo diario × (lead time − días que cubre el stock DISPONIBLE)',
+         'Piso sin factor de recuperación: asume pedido hoy y ninguna venta recuperada. Las unidades en camino al FULL no cuentan como cobertura'],
         []];
       _Rx.semanas.forEach(sm => {
         const d = new Date(sm.ini);
@@ -9387,15 +9787,15 @@ function exportarExcel(){
       if (idx < 60 && !(r[1] === undefined && r[2] === undefined)) {
         _filasEtiqueta.add(idx);
         if (typeof r[1] === 'number' &&
-            /^(Revenue en riesgo|Costo de demorar|Facturación apagada|Semana del)/.test(et)) _filasMonto.add(idx);
+            /^(Revenue en riesgo|Costo de demorar|En riesgo con reposición|Facturación apagada|Semana del)/.test(et)) _filasMonto.add(idx);
       }
     });
-    addSheet('Forecast 6w', fcRows, [30,16,42,22,16,12,10,12,10,12,12,10,10,10,10,10,10,12,16,16,10,18],
+    addSheet('Forecast 6w', fcRows, [30,16,42,22,16,12,10,11,12,10,12,12,10,10,10,10,10,10,12,16,16,10,18],
       /* La columna 6 es "Confianza" en la tabla principal (texto, el formato de
          moneda no la afecta) y "Facturación/mes" en el listado de apagadas, que
          sí necesita moneda. Declararla como money resuelve el listado sin tocar
          la tabla. */
-      { tipos:['general','general','general','general','money','general','general','money','general',
+      { tipos:['general','general','general','general','money','general','general','general','money','general',
                'general','general','general','general','general','general','general','general',
                'general','money','money','general','general'],
         filasMoneda: _filasMonto, filasTituloBloque: _filasTitulo,
@@ -9403,22 +9803,23 @@ function exportarExcel(){
         mergeTituloHasta: 6 });
     
     // Hoja 2: Reposición sugerida (priorizada)
-    const itemsRepo = FORECAST_DATA.items.filter(i => i.reposicion.necesita);
+    const itemsRepo = FORECAST_DATA.items.filter(i => i.reposicion.necesita || i.enCaminoCubre);
     if (itemsRepo.length > 0) {
-      const repoRows = [[idLabel,'Canal','Producto','Categoría','Stock Actual','DOH','Días al Quiebre',
+      const repoRows = [[idLabel,'Canal','Producto','Categoría','Stock Actual','En Camino','DOH','Días al Quiebre',
                          'Fecha Quiebre','Lead Time','Fecha Pedido Sugerida','Cantidad','Urgencia']];
       const fmtFecha = d => d ? d.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}) : '';
       itemsRepo.forEach(i => {
         const r = i.reposicion;
         repoRows.push([
           i.sku, i.canal || 'PROPIO', i.producto || '', i.bucket,
-          i.stock || 0, isFinite(i.doh) ? Math.round(i.doh) : '∞',
-          r.diasHastaQuiebre || '', fmtFecha(r.fechaQuiebre),
-          i.leadTime || 14, fmtFecha(r.fechaPedido),
-          r.cantidad || 0, r.urgente ? 'URGENTE' : 'Programada'
+          i.stock || 0, i.enCamino || 0, isFinite(i.doh) ? Math.round(i.doh) : '∞',
+          r.necesita ? (r.diasHastaQuiebre || '') : '', r.necesita ? fmtFecha(r.fechaQuiebre) : '',
+          i.leadTime || 14, r.necesita ? fmtFecha(r.fechaPedido) : '',
+          r.necesita ? (r.cantidad || 0) : 0,
+          r.urgente ? 'URGENTE' : (r.necesita ? 'Programada' : 'EN CAMINO')
         ]);
       });
-      addSheet('Reposición Sugerida', repoRows, [22,10,30,16,14,8,12,16,12,16,12,12]);
+      addSheet('Reposición Sugerida', repoRows, [22,10,30,16,14,12,8,12,16,12,16,12,12]);
     }
     
     // Hoja 3: Inputs manuales (snapshot para auditoría)
@@ -9477,7 +9878,10 @@ function exportarExcel(){
           ev.buckets.join(', ')
         ]);
       });
-      addSheet('Calendario Comercial', calRows, [30,10,14,14,16,12,10,40]);
+      /* Uplift es un MULTIPLICADOR (2,5 = dos veces y media), no un porcentaje:
+         formateado como % salía "250,0%", que se lee como un alza del 250%. */
+      addSheet('Calendario Comercial', calRows, [30,10,14,14,16,12,10,40],
+        { tipos:['general','general','general','general','general','general','general','general'] });
     }
   }
 
@@ -9597,6 +10001,13 @@ function exportarExcel(){
 let REND_DATA  = {};
 let OPOR_DATA  = {};
 let ADS_DATA   = {};
+/* Filas crudas del reporte por anuncios, sin colapsar por publicación.
+   ADS_DATA agrega todo bajo el # de publicación y se queda con UNA campaña por
+   anuncio, que alcanza para el TACOS pero no para leer una campaña: el mismo
+   anuncio puede haber estado en varias (estado "Movido") y el reporte trae una
+   fila por campaña y por bucket de tiempo. El panel por campaña necesita ese
+   detalle, así que se conserva aparte. */
+let ADS_CAMPANAS = { rows: [], loaded: false };
 let MOFU_DATA  = { daily: [], totals: {} };
 let BIZ_DATA   = { daily: [], priceBuckets: [], buyerTypes: [] };
 
@@ -10197,6 +10608,7 @@ function parseCampaigns(wb, isPrev) {
 
 function parseAds(wb) {
   ADS_DATA = {};
+  ADS_CAMPANAS = { rows: [], loaded: false };
   const ws = wb.Sheets['Reporte por Anuncios'] || wb.Sheets[wb.SheetNames[wb.SheetNames.length - 1]];
   if (!ws) return;
   const raw = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
@@ -10222,6 +10634,11 @@ function parseAds(wb) {
   const cCVR    = col('cvr');
   const cCPC    = col('cpc');
   const cCampana = col('campaña');
+  const cTitulo  = col('título de anuncio');
+  /* "Ventas por publicidad" ya es directas + indirectas, pero el desglose se
+     guarda igual: sirve para explicar en el panel de dónde sale el número. */
+  const cVDir = headers.findIndex(h => h.includes('ventas directas'));
+  const cVInd = headers.findIndex(h => h.includes('ventas indirectas'));
 
   // Pasada 1: parsear todas las filas y guardarlas con su rango temporal
   // ADS_DATA[canonKey] = { rows: [{desde, hasta, inv, ing, vpub}, ...], inversion, ingresos, ... }
@@ -10298,7 +10715,21 @@ function parseAds(wb) {
     }
     
     if (dDesde && dHasta) allRanges.push({ desde: dDesde, hasta: dHasta });
+
+    /* Fila cruda para el panel por campaña: se guarda tal cual viene, con su
+       campaña, su estado y su rango. Agregar acá perdería justamente lo que el
+       panel necesita distinguir. */
+    ADS_CAMPANAS.rows.push({
+      campana: campana || '(sin campaña)',
+      id: canonKey,
+      titulo: cTitulo >= 0 ? String(row[cTitulo] || '').trim() : '',
+      estado, desde: dDesde, hasta: dHasta,
+      inv, ing, vpub, clics, impr,
+      vDir: cVDir >= 0 ? (parseFloat(String(row[cVDir]||'').replace(/,/g,'')) || 0) : 0,
+      vInd: cVInd >= 0 ? (parseFloat(String(row[cVInd]||'').replace(/,/g,'')) || 0) : 0
+    });
   }
+  ADS_CAMPANAS.loaded = ADS_CAMPANAS.rows.length > 0;
   
   // META: rango global del reporte
   if (allRanges.length > 0) {
@@ -12412,6 +12843,476 @@ function buildNexusTable(cache, mode) {
   return html;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PUBLICIDAD · PANEL DESPLEGABLE POR CAMPAÑA
+   ═══════════════════════════════════════════════════════════════════════════
+   Todo este panel se calcula SÓLO con el reporte por anuncios (report-pads).
+   El reporte por campañas no lo alimenta: trae los totales ya agregados por ML
+   y, al mezclarlo, los porcentajes de presupuesto dejaban de cerrar contra la
+   suma de los anuncios. Acá cada cifra de campaña es la suma de sus anuncios,
+   así que el % de presupuesto y el ROAS son reproducibles fila por fila.
+
+   Lo que resuelve: en una campaña con 60 anuncios no hay forma de ver cuál se
+   está comiendo el presupuesto. Con CTR, CVR, ventas y % de gasto por anuncio,
+   un ad que consume el 30% de la campaña y no convierte salta a la vista.
+
+   Las campañas arrancan CONTRAÍDAS a propósito: son cientos de filas y el valor
+   está en abrir la que interesa, no en scrollear todo. */
+
+let ADS_CAMP_VIEW = 'ad';               // 'ad' = KPI por anuncio · 'consolidado' = totales de campaña
+const ADS_CAMP_ABIERTAS = new Set();    // nombres de campaña desplegados
+let _ADS_CAMP_CACHE = null;             // último cálculo, para resolver índices de los onclick
+
+/* Prorrateo por rango, idéntico al de getAdsForRange: una fila que se solapa
+   parcialmente con el filtro aporta la fracción de días que cae adentro. Sin
+   esto el panel mostraría la inversión de todo el reporte aunque el dashboard
+   esté filtrado a una semana. */
+function _adsCampFactor(r, from, to) {
+  if (!from || !to) return 1;
+  if (!r.desde || !r.hasta) return 1;
+  const rD = r.desde.getTime(), rH = r.hasta.getTime();
+  const iD = Math.max(rD, from.getTime()), iH = Math.min(rH, to.getTime());
+  if (iH < iD) return 0;
+  const diasFila = Math.max(1, Math.ceil((rH - rD) / 86400000) + 1);
+  const diasInter = Math.max(1, Math.ceil((iH - iD) / 86400000) + 1);
+  return Math.min(1, diasInter / diasFila);
+}
+
+/* Estado del anuncio dentro de la campaña: un mismo anuncio puede tener varias
+   filas (un bucket de tiempo por fila) con estados distintos. Se toma el más
+   "vivo", igual que hace parseAds para ADS_DATA. */
+const _ADS_EST_PRIO = { 'Activo': 4, 'Pausado': 3, 'Movido': 2, 'Deshabilitado': 1 };
+
+function _campanasAgg() {
+  if (typeof ADS_CAMPANAS === 'undefined' || !ADS_CAMPANAS.loaded) return [];
+  const from = (G && G._lastFilter && G._lastFilter.from) || null;
+  const to   = (G && G._lastFilter && G._lastFilter.to) || null;
+
+  const camps = new Map();
+  for (const r of ADS_CAMPANAS.rows) {
+    const f = _adsCampFactor(r, from, to);
+    if (f <= 0) continue;
+    let c = camps.get(r.campana);
+    if (!c) {
+      c = { nombre: r.campana, inv: 0, ing: 0, vpub: 0, vDir: 0, vInd: 0, clics: 0, impr: 0, ads: new Map() };
+      camps.set(r.campana, c);
+    }
+    c.inv += r.inv * f; c.ing += r.ing * f; c.vpub += r.vpub * f;
+    c.vDir += r.vDir * f; c.vInd += r.vInd * f;
+    c.clics += r.clics * f; c.impr += r.impr * f;
+
+    let a = c.ads.get(r.id);
+    if (!a) {
+      a = { id: r.id, titulo: r.titulo || '', estado: '',
+            inv: 0, ing: 0, vpub: 0, vDir: 0, vInd: 0, clics: 0, impr: 0 };
+      c.ads.set(r.id, a);
+    }
+    if (!a.titulo && r.titulo) a.titulo = r.titulo;
+    if (r.estado && (_ADS_EST_PRIO[r.estado] || 0) > (_ADS_EST_PRIO[a.estado] || 0)) a.estado = r.estado;
+    a.inv += r.inv * f; a.ing += r.ing * f; a.vpub += r.vpub * f;
+    a.vDir += r.vDir * f; a.vInd += r.vInd * f;
+    a.clics += r.clics * f; a.impr += r.impr * f;
+  }
+
+  const out = [];
+  let sinActividad = 0;
+  camps.forEach(c => {
+    /* Campañas sin inversión ni un solo clic en el período: existen en el
+       reporte porque tienen anuncios asociados, pero no hay nada que leer en
+       ellas y empujan hacia abajo a las que sí gastan. Se cuentan aparte en el
+       encabezado en lugar de ocupar una fila cada una. */
+    if (c.inv <= 0 && c.clics <= 0) { sinActividad++; return; }
+    const ads = [...c.ads.values()];
+
+    /* Se listan TODOS los anuncios, con el estado marcado y los activos
+       primero. Mostrar sólo los activos escondía a dónde fue el resto del
+       presupuesto —en una campaña real, el 57% del gasto— y obligaba a
+       explicar por qué los porcentajes no cerraban. El orden es el que manda:
+       arriba lo accionable, abajo lo que ya no admite decisión de puja. */
+    ads.forEach(a => {
+      a.activo = a.estado === 'Activo';
+      a.vendio = (a.vpub > 0) || (a.ing > 0);
+      a.peso = c.inv > 0 ? a.inv / c.inv * 100 : 0;          // % del presupuesto que consume
+      a.aporte = c.ing > 0 ? a.ing / c.ing * 100 : 0;        // % de los ingresos que aporta
+      a.ctr = a.impr > 0 ? a.clics / a.impr * 100 : 0;
+      a.cvr = a.clics > 0 ? a.vpub / a.clics * 100 : 0;
+      a.roas = a.inv > 0 ? a.ing / a.inv : 0;
+    });
+    ads.sort((x, y) => (y.activo - x.activo) || (y.inv - x.inv));
+
+    const activos = ads.filter(a => a.activo);
+    const invActivos = activos.reduce((t, a) => t + a.inv, 0);
+
+    /* Umbral de alerta ATADO A LA CAMPAÑA, no a un porcentaje fijo.
+       Un 10% del presupuesto no significa lo mismo en una campaña de 5
+       anuncios que en una de 168. Lo que sí es comparable es el resto del
+       pelotón: si los anuncios que VENDEN consumen en promedio N% del
+       presupuesto, un anuncio que consume lo mismo o más y no vende nada está
+       ocupando el lugar de uno que sí rinde.
+       Si en la campaña no vende NINGUNO, no hay con qué comparar y se usa el
+       reparto parejo entre los que gastan (100 ÷ n): ahí la campaña entera
+       está en cuestión y lo accionable es el que más consume. */
+    const conGasto = ads.filter(a => a.inv > 0);
+    const vendedores = conGasto.filter(a => a.vendio);
+    const refPeso = vendedores.length
+      ? vendedores.reduce((t, a) => t + a.peso, 0) / vendedores.length
+      : (conGasto.length ? 100 / conGasto.length : 0);
+    /* "Similar o superior": se admite un 10% de tolerancia hacia abajo, si no
+       un anuncio que consume 9,9% contra un promedio de 10% se escapa. */
+    const umbral = refPeso * 0.9;
+    ads.forEach(a => {
+      a.quema = a.inv > 0 && !a.vendio && refPeso > 0 && a.peso >= umbral;
+    });
+
+    out.push({
+      nombre: c.nombre, inv: c.inv, ing: c.ing, vpub: c.vpub, vDir: c.vDir, vInd: c.vInd,
+      clics: c.clics, impr: c.impr,
+      ctr: c.impr > 0 ? c.clics / c.impr * 100 : 0,
+      cvr: c.clics > 0 ? c.vpub / c.clics * 100 : 0,
+      cpc: c.clics > 0 ? c.inv / c.clics : 0,
+      roas: c.inv > 0 ? c.ing / c.inv : 0,
+      acos: c.ing > 0 ? c.inv / c.ing * 100 : 0,
+      nAds: ads.length, ads, activos, invActivos,
+      invOtros: Math.max(0, c.inv - invActivos),
+      refPeso, nVendedores: vendedores.length,
+      /* La marca aplica a cualquier anuncio que gastó sin vender, pero sólo los
+         ACTIVOS admiten acción: sobre un pausado el gasto ya está consumado.
+         Los contadores los separan para que el titular del panel sea siempre lo
+         que todavía se puede frenar. */
+      quema: ads.filter(a => a.quema),
+      invQuema: ads.filter(a => a.quema).reduce((t, a) => t + a.inv, 0),
+      quemaActivos: ads.filter(a => a.quema && a.activo),
+      invQuemaActivos: ads.filter(a => a.quema && a.activo).reduce((t, a) => t + a.inv, 0)
+    });
+  });
+  /* Las campañas sin ningún anuncio activo van al final aunque hayan gastado:
+     no admiten acción sobre la puja y taparían a las que sí. */
+  out.sort((a, b) => ((b.activos.length > 0) - (a.activos.length > 0)) || (b.inv - a.inv));
+  out.sinActividad = sinActividad;   // para declararlo en el encabezado del panel
+  return out;
+}
+
+/* Chip de estado del anuncio DENTRO de esta campaña. No se reusa adStateChip
+   porque aquél lee el estado global del anuncio en ADS_DATA y un anuncio movido
+   puede estar activo en una campaña y no en otra. */
+function _adEstadoChip(estado) {
+  const E = {
+    'Activo':        ['rgba(52,211,153,.15)',  'var(--ok)',     '● Activo',        'En circulación: puede mostrarse a los compradores. Es el único estado sobre el que se puede accionar la puja.'],
+    'Pausado':       ['rgba(251,146,60,.12)',  'var(--warn)',   '⏸ Pausado',       'Fuera de circulación, pero se puede reactivar. El gasto que muestra es el que hizo mientras estuvo activo en el período.'],
+    'Movido':        ['rgba(168,85,247,.12)',  'var(--accent)', '⇄ Movido',        'Estuvo en esta campaña y se pasó a otra. El reporte separa los resultados de cada campaña, así que este gasto es sólo el de acá.'],
+    'Deshabilitado': ['rgba(148,163,184,.12)', 'var(--muted)',  '⊘ Deshabilitado', 'No se puede accionar: la publicación está inactiva, por falta de stock u otro motivo.']
+  };
+  const d = E[estado];
+  if (!d) return '<span style="color:var(--muted);font-size:9px;">—</span>';
+  return '<span title="' + d[3] + '" style="background:' + d[0] + ';color:' + d[1]
+    + ';padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px;'
+    + 'white-space:nowrap;cursor:help;">' + d[2] + '</span>';
+}
+
+function setAdsCampView(v) {
+  if (ADS_CAMP_VIEW === v) return;
+  ADS_CAMP_VIEW = v;
+  _renderAdsCampBody();
+}
+
+function toggleCampana(idx) {
+  const c = _ADS_CAMP_CACHE && _ADS_CAMP_CACHE[idx];
+  if (!c) return;
+  if (ADS_CAMP_ABIERTAS.has(c.nombre)) ADS_CAMP_ABIERTAS.delete(c.nombre);
+  else ADS_CAMP_ABIERTAS.add(c.nombre);
+  _renderAdsCampBody();
+}
+
+function expandirTodasCampanas(abrir) {
+  if (!_ADS_CAMP_CACHE) return;
+  ADS_CAMP_ABIERTAS.clear();
+  if (abrir) _ADS_CAMP_CACHE.forEach(c => ADS_CAMP_ABIERTAS.add(c.nombre));
+  _renderAdsCampBody();
+}
+
+function _renderAdsCampBody() {
+  const el = document.getElementById('ads-camp-body');
+  if (!el) return;
+  el.innerHTML = _campanasBodyHTML();
+  const bA = document.getElementById('ads-camp-btn-ad');
+  const bC = document.getElementById('ads-camp-btn-cons');
+  if (bA && bC) {
+    const on  = 'background:rgba(168,85,247,.25);color:var(--accent);border:1px solid var(--accent);';
+    const off = 'background:transparent;color:var(--muted);border:1px solid var(--border);';
+    const base = 'padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;cursor:pointer;font-family:var(--mono);';
+    bA.style.cssText = base + 'border-radius:4px 0 0 4px;' + (ADS_CAMP_VIEW === 'ad' ? on : off);
+    bC.style.cssText = base + 'border-radius:0 4px 4px 0;' + (ADS_CAMP_VIEW === 'consolidado' ? on : off);
+  }
+}
+
+function _campanasBodyHTML() {
+  const camps = _campanasAgg();
+  _ADS_CAMP_CACHE = camps;
+  if (!camps.length) return '<div class="empty">Sin anuncios en el período filtrado</div>';
+
+  const ARS = fmtCurrency;
+  const invTotal = camps.reduce((t, c) => t + c.inv, 0);
+  const pct1 = v => (v).toFixed(1).replace('.', ',') + '%';
+  const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  let h = '';
+  camps.forEach((c, idx) => {
+    const abierta = ADS_CAMP_ABIERTAS.has(c.nombre);
+    const roasClr = c.roas >= 5 ? 'var(--ok)' : c.roas >= 2 ? 'var(--warn)' : 'var(--danger)';
+    const pesoCuenta = invTotal > 0 ? c.inv / invTotal * 100 : 0;
+
+    // ── Cabecera de la campaña: siempre visible, es la fila que se clickea ──
+    h += '<div style="border:1px solid var(--border);border-radius:6px;margin-bottom:8px;overflow:hidden;">'
+      + '<div onclick="toggleCampana(' + idx + ')" style="display:flex;align-items:center;gap:12px;padding:10px 14px;'
+        + 'cursor:pointer;background:' + (abierta ? 'rgba(168,85,247,.07)' : 'var(--surface2)') + ';">'
+      + '<span style="font-family:var(--mono);font-size:11px;color:var(--accent);width:12px;">' + (abierta ? '▾' : '▸') + '</span>'
+      + '<span style="flex:1;font-size:12px;color:' + (c.activos.length ? 'var(--text)' : 'var(--muted)') + ';font-weight:600;">'
+        + esc(c.nombre)
+        + (c.activos.length
+            ? ' <span style="font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:400;">· '
+              + c.activos.length + ' activo' + (c.activos.length === 1 ? '' : 's')
+              + (c.nAds > c.activos.length ? ' de ' + c.nAds : '') + '</span>'
+            : ' <span title="Ninguno de sus ' + c.nAds + ' anuncios está activo en el período: la campaña gastó, pero hoy no hay puja sobre la que accionar. Por eso va al final del listado."'
+              + ' style="background:rgba(148,163,184,.14);color:var(--muted);padding:1px 6px;border-radius:3px;font-size:9px;'
+              + 'font-weight:700;letter-spacing:.4px;cursor:help;white-space:nowrap;">SIN ACTIVOS · ' + c.nAds + ' anuncios</span>')
+        + (c.quema.length
+            ? ' <span title="' + esc(
+                  (c.quemaActivos.length
+                    ? c.quemaActivos.length + ' anuncio' + (c.quemaActivos.length > 1 ? 's ACTIVOS consumen ' : ' ACTIVO consume ')
+                      + ARS(c.invQuemaActivos) + ' sin una sola venta atribuida'
+                    : 'Ningún anuncio activo sin retorno')
+                + ', tanto o más que el promedio de los que sí venden en esta campaña ('
+                + pct1(c.refPeso) + ' del presupuesto cada uno).'
+                + (c.quema.length > c.quemaActivos.length
+                    ? ' Otros ' + (c.quema.length - c.quemaActivos.length) + ' ya no están activos ('
+                      + ARS(c.invQuema - c.invQuemaActivos) + '): ese gasto es histórico del período.'
+                    : '')) + '"'
+              + ' style="background:' + (c.quemaActivos.length ? 'rgba(248,113,113,.14);color:var(--danger)' : 'rgba(148,163,184,.14);color:var(--muted)')
+              + ';padding:1px 6px;border-radius:3px;font-size:9px;'
+              + 'font-weight:700;letter-spacing:.4px;cursor:help;white-space:nowrap;">▲ '
+              + (c.quemaActivos.length || c.quema.length) + ' sin retorno'
+              + (c.quemaActivos.length ? '' : ' (histórico)') + '</span>'
+            : '')
+        + '</span>'
+      + '<span style="font-family:var(--mono);font-size:11px;color:var(--warn);white-space:nowrap;" title="Inversión de la campaña en el período · ' + pct1(pesoCuenta) + ' del gasto total de la cuenta">'
+        + ARS(c.inv) + '</span>'
+      + '<span style="font-family:var(--mono);font-size:11px;color:' + roasClr + ';white-space:nowrap;min-width:52px;text-align:right;" title="Ingresos atribuidos ÷ inversión">'
+        + (c.inv > 0 ? c.roas.toFixed(2) + 'x' : '—') + '</span>'
+      + '</div>';
+
+    if (abierta) {
+      h += '<div style="padding:12px 14px;border-top:1px solid var(--border);">'
+        + (ADS_CAMP_VIEW === 'consolidado' ? _campConsolidadoHTML(c, pesoCuenta) : _campPorAdHTML(c))
+        + '</div>';
+    }
+    h += '</div>';
+  });
+  return h;
+}
+
+/* Reparto del presupuesto de la campaña por estado del anuncio. Va en el
+   consolidado porque ahí la pregunta es "¿esta campaña está viva?": una que
+   gasta el 57% en anuncios que ya no están activos no es la misma que una que
+   lo gasta todo en circulación, y el ROAS solo no lo distingue. */
+function _campEstadosHTML(c) {
+  const ARS = fmtCurrency;
+  const pct1 = v => (v).toFixed(1).replace('.', ',') + '%';
+  const ORD = ['Activo', 'Pausado', 'Movido', 'Deshabilitado'];
+  const porEstado = new Map();
+  c.ads.forEach(a => {
+    const k = a.estado || 'Sin estado';
+    const e = porEstado.get(k) || { n: 0, inv: 0 };
+    e.n++; e.inv += a.inv;
+    porEstado.set(k, e);
+  });
+  if (porEstado.size <= 1) return '';
+  const filas = [...porEstado.entries()].sort((x, y) => {
+    const ix = ORD.indexOf(x[0]), iy = ORD.indexOf(y[0]);
+    return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy);
+  });
+  return '<div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;padding-top:10px;'
+    + 'border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);">'
+    + '<span style="letter-spacing:1px;text-transform:uppercase;">Presupuesto por estado</span>'
+    + filas.map(([est, e]) => _adEstadoChip(est)
+        + ' <span style="color:var(--text)">' + e.n + '</span> · ' + ARS(e.inv)
+        + ' (' + pct1(c.inv > 0 ? e.inv / c.inv * 100 : 0) + ')').join('')
+    + '</div>';
+}
+
+/* Vista "por anuncio": la que responde qué ad se come el presupuesto. */
+function _campPorAdHTML(c) {
+  const ARS = fmtCurrency;
+  const pct1 = v => (v).toFixed(1).replace('.', ',') + '%';
+  /* CTR y CVR viven por debajo del 1% en Mercado Ads: con un decimal la columna
+     entera queda en "0,0%" y deja de servir para comparar anuncios. */
+  const pct2 = v => (v).toFixed(2).replace('.', ',') + '%';
+  const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  if (!c.ads.length) return '<div class="empty">Esta campaña no registra anuncios en el período</div>';
+
+  const th = (t, tip, r) => '<th style="text-align:' + (r ? 'right' : 'left') + ';padding:7px 9px;font-family:var(--mono);'
+    + 'font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;'
+    + (tip ? 'cursor:help;' : '') + '"' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + t + '</th>';
+
+  /* El umbral de alerta se explica en el encabezado: sin eso, una fila en rojo
+     en una campaña y no en otra con el mismo porcentaje parece un error. */
+  const tipPeso = 'Inversión del anuncio ÷ inversión total de la campaña, incluidos los anuncios no activos. '
+    + 'Es la parte del presupuesto que se lleva este ad.'
+    + (c.nVendedores > 0
+        ? ' En esta campaña, los ' + c.nVendedores + ' anuncios que venden consumen en promedio ' + pct1(c.refPeso)
+          + ' cada uno: un anuncio sin ventas que consume eso o más queda marcado en rojo.'
+        : ' En esta campaña no vende ningún anuncio, así que la referencia es el reparto parejo entre los que gastan ('
+          + pct1(c.refPeso) + ').');
+
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:11px;"><thead>'
+    + '<tr style="border-bottom:1px solid var(--border);">'
+    + th('# Publicación')
+    + th('Estado', 'Estado del anuncio DENTRO de esta campaña. Los activos van primero: son los únicos sobre los que se puede accionar la puja.')
+    + th('Título')
+    + th('Inversión', 'Inversión del anuncio en el período, prorrateada al filtro de fechas', true)
+    + th('% de la campaña', tipPeso, true)
+    + th('CTR', 'Clics ÷ impresiones', true)
+    + th('CVR', 'Ventas por publicidad ÷ clics', true)
+    + th('Ventas Ads', 'Ventas por publicidad: directas + indirectas', true)
+    + th('Ingresos', 'Ingresos atribuidos al anuncio. El tooltip de cada celda muestra qué parte de los ingresos de la campaña aporta, para contrastarla con lo que consume.', true)
+    + th('ROAS', 'Ingresos ÷ inversión', true)
+    + '</tr></thead><tbody>';
+
+  let corteHecho = false;
+  c.ads.forEach(a => {
+    /* Separador entre lo accionable y lo que ya no admite decisión de puja.
+       Los no activos se muestran igual: es donde fue el resto del presupuesto
+       y sin ellos los porcentajes no cierran contra el total de la campaña. */
+    if (!a.activo && !corteHecho && c.activos.length) {
+      corteHecho = true;
+      h += '<tr><td colspan="10" style="padding:6px 9px;background:var(--surface2);font-family:var(--mono);'
+        + 'font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);">'
+        + '▼ Sin acción posible sobre la puja · ' + ARS(c.invOtros) + ' ('
+        + pct1(c.inv > 0 ? c.invOtros / c.inv * 100 : 0) + ' del presupuesto de la campaña)</td></tr>';
+    }
+
+    const pesoClr = a.quema ? 'var(--danger)' : (a.vendio ? 'var(--text)' : 'var(--warn)');
+    const roasClr = a.inv <= 0 ? 'var(--muted)' : a.roas >= 5 ? 'var(--ok)' : a.roas >= 2 ? 'var(--warn)' : 'var(--danger)';
+    const td = (v, clr, extra, tip) => '<td style="padding:7px 9px;text-align:right;font-family:var(--mono);font-size:11px;color:'
+      + (clr || 'var(--text)') + ';' + (extra || '') + (tip ? 'cursor:help;' : '') + '"'
+      + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + v + '</td>';
+
+    /* El aporte a los ingresos es la contracara del consumo de presupuesto:
+       verlos juntos es lo que convierte la tabla en una decisión. Un anuncio
+       que consume 26,5% y aporta 48,4% financia al resto; uno que consume 13%
+       y aporta 0% lo está drenando. */
+    const tipIng = a.ing > 0
+      ? 'Aporta ' + pct1(a.aporte) + ' de los ingresos de la campaña y consume ' + pct1(a.peso)
+        + ' del presupuesto.' + (a.aporte >= a.peso
+            ? ' Aporta más de lo que consume: sostiene al resto de la campaña.'
+            : ' Consume más de lo que aporta: se está financiando con el resto de la campaña.')
+      : 'No tiene ingresos atribuidos y consume ' + pct1(a.peso) + ' del presupuesto de la campaña.';
+
+    const tipFila = a.quema
+      ? 'ALERTA: consume ' + pct1(a.peso) + ' del presupuesto sin una sola venta atribuida, '
+        + (c.nVendedores > 0
+            ? 'cuando los anuncios que SÍ venden consumen en promedio ' + pct1(c.refPeso) + ' cada uno. '
+              + 'Está ocupando el lugar de uno que rinde.'
+            : 'y en esta campaña no vende ningún anuncio: el reparto parejo sería ' + pct1(c.refPeso) + '.')
+        + (a.activo ? '' : ' Ya no está activo, así que el gasto es histórico del período.')
+      : '';
+
+    h += '<tr style="border-bottom:1px solid var(--border);'
+      + (a.quema ? 'background:rgba(248,113,113,.05);' : '')
+      + (a.activo ? '' : 'opacity:.62;') + '"'
+      + (tipFila ? ' title="' + esc(tipFila) + '"' : '') + '>'
+      + '<td style="padding:7px 9px;font-family:var(--mono);font-size:11px;color:var(--text);white-space:nowrap;">'
+        + idWithTitle(a.id) + (a.quema ? ' <span style="color:var(--danger);font-size:10px;" title="Consume presupuesto sin ventas">▲</span>' : '') + '</td>'
+      + '<td style="padding:7px 9px;white-space:nowrap;">' + _adEstadoChip(a.estado) + '</td>'
+      + '<td style="padding:7px 9px;font-size:10px;color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'
+        + esc(a.titulo) + '">' + esc(String(a.titulo || '—').slice(0, 60)) + '</td>'
+      + td(a.inv > 0 ? ARS(a.inv) : '—', a.inv > 0 ? 'var(--warn)' : 'var(--muted)')
+      + td(a.inv > 0 ? pct1(a.peso) : '—', pesoClr, 'font-weight:700;', tipPeso)
+      + td(a.impr > 0 ? pct2(a.ctr) : '—', a.ctr >= 1 ? 'var(--ok)' : 'var(--muted)')
+      + td(a.clics > 0 ? pct2(a.cvr) : '—', a.cvr >= 2 ? 'var(--ok)' : 'var(--muted)')
+      + td(a.vpub > 0 ? NUM(Math.round(a.vpub)) : '—', a.vpub > 0 ? 'var(--text)' : 'var(--muted)',
+           '', a.vpub > 0 ? 'Directas ' + NUM(Math.round(a.vDir)) + ' · Indirectas ' + NUM(Math.round(a.vInd)) : '')
+      + td(a.ing > 0 ? ARS(a.ing) : '—', a.ing > 0 ? 'var(--ok)' : 'var(--muted)', '', tipIng)
+      + td(a.inv > 0 ? a.roas.toFixed(2) + 'x' : '—', roasClr)
+      + '</tr>';
+  });
+
+  h += '</tbody></table>';
+
+  const notas = [];
+  if (c.quemaActivos.length) {
+    notas.push('<span style="color:var(--danger)">▲ ' + c.quemaActivos.length + ' anuncio'
+      + (c.quemaActivos.length > 1 ? 's activos consumen ' : ' activo consume ') + ARS(c.invQuemaActivos)
+      + ' sin una sola venta atribuida</span>, tanto o más que el promedio de los que sí venden en esta campaña ('
+      + pct1(c.refPeso) + ' del presupuesto cada uno). Es gasto que sigue corriendo: se puede frenar hoy.');
+  }
+  if (c.quema.length > c.quemaActivos.length) {
+    const _n = c.quema.length - c.quemaActivos.length;
+    notas.push('▲ Otros ' + _n + ' anuncio' + (_n > 1 ? 's' : '') + ' consumieron '
+      + ARS(c.invQuema - c.invQuemaActivos) + ' sin ventas pero ya no están activos: el gasto es histórico '
+      + 'del período y no hay nada que frenar.');
+  }
+  if (c.activos.length < c.nAds) {
+    notas.push((c.nAds - c.activos.length) + ' de ' + c.nAds + ' anuncios no están activos y suman '
+      + ARS(c.invOtros) + ' del presupuesto. Se listan igual, al final y atenuados, porque es plata gastada '
+      + 'de esta campaña y sin ellos los porcentajes no cerrarían contra el total.');
+  }
+  if (notas.length) {
+    h += '<div style="font-size:10px;color:var(--muted);padding:9px 2px 0;line-height:1.7;">' + notas.join('<br>') + '</div>';
+  }
+  return h;
+}
+
+/* Vista "consolidado": la campaña como unidad de decisión. */
+function _campConsolidadoHTML(c, pesoCuenta) {
+  const ARS = fmtCurrency;
+  const pct1 = v => (v).toFixed(1).replace('.', ',') + '%';
+  const pct2 = v => (v).toFixed(2).replace('.', ',') + '%';
+  const tile = (lab, val, sub, clr, tip) =>
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:11px 13px;'
+    + (tip ? 'cursor:help;' : '') + '"' + (tip ? ' title="' + String(tip).replace(/"/g, '&quot;') + '"' : '') + '>'
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;">' + lab + '</div>'
+    + '<div style="font-family:\'Syne\',sans-serif;font-size:19px;font-weight:700;color:' + (clr || 'var(--text)') + ';line-height:1.2;margin-top:4px;">' + val + '</div>'
+    + (sub ? '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px;">' + sub + '</div>' : '')
+    + '</div>';
+
+  const roasClr = c.roas >= 5 ? 'var(--ok)' : c.roas >= 2 ? 'var(--warn)' : 'var(--danger)';
+  const acosClr = c.acos > 30 ? 'var(--danger)' : c.acos > 15 ? 'var(--warn)' : 'var(--ok)';
+
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">'
+    + tile('Inversión total', ARS(c.inv), pct1(pesoCuenta) + ' del gasto de la cuenta', 'var(--warn)',
+        'Suma de la inversión de todos los anuncios de la campaña —activos y no activos— prorrateada al filtro de fechas.')
+    + tile('Ingresos totales', ARS(c.ing), 'Atribuidos por el reporte de anuncios', 'var(--ok)',
+        'Ingresos que Mercado Ads atribuye a los anuncios de esta campaña. No es la facturación total de esas publicaciones.')
+    + tile('Ventas totales', NUM(Math.round(c.vpub)),
+        'Directas ' + NUM(Math.round(c.vDir)) + ' · Indirectas ' + NUM(Math.round(c.vInd)), 'var(--text)',
+        'Ventas por publicidad: directas (el comprador clickeó el anuncio de ESTE producto) más indirectas (llegó por el anuncio de otro producto de la campaña).')
+    + tile('ROAS', c.inv > 0 ? c.roas.toFixed(2) + 'x' : '—', 'Ingresos ÷ inversión', roasClr)
+    + tile('ACOS', c.ing > 0 ? pct1(c.acos) : '—', 'Inversión ÷ ingresos', acosClr)
+    + tile('CTR', c.impr > 0 ? pct2(c.ctr) : '—', NUM(Math.round(c.clics)) + ' clics · ' + NUM(Math.round(c.impr)) + ' impresiones', 'var(--text)')
+    + tile('CVR', c.clics > 0 ? pct2(c.cvr) : '—', 'Ventas ÷ clics', 'var(--text)')
+    + tile('CPC', c.clics > 0 ? ARS(c.cpc) : '—', 'Inversión ÷ clics', 'var(--text)')
+    + tile('Anuncios activos', NUM(c.activos.length),
+        'de ' + NUM(c.nAds) + ' · ' + ARS(c.invActivos) + ' de gasto accionable',
+        c.activos.length ? 'var(--accent)' : 'var(--muted)',
+        'Anuncios en circulación, los únicos sobre los que se puede accionar la puja. El resto (pausados, movidos o '
+        + 'deshabilitados) sigue contando en la inversión total porque es plata gastada en el período, y se lista al '
+        + 'final de la vista POR AD.')
+    + tile('Sin retorno · activos', NUM(c.quemaActivos.length),
+        c.quemaActivos.length
+          ? ARS(c.invQuemaActivos) + ' que sigue corriendo'
+            + (c.quema.length > c.quemaActivos.length
+                ? ' · ' + (c.quema.length - c.quemaActivos.length) + ' más ya no activos' : '')
+          : (c.quema.length ? c.quema.length + ' sin retorno, pero ninguno activo' : 'todo el gasto activo tiene ventas'),
+        c.quemaActivos.length ? 'var(--danger)' : 'var(--ok)',
+        'Anuncios que consumen tanto o más presupuesto que el promedio de los que SÍ venden en esta campaña ('
+        + pct1(c.refPeso) + ' cada uno) sin una sola venta atribuida. El umbral sale de la propia campaña, no de un '
+        + 'porcentaje fijo: un 10% no significa lo mismo en una campaña de 5 anuncios que en una de 168.')
+    + '</div>'
+    + _campEstadosHTML(c);
+}
+
 function renderNEXUS(skuMap, useML, idLabel) {
   const ARS = fmtCurrency;
   const hasAnyAds = Object.keys(ADS_DATA).length > 0;
@@ -12573,6 +13474,46 @@ function renderNEXUS(skuMap, useML, idLabel) {
     }
   }
 
+  /* ── Campañas desplegables · va después de los paneles de pauta y antes de
+        Inversión Sin Retorno: primero el diagnóstico agregado, después el
+        detalle por campaña, y al final las acciones sobre lo que no rinde. ── */
+  if (typeof ADS_CAMPANAS !== 'undefined' && ADS_CAMPANAS.loaded) {
+    const _camps = _campanasAgg();
+    if (_camps.length) {
+      const _invT = _camps.reduce((t, c) => t + c.inv, 0);
+      const _act = _camps.reduce((t, c) => t + c.activos.length, 0);
+      const _qN = _camps.reduce((t, c) => t + c.quemaActivos.length, 0);
+      const _qInv = _camps.reduce((t, c) => t + c.invQuemaActivos, 0);
+      const d = document.createElement('div');
+      d.className = 'panel grid-full';
+      d.setAttribute('data-nexus-panel', '1');
+      const base = 'padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;cursor:pointer;font-family:var(--mono);';
+      const on  = 'background:rgba(168,85,247,.25);color:var(--accent);border:1px solid var(--accent);';
+      const off = 'background:transparent;color:var(--muted);border:1px solid var(--border);';
+      d.innerHTML = '<div class="panel-header" style="position:relative;">'
+        + '<span class="panel-title">Campañas · detalle por anuncio</span>'
+        + '<span class="panel-subtitle">' + _camps.length + ' campaña' + (_camps.length === 1 ? '' : 's')
+          + ' · ' + _act + ' anuncios activos · ' + fmtCurrency(_invT) + ' de inversión'
+          + (_qN
+              ? ' · <span style="color:var(--danger)" title="Anuncios ACTIVOS que consumen tanto o más presupuesto que el promedio de los que sí venden en su propia campaña, sin una sola venta atribuida. El umbral sale de cada campaña, no de un porcentaje fijo. Es gasto que sigue corriendo: los que ya están pausados se marcan igual, pero no entran en este número.">▲ '
+                + _qN + ' activos sin retorno · ' + fmtCurrency(_qInv) + '</span>'
+              : '')
+          + (_camps.sinActividad
+              ? ' · <span title="Campañas que figuran en el reporte pero no registran inversión ni un solo clic en el período. No se listan porque no hay nada que leer en ellas.">'
+                + _camps.sinActividad + ' sin actividad, ocultas</span>'
+              : '')
+          + ' · <a onclick="expandirTodasCampanas(true)" style="color:var(--accent2);cursor:pointer;text-decoration:underline">desplegar todas</a>'
+          + ' · <a onclick="expandirTodasCampanas(false)" style="color:var(--accent2);cursor:pointer;text-decoration:underline">contraer</a>'
+          + ' · Calculado sobre el reporte por anuncios</span>'
+        + '<div style="position:absolute;top:14px;right:16px;display:flex;">'
+        + '<button id="ads-camp-btn-ad" onclick="setAdsCampView(\'ad\')" style="' + base + 'border-radius:4px 0 0 4px;' + (ADS_CAMP_VIEW === 'ad' ? on : off) + '">POR AD</button>'
+        + '<button id="ads-camp-btn-cons" onclick="setAdsCampView(\'consolidado\')" style="' + base + 'border-radius:0 4px 4px 0;' + (ADS_CAMP_VIEW === 'consolidado' ? on : off) + '">CONSOLIDADO</button>'
+        + '</div></div>'
+        + '<div class="panel-body" id="ads-camp-body">' + _campanasBodyHTML() + '</div>';
+      pubGrid.appendChild(d);
+    }
+  }
+
   {
     const zeroReturnArr = [];
     const allSkuArr = Object.values(skuMap);
@@ -12614,7 +13555,11 @@ function renderNEXUS(skuMap, useML, idLabel) {
         accionDesc = `Inversión baja (${PCT(acosProyectado)} del precio). Producto reciente en campaña. Dar más tiempo.`;
       }
 
-      zeroReturnArr.push({ s, inv, aov, acosProyectado, accion, accionClass, accionDesc, sinVentaAlguna: false, pubLiqSales });
+      zeroReturnArr.push({ s, inv, aov, acosProyectado, accion, accionClass, accionDesc, sinVentaAlguna: false, pubLiqSales,
+        /* Estado y campaña del anuncio: pausar lo que ya está pausado no es una
+           acción, y sin el estado la tabla mandaba a revisar publicaciones sobre
+           las que no hay nada que tocar. */
+        estado: (enrich.ads && enrich.ads.estado) || '', campana: (enrich.ads && enrich.ads.campana) || '' });
     }
 
     /* Publicaciones con inversión que NO figuran en el reporte de ventas.
@@ -12649,14 +13594,24 @@ function renderNEXUS(skuMap, useML, idLabel) {
           accion: 'SIN VENTAS', accionClass: 'zr-row-danger',
           accionDesc: 'No registra ninguna venta en el período (ni atribuida a Ads ni orgánica). '
             + 'La inversión es pérdida completa. Verificá que el período del reporte de Ads coincida con el filtro de fechas antes de decidir.'
-            + (a.estado ? ' Estado del anuncio: ' + a.estado + '.' : ''),
+            + (a.estado === 'Activo'
+                ? ' El anuncio SIGUE ACTIVO: el gasto no se detuvo.'
+                : a.estado ? ' El anuncio ya no está activo (' + a.estado + '): el gasto es histórico del período y no hay nada que frenar.' : ''),
           sinVentaAlguna: true, estado: a.estado || '', campana: a.campana || ''
         });
       });
     }
 
     const orden = { 'SIN VENTAS': 0, 'PAUSAR ADS': 1, 'REVISAR': 2, 'SOPORTAR': 3, 'SIN PRECIO': 4 };
+    /* Los ACTIVOS primero, siempre. Un anuncio pausado o deshabilitado con
+       inversión sin retorno es historia del período: el gasto ya ocurrió y no
+       hay puja que tocar. Mezclarlos con los activos hacía que la primera
+       pantalla del panel —la que el consultor mira— se llenara de filas sobre
+       las que no se puede accionar nada. */
+    const _viva = z => (z.estado === 'Activo' ? 0 : z.estado === 'Pausado' ? 1 : 2);
     zeroReturnArr.sort((a, b) => {
+      const va = _viva(a) - _viva(b);
+      if (va !== 0) return va;
       const od = (orden[a.accion] || 0) - (orden[b.accion] || 0);
       return od !== 0 ? od : b.inv - a.inv;
     });
@@ -12669,6 +13624,9 @@ function renderNEXUS(skuMap, useML, idLabel) {
         true
       );
     } else {
+      const activosZR     = zeroReturnArr.filter(z => z.estado === 'Activo');
+      const invActivosZR  = activosZR.reduce((acc, z) => acc + z.inv, 0);
+      const noActivosZR   = zeroReturnArr.length - activosZR.length;
       const pausarCount   = zeroReturnArr.filter(z => z.accion === 'PAUSAR ADS').length;
       const revisarCount  = zeroReturnArr.filter(z => z.accion === 'REVISAR').length;
       const soportarCount = zeroReturnArr.filter(z => z.accion === 'SOPORTAR').length;
@@ -12678,6 +13636,13 @@ function renderNEXUS(skuMap, useML, idLabel) {
       const sinVentaInv   = zeroReturnArr.filter(z => z.sinVentaAlguna).reduce((a,z)=>a+z.inv,0);
 
       let alertsHtml = '';
+      /* El primer número que tiene que ver el consultor es el que puede frenar
+         hoy: lo que sigue gastando. El resto es gasto ya consumado. */
+      if (activosZR.length > 0) {
+        alertsHtml += `<div class="zr-alert"><span class="zr-icon">🔴</span><div class="zr-body"><div class="zr-title">SIGUE GASTANDO · ${activosZR.length} ${activosZR.length>1?'anuncios activos':'anuncio activo'} sin retorno</div><div class="zr-desc">${fmtCurrency(invActivosZR)} de inversión en anuncios que <b>están en circulación ahora mismo</b> y no tienen ventas atribuidas. Son los únicos sobre los que pausar o ajustar la puja cambia algo: van primero en la tabla.${noActivosZR>0?` Los otros ${noActivosZR} ya están pausados, movidos o deshabilitados y figuran atenuados al final: su gasto es histórico del período.`:''}</div></div></div>`;
+      } else if (noActivosZR > 0) {
+        alertsHtml += `<div class="zr-alert zr-alert-ok"><span class="zr-icon">✓</span><div class="zr-body"><div class="zr-title zr-title-ok">Ningún anuncio activo sin retorno</div><div class="zr-desc">Las ${noActivosZR} publicaciones del listado ya están pausadas, movidas o deshabilitadas: el gasto es histórico del período y no hay nada que frenar.</div></div></div>`;
+      }
       if (sinVentaCount > 0) {
         alertsHtml += `<div class="zr-alert"><span class="zr-icon">⛔</span><div class="zr-body"><div class="zr-title">PÉRDIDA COMPLETA · ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin NINGUNA venta</div><div class="zr-desc">${fmtCurrency(sinVentaInv)} de inversión en publicaciones que no vendieron nada en el período, ni por Ads ni de forma orgánica. Antes de pausar, verificá que el período del reporte de Ads coincida con el filtro de fechas: si el reporte de ventas cubre una ventana más corta, algunas pueden haber vendido fuera de ella.</div></div></div>`;
       }
@@ -12694,6 +13659,7 @@ function renderNEXUS(skuMap, useML, idLabel) {
       let html = alertsHtml;
       html += `<table><thead><tr>`
         + `<th>${idLabel}</th>`
+        + `<th>Estado</th>`
         + `<th class="r">Inversión ADS</th>`
         + `<th class="r">AOV / Precio prom.</th>`
         + `<th class="r">ACOS proy. (1 venta)</th>`
@@ -12710,13 +13676,15 @@ function renderNEXUS(skuMap, useML, idLabel) {
             : z.accion === 'SOPORTAR'
               ? `<span class="tag tag-ok">${z.accion}</span>`
               : `<span class="tag tag-muted">${z.accion}</span>`;
-        html += `<tr class="${z.accionClass}" title="${z.accionDesc}">`
+        const _noAccionable = z.estado && z.estado !== 'Activo';
+        html += `<tr class="${z.accionClass}" title="${z.accionDesc}"${_noAccionable ? ' style="opacity:.62"' : ''}>`
           + `<td>${idWithTitle(z.s.id)}</td>`
+          + `<td>${_adEstadoChip(z.estado)}</td>`
           + `<td class="num" style="color:var(--warn)">${ARS(z.inv)}</td>`
           + `<td class="num">${z.aov > 0 ? ARS(z.aov) : '<span style="color:var(--muted)">—</span>'}</td>`
           + `<td class="num" style="color:${acosClr}">${z.acosProyectado !== null ? PCT(z.acosProyectado) : '—'}</td>`
           + `<td style="font-size:11px;color:var(--muted)">${
-              z.sinVentaAlguna ? 'Sin ninguna venta' + (z.estado ? ' · ' + z.estado : '')
+              z.sinVentaAlguna ? 'Sin ninguna venta'
               : (z.pubLiqSales > 0
                  ? `<span style="cursor:help" title="El reporte de ventas marcó ${fmtCurrency(z.pubLiqSales)} con el flag Venta por publicidad, pero el reporte de Anuncios no le atribuye ingresos a esta publicación. Suele indicar venta indirecta: el comprador llegó por el anuncio de otro producto. Su propia pauta no registra retorno.">Ventas por sesión de Ads, sin atribución propia</span>`
                  : 'Vendió, pero sin venta atribuida a Ads')
@@ -12729,7 +13697,8 @@ function renderNEXUS(skuMap, useML, idLabel) {
       panelTo(pubGrid,
         `⚠ Inversión Sin Retorno · ${zeroReturnArr.length} pub${zeroReturnArr.length>1?'s':''}`,
         `Inversión total expuesta: ${fmtCurrency(totalInv)}` +
-        (sinVentaCount > 0 ? ` · de la cual ${fmtCurrency(sinVentaInv)} en ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin ninguna venta` : '') +
+        (activosZR.length > 0 ? ` · ${fmtCurrency(invActivosZR)} en ${activosZR.length} ${activosZR.length>1?'anuncios activos':'anuncio activo'} (lo único frenable hoy)` : '') +
+        (sinVentaCount > 0 ? ` · ${fmtCurrency(sinVentaInv)} en ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin ninguna venta` : '') +
         ` · ACOS proyectado = inversión ÷ precio promedio`,
         html,
         true
