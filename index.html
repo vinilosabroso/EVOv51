@@ -1120,6 +1120,7 @@ const _GLOSARIO = [
   ['Período con reporte de Ads','Se alinea solo a la ventana del reporte','Al cargar ventas o Ads y al generar el dashboard, el filtro de fechas pasa a la ventana del reporte de Mercado Ads, recortada a las fechas que tienen ventas. Es el único rango con datos de pauta, y el COGS del template refleja costos vigentes, no los de meses atrás. Medido en una cuenta real con 6 meses de ventas y 30 días de Ads: el margen real final daba 37,1% sobre todo el período y 31,2% en la ventana. Después de generar, el filtro se puede mover a mano.'],
   ['Pauta sin ventas','Se resta aunque la publicación no haya vendido','La inversión en publicaciones que no vendieron en el período es gasto real, pero no tiene fila en el análisis por publicación y calcNEXUS no la ve. Se resta del resultado en el dashboard, el informe y el export; en el resultado con COGS se imputa en proporción a la facturación con costo cargado. Hasta v51.1 el dashboard la restaba y el informe no: $71.210 de diferencia en el resultado antes de mercadería sobre la misma cuenta.'],
   ['Descuentos y bonificaciones','Suman a lo recibido, netos de IVA','Lo que ML reintegra sobre sus propios cargos. Viene positivo en el reporte y forma parte de la columna Total, así que se suma a lo recibido con el mismo neteo de IVA que los cargos. En carritos se reparte entre los ítems igual que el resto de los importes del paquete. Hasta v51.1 no se computaba.'],
+  ['Columna Envío de la tabla NEXUS','Promedio ponderado por unidad, no suma de tarifas','Una publicación puede despachar parte por Mercado Envíos y parte por cuenta propia, y son dos costos por unidad muy distintos. La columna muestra el costo TOTAL de envío de la publicación dividido por TODAS sus unidades: cada venta salió por un canal o por el otro, nunca por los dos, y el promedio pondera por cuántas unidades fue cada vía. En el tooltip eso aparece partido en dos bloques que responden preguntas distintas: "costo por unidad según por dónde salió" da la tarifa efectiva de cada canal, que son comparables entre sí; "aporte de cada vía al promedio" da lo que cada canal pone en el número de la celda, y esos sí suman. Caso real: 7 unidades, 3 por Mercado Envíos a $7.683 por unidad y 4 por despacho propio a $4.419 netos por unidad; la celda muestra $5.818, que es el costo total ($40.727) sobre 7 unidades. Promediar las dos tarifas de canal sin ponderar, o promediar los dos aportes, se come la mitad del costo logístico.'],
   ['Base del cobro del despacho propio','Una tarifa por ORDEN, no por unidad','El envío propio se paga una vez por orden: una venta de 7 unidades es un viaje del mensajero y una sola tarifa. Está verificado contra la plataforma, que bonifica exactamente igual — sobre 426 órdenes de 3 o más unidades de una cuenta real, todas traen UNA sola bonificación—. Hasta v53.2 EVO cobraba la tarifa por unidad y no había forma de cambiarlo. En una cuenta con 1,29 unidades por orden eso sobreestimaba el envío propio un 29% ($14,2 millones en el período) y hundía a los productos que se compran de a varios: un adhesivo de $5.711 con 3,92 unidades por orden mostraba un costo de envío del 140% de su venta neta —pérdida segura— cuando el real es 41%. No era un problema de presentación: el margen estaba mal y la conclusión también. En un carrito el despacho se reparte entre sus ítems con la misma participación con la que se reparte el resto del paquete, así que un ítem puede tener medio despacho. La base se cambia en la ventana de tarifas de envío propio: elegir "por unidad" tiene sentido sólo si la logística factura por bulto y no por entrega. El reporte no puede decidirlo solo —una orden de 30 zócalos puede ser un viaje o tres bultos— así que la decisión queda declarada y viaja en el snapshot.'],
   ['Zona de cada despacho, declarada por Mercado Libre','El importe que bonifica ES la tarifa del anillo','Hasta v53.1 EVO costeaba todo el despacho propio al promedio ponderado de las cuatro tarifas, con el argumento de que el reporte no dice a qué anillo fue cada venta. Era falso. En cada venta de despacho propio ML paga la tarifa publicada del anillo de destino, y ese importe llega por "Descuentos y bonificaciones" cuando el vendedor ofrece envío gratis o por "Ingresos por envío" cuando lo paga el comprador. Como las tarifas son ocho valores conocidos y están separadas entre sí al menos un 3,4%, el monto identifica la zona sin ambigüedad. Medido sobre un reporte real de 99 ventas Flex: 60 traen uno de los dos importes y el 100% cae exactamente en una tarifa de la tabla. Las que no traen ninguno son ventas bajo el umbral donde el vendedor ofreció envío gratis —ahí ML no bonifica, y está bien— y se resuelven por código postal. Desde v53.2, cada publicación paga las zonas a las que efectivamente despachó: un item que despacha todo a zona lejana deja de costar lo mismo que uno que despacha todo a zona cercana, cuando la tarifa se lleva más del doble. El Resumen declara cuántas unidades resolvió cada vía.'],
   ['Bonificación de envío (despacho propio)','Lo que ML le paga al vendedor por despachar él','En Argentina, cada venta de Envíos Flex recibe una bonificación que viene en la columna "Descuentos y bonificaciones" del reporte de ventas, una línea por venta. En productos de hasta $33.000, usados y publicaciones gratuitas, el comprador paga el envío y el vendedor recibe la tarifa COMPLETA del anillo de destino: $4.990 cercana, $6.990 media, $8.990 lejana, $10.490 muy lejana. En productos nuevos desde $33.000 con envío gratis y reputación verde, recibe el 10%: $499, $699, $899 y $1.049. Medido sobre un reporte real de 99 ventas Flex, el 100% de los importes de esa columna cae exactamente en una de esas tarifas y ninguna venta que no sea Flex trae un peso ahí: la columna ES la bonificación de envío, y su importe dice a qué anillo fue cada venta. Siempre estuvo computada dentro de lo recibido —el margen la contempla desde v51.1— pero hasta v53.0 no tenía dónde verse, así que el despacho propio se leía a tarifa plena. Desde v53.1 el costo que muestran las tarjetas, la columna de envío de la tabla NEXUS y las hojas del export es el NETO: tarifa menos bonificación. Cuando el producto es barato y el destino lejano, el neto puede dar negativo: ML paga más de lo que cuesta el despacho.'],
@@ -1423,7 +1424,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v53.3';
+const EVO_VERSION = 'v53.4';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -14596,65 +14597,88 @@ function buildNexusTable(cache, mode) {
      consolidada responde la pregunta obvia: "¿de dónde sale este costo?". */
   const celdaEnvio = (n, s, mult) => {
     /* El envío de la celda es TODO el envío que absorbe el vendedor: el que
-       informa ML más el propio que sale del template. Mostrar sólo el primero
-       dejaba en $0 a las publicaciones 100% Flex aunque el costo estuviera
-       cargado y descontado del margen: el tooltip lo mostraba y la celda no. */
-    /* El envío propio entra NETO de la bonificación de ML (v53.1): lo que sale
-       del bolsillo del vendedor es la tarifa menos lo que la plataforma le
-       reintegra por despachar él. La bonificación ya estaba dentro del margen
-       —viaja en la columna Descuentos— pero la celda mostraba la tarifa plena,
-       así que el costo logístico por unidad se leía más caro que el real y el
-       piso de ticket calculado sobre él quedaba alto. Las tres cifras van en el
-       tooltip. */
+       informa ML más el propio, NETO de la bonificación de la plataforma.
+
+       ES UN PROMEDIO PONDERADO, NO UNA SUMA DE TARIFAS. Los dos componentes ya
+       vienen divididos por las unidades TOTALES de la publicación, no por las de
+       su canal, así que sumarlos da el costo total de envío por unidad vendida.
+       Medido sobre un caso real: 7 unidades, 3 por ME2 con $23.050 de costo y 4
+       por despacho propio con $19.553 menos $1.876 de bonificación; la celda
+       muestra $5.818, que es (23.050 + 19.553 − 1.876) ÷ 7. Promediar los dos
+       aportes como si fueran tarifas —(3.293 + 2.793) ÷ 2 = $3.043— se comería
+       la mitad del costo logístico de la publicación.
+       El tooltip lo decía mal: rotulaba los aportes al promedio como si fueran
+       la tarifa de cada canal, y así leído parece una suma indebida. Ahora el
+       desglose da las dos cosas por separado —el costo por unidad DE CADA
+       CANAL, que sí son comparables entre sí, y el aporte de cada uno al
+       promedio, que es lo que suma—. */
     const val = ((n.envioUnit || 0) + (n.flexNetoUnitEfectivo != null ? n.flexNetoUnitEfectivo : (n.flexUnitEfectivo || 0))) * mult;
     const base = mult === 1 ? ((n.precioProm || 0) * (1 - (n.factorIva || 0))) : (n.ventaNeta || 0);
+    const uTot = s && s.unidades > 0 ? s.unidades : 0;
+    const nf = (typeof fiscalNetFactor === 'function') ? fiscalNetFactor() : 1;
+    const num1 = x => (Math.abs(x - Math.round(x)) < 0.05 ? String(Math.round(x)) : x.toFixed(1).replace('.', ','));
     const pc = s && s.porCanal;
     const partes = [];
     if (pc) {
       CANALES_ENVIO.forEach(k => {
         const C = pc[k]; if (!C || !(C.unidades > 0)) return;
-        const abs = Math.max(0, -((C.costo_envio || 0) + (C.ing_envio || 0)));
         const lab = k === 'FLEX' ? 'Flex / propio' : k;
         if (k === 'FLEX') {
-          const fu = (n.flexUnit || 0);
           const bo = (n.bonifFlex || 0);
           const nd = (n.flexDespachos || 0);
-          partes.push('  ' + lab + ': ' + C.unidades + ' u en '
-            + (nd > 0 ? (Math.abs(nd - Math.round(nd)) < 0.01 ? Math.round(nd) : nd.toFixed(1).replace('.', ',')) + ' despacho' + (nd >= 1.5 ? 's' : '') : 'despacho propio') + ' · '
-            + (fu > 0 ? ARS(fu * C.unidades)
-                 + (nd > 0 ? ' (' + ARS(fu * C.unidades / nd) + ' por despacho, ' + ARS(fu) + '/u)' : ' (' + ARS(fu) + '/u)')
-               : 'costo no informado por ML')
-            + (bo > 0 ? ' − ' + ARS(bo) + ' de bonificación = ' + ARS(fu * C.unidades - bo) : ''));
+          const totFx = (n.flexTotal || 0) - bo;               // lo que sale del bolsillo
+          partes.push('  ' + lab + ': ' + C.unidades + ' u'
+            + (nd > 0 ? ' en ' + num1(nd) + ' despacho' + (nd >= 1.5 ? 's' : '') : '')
+            + (n.flexTotal > 0
+                ? ' · ' + ARS(totFx / C.unidades) + ' por unidad despachada así · total ' + ARS(totFx)
+                : ' · costo no informado por ML'));
+          if (n.flexTotal > 0) {
+            partes.push('      tarifa ' + ARS(nd > 0 ? n.flexTotal / nd : n.flexUnit) + ' por despacho'
+              + (bo > 0 ? ' − ' + ARS(bo) + ' de bonificación de la plataforma' : ''));
+          }
           /* Reparto por anillo de ESTA publicación (v53.2). El promedio de la
              celda esconde que un item despachó todo a zona lejana y otro todo a
              zona cercana pagando tarifas que difieren en más del doble. */
-          if (typeof _flexZonasDeItem === 'function' && fu > 0) {
+          if (typeof _flexZonasDeItem === 'function' && n.flexTotal > 0) {
             const dz = _flexZonasDeItem(s);
             _ZONA_ORDEN.forEach(z => {
               const uz = dz.porZona[z].u; if (!(uz > 0)) return;
               const tz = FLEX_ZONAS[z] || 0;
               const nz = dz.porZona[z].desp || 0;
-              const base = FLEX_MODO === 'UNIDAD' ? uz : nz;
+              const bz = FLEX_MODO === 'UNIDAD' ? uz : nz;
               partes.push('      ' + _ZONA_LABEL[z] + ': ' + uz + ' u'
-                + (nz > 0 ? ' en ' + (Math.abs(nz - Math.round(nz)) < 0.01 ? Math.round(nz) : nz.toFixed(1).replace('.', ',')) + ' despacho' + (nz >= 1.5 ? 's' : '') : '')
-                + (tz > 0 && base > 0 ? ' · ' + ARS(tz) + ' × ' + (Math.abs(base - Math.round(base)) < 0.01 ? Math.round(base) : base.toFixed(1).replace('.', ',')) + ' = ' + ARS(tz * base) : '')
+                + (nz > 0 ? ' en ' + num1(nz) + ' despacho' + (nz >= 1.5 ? 's' : '') : '')
+                + (tz > 0 && bz > 0 ? ' · ' + ARS(tz) + ' × ' + num1(bz) + ' = ' + ARS(tz * bz) : '')
                 + (dz.porZona[z].uML > 0 ? ' · ' + dz.porZona[z].uML + ' u con zona declarada por ML' : ''));
             });
             if (dz.sinZona.u > 0) partes.push('      sin zona resuelta: ' + dz.sinZona.u + ' u · pagan el promedio');
           }
         } else {
-          partes.push('  ' + lab + ': ' + C.unidades + ' u · ' + ARS(abs * (typeof fiscalNetFactor === 'function' ? fiscalNetFactor() : 1)));
+          const absC = (C.envioRealSeller || 0) * nf;
+          partes.push('  ' + lab + ': ' + C.unidades + ' u · '
+            + ARS(absC / C.unidades) + ' por unidad despachada así · total ' + ARS(absC));
         }
       });
     }
     const _mlPart = (n.envioUnit || 0) * mult, _fxPart = (n.flexUnitEfectivo || 0) * mult;
     const _boPart = (n.bonifFlexUnit || 0) * mult;
-    const ttl = 'Envío total absorbido: ' + ARS(val) + (base > 0 ? ' (' + PCT(val / base) + ' de la venta neta)' : '')
-      + (_fxPart > 0 ? '\n  informado por ML: ' + ARS(_mlPart) + '\n  despacho propio (tarifa): ' + ARS(_fxPart)
-           + (_boPart > 0 ? '\n  bonificación de la plataforma: −' + ARS(_boPart) + '\n  despacho propio neto: ' + ARS(_fxPart - _boPart) : '') : '')
-      + (partes.length ? '\n\nDesglose por canal de despacho:\n' + partes.join('\n') : '')
-      + (n.flexUnit > 0 ? '\n\nLa tarifa de despacho propio sale del template de costo de envío propio o de las tarifas por zona.' : '')
-      + (_boPart > 0 ? '\n\nLa bonificación es lo que Mercado Libre le paga al vendedor por despachar él: viene venta por venta en la columna Descuentos y bonificaciones del reporte, y su importe es la tarifa del anillo al que fue esa venta. Ya estaba adentro del margen; acá se muestra para que el costo logístico no se lea a tarifa plena.' : '')
+    const _fxNeto = _fxPart - _boPart;
+    const esUnit = mult === 1;
+    const ttl = (esUnit ? 'Envío por unidad: ' : 'Envío del período: ') + ARS(val)
+      + (base > 0 ? ' (' + PCT(val / base) + ' de la venta neta)' : '')
+      + (esUnit && uTot > 0
+          ? '\nEs el costo total de envío de la publicación dividido por sus ' + uTot + ' unidades: un promedio ponderado, no la suma de dos tarifas. Una venta sale por un canal o por el otro, nunca por los dos.'
+          : '')
+      + (partes.length ? '\n\nCosto por unidad según por dónde salió:\n' + partes.join('\n') : '')
+      + (_fxPart > 0 && _mlPart > 0
+          ? '\n\nAporte de cada vía al promedio de ' + ARS(val) + ':'
+            + '\n  informado por ML: ' + ARS(_mlPart)
+            + '\n  despacho propio: ' + ARS(_fxNeto) + (_boPart > 0 ? ' (tarifa ' + ARS(_fxPart) + ' − bonificación ' + ARS(_boPart) + ')' : '')
+          : (_fxPart > 0 && _boPart > 0
+              ? '\n\nTarifa de despacho propio ' + ARS(_fxPart) + ' − bonificación de la plataforma ' + ARS(_boPart) + ' = ' + ARS(_fxNeto)
+              : ''))
+      + (n.flexTotal > 0 ? '\n\nLa tarifa de despacho propio sale del template de costo de envío propio o de las tarifas por zona, y se paga una vez por orden.' : '')
+      + (_boPart > 0 ? '\n\nLa bonificación es lo que Mercado Libre le paga al vendedor por despachar él: viene venta por venta en la columna Descuentos y bonificaciones del reporte, y su importe es la tarifa del anillo al que fue esa venta.' : '')
       + (n.envioSinCosto ? '\n\nHay ventas por despacho propio sin costo cargado: este número está incompleto.' : '');
     return '<td class="num" style="color:' + (n.envioSinCosto ? 'var(--warn)' : 'var(--muted)')
       + ';cursor:help;border-bottom:1px dotted rgba(255,255,255,.15)" title="'
