@@ -1120,6 +1120,7 @@ const _GLOSARIO = [
   ['Período con reporte de Ads','Se alinea solo a la ventana del reporte','Al cargar ventas o Ads y al generar el dashboard, el filtro de fechas pasa a la ventana del reporte de Mercado Ads, recortada a las fechas que tienen ventas. Es el único rango con datos de pauta, y el COGS del template refleja costos vigentes, no los de meses atrás. Medido en una cuenta real con 6 meses de ventas y 30 días de Ads: el margen real final daba 37,1% sobre todo el período y 31,2% en la ventana. Después de generar, el filtro se puede mover a mano.'],
   ['Pauta sin ventas','Se resta aunque la publicación no haya vendido','La inversión en publicaciones que no vendieron en el período es gasto real, pero no tiene fila en el análisis por publicación y calcNEXUS no la ve. Se resta del resultado en el dashboard, el informe y el export; en el resultado con COGS se imputa en proporción a la facturación con costo cargado. Hasta v51.1 el dashboard la restaba y el informe no: $71.210 de diferencia en el resultado antes de mercadería sobre la misma cuenta.'],
   ['Descuentos y bonificaciones','Suman a lo recibido, netos de IVA','Lo que ML reintegra sobre sus propios cargos. Viene positivo en el reporte y forma parte de la columna Total, así que se suma a lo recibido con el mismo neteo de IVA que los cargos. En carritos se reparte entre los ítems igual que el resto de los importes del paquete. Hasta v51.1 no se computaba.'],
+  ['Envío a cargo del comprador (despacho propio)','Entra y sale: no es ingreso ni costo','En el panel de Mercado Libre estas ventas figuran como envío "a cargo del comprador", y en el reporte llegan con Ingresos por envío cargado y Costos de envío vacío. El comprador paga el flete, el vendedor lo recibe y lo gira al transporte: no es margen suyo. Desde v53.5 EVO lo deja neutro —no suma al resultado y esas unidades no reciben tarifa de despacho propio— y lo declara como partida fuera del resultado, donde también explica parte de la diferencia entre lo Recibido de Mercado Libre y el Depósito. Hasta v53.4 se contaba como ingreso sin ningún costo enfrente Y encima se le aplicaba una tarifa estimada: en una cuenta de materiales de construcción eran $37,7 millones de ingreso inexistente sobre 12.126 unidades, y era la razón por la que publicaciones enteras mostraban márgenes arriba del 100% de la venta neta. Si el vendedor le cobra al comprador MÁS de lo que le cuesta el flete, esa diferencia es margen real que el reporte no muestra: para verla hay que cargar el costo del transporte en el template.'],
   ['Columna Envío de la tabla NEXUS','Promedio ponderado por unidad, no suma de tarifas','Una publicación puede despachar parte por Mercado Envíos y parte por cuenta propia, y son dos costos por unidad muy distintos. La columna muestra el costo TOTAL de envío de la publicación dividido por TODAS sus unidades: cada venta salió por un canal o por el otro, nunca por los dos, y el promedio pondera por cuántas unidades fue cada vía. En el tooltip eso aparece partido en dos bloques que responden preguntas distintas: "costo por unidad según por dónde salió" da la tarifa efectiva de cada canal, que son comparables entre sí; "aporte de cada vía al promedio" da lo que cada canal pone en el número de la celda, y esos sí suman. Caso real: 7 unidades, 3 por Mercado Envíos a $7.683 por unidad y 4 por despacho propio a $4.419 netos por unidad; la celda muestra $5.818, que es el costo total ($40.727) sobre 7 unidades. Promediar las dos tarifas de canal sin ponderar, o promediar los dos aportes, se come la mitad del costo logístico.'],
   ['Base del cobro del despacho propio','Una tarifa por ORDEN, no por unidad','El envío propio se paga una vez por orden: una venta de 7 unidades es un viaje del mensajero y una sola tarifa. Está verificado contra la plataforma, que bonifica exactamente igual — sobre 426 órdenes de 3 o más unidades de una cuenta real, todas traen UNA sola bonificación—. Hasta v53.2 EVO cobraba la tarifa por unidad y no había forma de cambiarlo. En una cuenta con 1,29 unidades por orden eso sobreestimaba el envío propio un 29% ($14,2 millones en el período) y hundía a los productos que se compran de a varios: un adhesivo de $5.711 con 3,92 unidades por orden mostraba un costo de envío del 140% de su venta neta —pérdida segura— cuando el real es 41%. No era un problema de presentación: el margen estaba mal y la conclusión también. En un carrito el despacho se reparte entre sus ítems con la misma participación con la que se reparte el resto del paquete, así que un ítem puede tener medio despacho. La base se cambia en la ventana de tarifas de envío propio: elegir "por unidad" tiene sentido sólo si la logística factura por bulto y no por entrega. El reporte no puede decidirlo solo —una orden de 30 zócalos puede ser un viaje o tres bultos— así que la decisión queda declarada y viaja en el snapshot.'],
   ['Zona de cada despacho, declarada por Mercado Libre','El importe que bonifica ES la tarifa del anillo','Hasta v53.1 EVO costeaba todo el despacho propio al promedio ponderado de las cuatro tarifas, con el argumento de que el reporte no dice a qué anillo fue cada venta. Era falso. En cada venta de despacho propio ML paga la tarifa publicada del anillo de destino, y ese importe llega por "Descuentos y bonificaciones" cuando el vendedor ofrece envío gratis o por "Ingresos por envío" cuando lo paga el comprador. Como las tarifas son ocho valores conocidos y están separadas entre sí al menos un 3,4%, el monto identifica la zona sin ambigüedad. Medido sobre un reporte real de 99 ventas Flex: 60 traen uno de los dos importes y el 100% cae exactamente en una tarifa de la tabla. Las que no traen ninguno son ventas bajo el umbral donde el vendedor ofreció envío gratis —ahí ML no bonifica, y está bien— y se resuelven por código postal. Desde v53.2, cada publicación paga las zonas a las que efectivamente despachó: un item que despacha todo a zona lejana deja de costar lo mismo que uno que despacha todo a zona cercana, cuando la tarifa se lleva más del doble. El Resumen declara cuántas unidades resolvió cada vía.'],
@@ -1424,7 +1425,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v53.4';
+const EVO_VERSION = 'v53.5';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1569,7 +1570,8 @@ function _metodologiaIA() {
     ['Estado de resultados', 'Ventas netas = 100%', 'Segunda hoja. Ingresos por productos, IVA, ingresos netos por ventas, costos de plataforma y logística, publicidad, IIBB, resultado antes de mercadería, COGS y resultado operativo. Debajo, márgenes sobre ventas netas y sobre recibido sin IVA, y partidas fuera del resultado (IVA de los cargos, retenciones).'],
     ['Resumen', 'KPI de cuenta', 'Facturación Neta = venta neta; Depósito de ML = columna Total; Costos de canal % sobre venta neta. El bloque con COGS usa el recibido sin IVA de las publicaciones con costo.'],
     ['Pareto Revenue / Pareto Volumen', 'Venta neta / unidades', 'Top 80% acumulado. Falso héroe: dentro del 80% de unidades y fuera del 80% de facturación.'],
-    ['Rentabilidad', 'Por publicación, sin Ads ni COGS en Rev Neto', 'Rev Neto = Recibido de ML − carga fiscal; Margen% = Rev Neto ÷ Venta neta. Comisión% incluye el cargo fijo; Envío Neto% = envío absorbido; Impuestos% = retenciones. Todos los % sobre venta neta; Costos de canal % incluye Ads. Con el reporte de costos promedio, Comisión% incluye ADEMÁS el costo de cuotas y las retenciones, y Cuotas% e Impuestos% dan 0 porque esas columnas no vienen en el reporte.'],
+    ['Apagadas fuera del período', 'Tasa mensual en BRUTO, con IVA', 'La cifra es Σ Ingresos por productos de los últimos 30 días activos de cada publicación apagada, o sea precio CON IVA. El Resumen la publica rotulada y con su equivalente en venta neta al lado. Es una TASA MENSUAL, no un acumulado histórico: no se suma al período. EVO ya descartó las publicaciones cuyo producto sigue vivo bajo otro identificador.'],
+    ['Rentabilidad', 'Por publicación, sin Ads ni COGS en Rev Neto', 'Rev Neto = Recibido de ML − carga fiscal; Margen% = Rev Neto ÷ Venta neta. Comisión% incluye el cargo fijo; Envío Neto% = envío absorbido; Impuestos% = retenciones. Todos los % sobre venta neta; Costos de canal % incluye Ads y el envío propio neto de bonificación. Con el reporte de costos promedio, Comisión% incluye ADEMÁS el costo de cuotas y las retenciones, y Cuotas% e Impuestos% dan 0 porque esas columnas no vienen en el reporte. Rev Neto y Margen% los calcula el mismo motor que NEXUS (v53.5): hasta v53.4 esta hoja repetía la fórmula a mano y se había quedado sin el envío propio, así que Σ Rev Neto daba por encima de Σ NEXUS sin Ads en exactamente la tarifa de despacho propio. Las dos columnas ahora cierran contra NEXUS Unit publicación por publicación.'],
     ['NEXUS Unit', 'Por unidad, sin Ads', 'Break Even y Margen Unit % sobre venta neta. Con COGS, el margen post COGS va sobre recibido sin IVA por unidad. El despacho propio va en tres columnas: tarifa, bonificación de la plataforma y neto; el costo que entra al margen es el neto.'],
     ['NEXUS P&L', 'Período, con Ads', 'Recibido ML incluye el IVA débito. Margen P&L % = NEXUS ÷ (Recibido ML − Rev. Bruto × factorIVA). Inversión Ads neta de IVA; TACOS en bruto. Mismas tres columnas de despacho propio que NEXUS Unit, en $ del período.'],
     ['TACOS / Publicidad', 'Inversión bruta del período', 'DOS BASES EN LA MISMA HOJA. Inversión Ads e Ing. atribuidos vienen del reporte de Anuncios en BRUTO (con IVA, atribución a 30 días post-clic). Rev. sesión, Revenue Total y Orgánico salen del reporte de ventas en venta NETA. Para juzgar si un anuncio acredita ventas de otros productos, comparar el atribuido contra Rev. Bruto del ítem —las dos columnas están en la hoja, más la relación ya calculada y la alerta ATRIBUCIÓN INDIRECTA—, nunca contra Revenue Total.'],
@@ -1582,6 +1584,8 @@ function _metodologiaIA() {
     ['"EVO no computa el crédito fiscal de IVA de los cargos"', 'Falso', 'Cada cargo se toma × netFee. Rearmar con las columnas del reporte tal cual subestima la base en el IVA de los cargos; el importe está en Cifras de control.'],
     ['"El costo de cuotas es $0, así que el margen está sobreestimado"', 'Es el formato del reporte', 'Ver el parámetro "Formato del reporte de ventas". Con el reporte de costos promedio, Mercado Libre entrega una sola columna "Cargo por venta e impuestos" y las columnas Cuotas, Costo fijo e Impuestos no existen: su valor es 0 en todas las hojas porque ese costo ya está adentro de Comisión%. El costo financiero de ofrecer cuotas ESTÁ descontado del margen. Para verlo desagregado hay que pedirle a ML el reporte con costos detallados. Lo mismo vale para deducir la condición de venta: con este formato, Cuotas% = 0 no significa "Sin cuotas" y hay que leer la columna Condición, que sale del campo "Tiene cuotas agregadas" del reporte.'],
     ['Dividir los ingresos atribuidos por Ads sobre Revenue Total de la hoja Publicidad', 'Bases distintas', 'Los ingresos atribuidos y la inversión vienen del reporte de Anuncios y están en BRUTO, con IVA. Rev. sesión, Revenue Total y Orgánico salen del reporte de ventas y están en venta NETA. Dividir uno por otro infla la relación un 21% en Argentina y hace aparecer atribución indirecta donde no la hay: en una cuenta real, 3 de 9 publicaciones señaladas como "el anuncio acredita ventas de otros productos" daban exactamente 1,00 contra el bruto, o sea el anuncio se llevó el 100% de sus propias ventas y nada más. La hoja trae la columna Rev. Bruto del ítem y la relación ya calculada: usar ésas.'],
+    ['Sumar Rev Neto de la hoja Rentabilidad y no cerrar contra NEXUS', 'Era un error de EVO, corregido en v53.5', 'Hasta v53.4 la hoja Rentabilidad repetía la fórmula de lo recibido a mano y se había quedado sin el envío propio, que calcNEXUS sí descuenta. Σ Rev Neto daba la tarifa de despacho propio POR ENCIMA de Σ NEXUS sin Ads, y siete publicaciones mostraban márgenes arriba del 85%. Si el archivo que se está leyendo fue generado con v53.4 o anterior Y la cuenta tiene despacho propio, esa hoja no sirve: usar NEXUS Unit, NEXUS P&L y Estado de resultados, que siempre cerraron. Desde v53.5 la hoja consume el mismo motor y trae la columna Envío propio $ para poder verlo.'],
+    ['Contar como ingreso el envío que pagó el comprador', 'Entra y sale', 'En las ventas de despacho propio donde ML informa Ingresos por envío y ningún costo, el flete lo pagó el comprador y el vendedor lo gira al transporte. Desde v53.5 ese importe no suma al resultado y esas unidades no reciben tarifa de despacho propio: queda declarado como partida fuera del resultado. Hasta v53.4 se contaba como ingreso sin costo y era la razón por la que publicaciones enteras mostraban márgenes arriba del 100% de la venta neta.'],
     ['Multiplicar la tarifa de envío propio por las unidades', 'La tarifa es por orden', 'Una orden de 7 unidades es un despacho y una sola tarifa, y así la bonifica también la plataforma. Cobrarla por unidad sobreestima el envío propio en proporción a las unidades por orden de la cuenta y da por deficitarios productos que se compran de a varios y son rentables. El Resumen informa las unidades por despacho y la base del cobro configurada.'],
     ['Leer el envío propio a tarifa plena', 'Falta la bonificación', 'En Argentina, cada venta despachada con logística propia recibe de Mercado Libre una bonificación de envío que viene en la columna "Descuentos y bonificaciones" del reporte de ventas: la tarifa completa del anillo bajo el umbral de envío gratis, el 10% arriba. Ya está computada dentro de lo recibido y del resultado, pero el costo del despacho propio no es la tarifa: es tarifa menos bonificación. Las hojas NEXUS traen las tres columnas y el estado de resultados, las dos líneas.'],
     ['Restar las retenciones además del IIBB', 'Doble cómputo', 'Las retenciones son pago a cuenta del IIBB: el costo fiscal provincial es el IIBB total, una sola vez.'],
@@ -1665,7 +1669,9 @@ function _cifrasControlIA() {
     ['El mismo resultado sobre venta neta', P(M.ventaNeta > 0 ? M.nexus / M.ventaNeta : 0), 'NEXUS ÷ Venta neta, para comparar con análisis que usan esa base', true],
     ['Costos de canal %', P(M.ventaNeta > 0 ? M.costosCanal / M.ventaNeta : 0), '(Comisión + envío absorbido + envío propio + cargo fijo + cuotas + Ads) ÷ Venta neta', true],
     ['Depósito de ML (columna Total)', $(deposito), 'No es base de ningún margen'],
-    ['Recibido de ML − Depósito de ML', $(M.recibidoML - deposito), 'Principalmente el IVA de los cargos, más ajustes de ML que el reporte no desglosa'],
+    ...(M.envioComprador > 0 ? [['Envío a cargo del comprador en despacho propio (fuera del resultado)', $(M.envioComprador),
+      'Ventas de despacho propio donde ML informa "Ingresos por envío" y ningún costo: el comprador pagó el flete y el vendedor lo gira al transporte. No suma al resultado ni se le aplica tarifa de despacho propio. SÍ está dentro de la columna Total, así que forma parte de la diferencia Recibido − Depósito']] : []),
+    ['Recibido de ML − Depósito de ML', $(M.recibidoML - deposito), 'Principalmente el IVA de los cargos y el envío a cargo del comprador en despacho propio, más ajustes de ML que el reporte no desglosa'],
   ];
   if (M.nMatch > 0) {
     const baseMatch = M.recSinIvaMatchBase;
@@ -1776,6 +1782,8 @@ function _estadoResultados(M) {
   /* El costo real del despacho propio, en una sola cifra. Las dos líneas que lo
      componen ya están arriba; acá va neteado porque es el número con el que se
      negocia una tarifa y el que hay que usar para calcular un piso de ticket. */
+  if (M.envioComprador > 0) memo.push(['Envío a cargo del comprador en despacho propio', M.envioComprador,
+    'El comprador pagó el flete de ' + NUM(Math.round(M.uEnvioComprador || 0)) + ' unidades despachadas por el vendedor: la plata entra y se gira al transporte, así que no es ingreso ni costo del período. Está fuera del resultado y explica parte de la diferencia entre lo Recibido de Mercado Libre y el Depósito']);
   if (M.flexPropio && M.bonifFlex) memo.push(['Envío propio neto de la bonificación de la plataforma',
     M.flexPropio - M.bonifFlex,
     'Tarifa ' + fmtCurrency(M.flexPropio) + ' menos bonificación ' + fmtCurrency(M.bonifFlex)
@@ -2107,6 +2115,10 @@ function _infMetricas(){
      sólo el corte, para que el estado de resultados pueda poner la que compensa
      envío al lado del envío y no mezclada con reintegros de otra naturaleza. */
   let bonifFlex=0, bonifOtras=0;
+  /* Envío que pagó el comprador en ventas de despacho propio. Entra y sale, así
+     que no está en ninguna línea del resultado: se informa como partida aparte y
+     explica parte de la diferencia entre lo Recibido y el Depósito. */
+  let envioComprador=0, uEnvioComprador=0;
   // v52.1: IVA débito sumado por SKU (MX excluye exentos) y retenciones MX separadas
   let ivaDebito=0, ivaDebMatch=0, retACMatch=0, retIva=0, retIsr=0, exentos=0;
   const filas = [];
@@ -2128,6 +2140,8 @@ function _infMetricas(){
     fijo     += Math.abs((s.costo_fijo||0)*fc.netFee);
     cuotas   += Math.abs((s.cuotas||0)*fc.netFee);
     bonif    += (s.descuentos||0)*fc.netFee;
+    envioComprador += s.ingEnvioComprador||0;
+    uEnvioComprador += (s.porCanal && s.porCanal.FLEX && s.porCanal.FLEX.uEnvioComprador) || 0;
     bonifFlex  += n.bonifFlex||0;
     bonifOtras += (s.descuentos||0)*fc.netFee - (n.bonifFlex||0);
     devol    += -(n.devolucionesNeto||0);
@@ -2149,7 +2163,7 @@ function _infMetricas(){
   ads += adsSinVenta; nexus -= adsSinVenta;
   nexusMatch -= adsSinVenta * cobertura;
   return { fc, esRI, items, filas, bruto, ventaNeta, recibidoML, nexus, cogsTot, nexusMatch, brutoMatch, recibMatch,
-           nMatch, cobertura, comision, envio, envioNeto, flexPropio, fijo, cuotas, bonif, bonifFlex, bonifOtras, devol, retACuenta, impuestos, ads, adsSinVenta, fiscalTot,
+           nMatch, cobertura, comision, envio, envioNeto, flexPropio, fijo, cuotas, bonif, bonifFlex, bonifOtras, envioComprador, uEnvioComprador, devol, retACuenta, impuestos, ads, adsSinVenta, fiscalTot,
            ivaDebito, iibb, ivaDebMatch, retACMatch, retIva, retIsr, exentos,
            // Bases de márgenes sobre recibido sin IVA (MX con RFC: + retenciones a cuenta)
            recSinIvaBase: recibidoML - ivaDebito + retBaseMX(fc, retACuenta),
@@ -5384,6 +5398,30 @@ function canalEnvio(formaEntrega) {
   if (/colecta|places|correo|despacho|sucursal|agencia|mercado env/.test(t)) return 'ME2';
   return 'FLEX';   // acuerdo con el comprador, sin datos, vacío: despacha el seller
 }
+/* ═══════════ ENVÍO A CARGO DEL COMPRADOR EN DESPACHO PROPIO (v53.5) ═══════════
+   Hay ventas de despacho propio donde el envío lo paga el comprador: en el panel
+   de Mercado Libre figuran como "a cargo del comprador" y en el reporte llegan
+   con "Ingresos por envío" cargado y "Costos de envío" vacío. Esa plata entra y
+   sale: el vendedor la recibe y la gira al transporte. No es margen suyo.
+
+   Hasta v53.4 EVO la contaba como INGRESO y encima le aplicaba una tarifa de
+   despacho propio estimada, o sea inventaba las dos puntas. En una cuenta de
+   materiales de construcción eran $37,7 millones de ingreso falso sobre 12.126
+   unidades, y era la razón por la que publicaciones enteras mostraban márgenes
+   arriba del 100% de la venta neta.
+
+   Desde v53.5 esas ventas quedan NEUTRAS: el importe no suma al resultado y no
+   se les carga tarifa. Se informa aparte, como partida fuera del resultado, y
+   por eso explica parte de la diferencia entre Recibido de ML y el Depósito.
+   Si el vendedor cobra al comprador MÁS de lo que le cuesta el flete, esa
+   diferencia es margen real que EVO no puede ver: hace falta el costo del
+   transporte, que no está en el reporte. Cargarlo en el template lo resuelve. */
+function envioLoPagaComprador(formaEntrega, ingEnvio, costoEnvio) {
+  if (!(ingEnvio > 0)) return false;
+  if ((costoEnvio || 0) < 0) return false;          // ML informó un costo: no es pass-through
+  return canalEnvio(formaEntrega) === 'FLEX';       // sólo en despacho propio
+}
+
 /* Canales donde ML informa el costo: son los únicos sobre los que el margen de
    envío es verificable sin pedirle nada al usuario. */
 const CANALES_CON_COSTO = ['ME2', 'FULL'];
@@ -7708,7 +7746,12 @@ function parsearArchivo(raw,filename){
       const cargo_venta = carritoCtx.cargo_venta * frac;
       const costo_fijo  = carritoCtx.costo_fijo  * frac;
       const cuotas      = carritoCtx.cuotas      * frac;
-      const ing_envio   = carritoCtx.ing_envio   * frac;
+      /* El envío de un carrito se decide a nivel PAQUETE: es un despacho a una
+         dirección. Si lo pagó el comprador, el importe no es ingreso del
+         vendedor y se prorratea a la partida informativa, no al resultado. */
+      const _compPagaC = envioLoPagaComprador(carritoCtx.forma_entrega, carritoCtx.ing_envio, carritoCtx.costo_envio);
+      const ing_envio   = (_compPagaC ? 0 : carritoCtx.ing_envio) * frac;
+      const ing_envio_comprador = (_compPagaC ? carritoCtx.ing_envio : 0) * frac;
       const costo_envio = carritoCtx.costo_envio * frac;
       const impuestos   = carritoCtx.impuestos   * frac;
 
@@ -7773,7 +7816,8 @@ function parsearArchivo(raw,filename){
            UN despacho a UNA dirección: su tarifa de envío no se multiplica por
            los ítems, se reparte entre ellos con la misma participación con la
            que se reparte todo lo demás del paquete. */
-        fracPaquete: frac
+        fracPaquete: frac,
+        ing_envio_comprador, envioCompradorPaga: _compPagaC
       });
       if (!esCanceled) {
         const comboId = pubVal || skuVal;
@@ -7818,6 +7862,11 @@ function parsearArchivo(raw,filename){
     const costo_envio=costo_envio_raw+costo_env_med+costo_env_dif+costo_env_cam;
     const descuentos = parseNum(get(row,'descuentos'));
     const anulaciones= parseNum(get(row,'anulaciones'));
+    /* Envío a cargo del comprador en despacho propio: entra y sale. Se decide
+       ANTES de armar el record porque cambia dónde va el importe, y la tarifa que
+       declara ML se lee del valor original (el neutralizado ya no está). */
+    const _compPaga = envioLoPagaComprador(forma_entrega, ing_envio, costo_envio);
+    const _tarifaDeclarada = descuentos || ing_envio;
 
     // Capturar título (FIX: faltaba en el bloque de ventas normales, solo estaba en carritos)
     if(G&&G.titulos){
@@ -7847,13 +7896,17 @@ function parsearArchivo(raw,filename){
       forma_entrega,
       condicion: _condVenta(get(row,'condicion')),
       ingresos_brutos,cargo_venta,costo_fijo,cuotas,
-      ing_envio,costo_envio,impuestos,descuentos,anulaciones,
+      costo_envio,impuestos,descuentos,anulaciones,
       /* Tarifa de envío que declara ML para esta venta: la bonificación cuando
          el vendedor ofreció envío gratis, o lo que pagó el comprador cuando no.
-         Su importe identifica el anillo de destino (ver _zonaPorTarifaML).
-         No es plata nueva: descuentos e ing_envio ya están en el resultado. */
-      tarifaML: descuentos || ing_envio,
-      fracPaquete: 1        // venta simple: el despacho es entero de esta publicación
+         Su importe identifica el anillo de destino (ver _zonaPorTarifaML). */
+      tarifaML: _tarifaDeclarada,
+      fracPaquete: 1,       // venta simple: el despacho es entero de esta publicación
+      /* Envío a cargo del comprador: entra y sale, así que no va al resultado.
+         Ver envioLoPagaComprador. */
+      ing_envio: _compPaga ? 0 : ing_envio,
+      ing_envio_comprador: _compPaga ? ing_envio : 0,
+      envioCompradorPaga: _compPaga
     });
   }
   flushCombo();
@@ -8058,6 +8111,8 @@ function aplicarFiltros(){
         const _netoEnv = (costo_envio||0) + (ing_envio||0);
         S.envioRealSeller = (S.envioRealSeller||0) + (_netoEnv < 0 ? -_netoEnv : 0);
         S.impuestos+=impuestos; S.descuentos+=descuentos; S.anulaciones+=anulaciones;
+        // Envío que pagó el comprador en despacho propio: fuera del resultado
+        S.ingEnvioComprador = (S.ingEnvioComprador||0) + (r.ing_envio_comprador||0);
         S.ret_iva+=r.ret_iva||0; S.ret_isr+=r.ret_isr||0; S.ret_isr_sinrfc+=r.ret_isr_sinrfc||0;
         S.ingresos_exentos+=r.ingresos_exentos||0;
         // Bruto por origen: base de venta neta para Pareto y split Ads/orgánico (v51.3)
@@ -8094,6 +8149,8 @@ function aplicarFiltros(){
         const _netoEnvC = (costo_envio||0) + (ing_envio||0);
         C.envioRealSeller += (_netoEnvC < 0 ? -_netoEnvC : 0);
         C.impuestos+=impuestos; C.descuentos+=descuentos; C.anulaciones+=anulaciones;
+        C.ingEnvioComprador = (C.ingEnvioComprador||0) + (r.ing_envio_comprador||0);
+        C.uEnvioComprador = (C.uEnvioComprador||0) + (r.envioCompradorPaga ? unidades : 0);
         C.costo_devolucion += r.costo_devolucion || 0;
         C.ret_iva+=r.ret_iva||0; C.ret_isr+=r.ret_isr||0; C.ret_isr_sinrfc+=r.ret_isr_sinrfc||0;
         C.ingresos_exentos+=r.ingresos_exentos||0;
@@ -8134,7 +8191,7 @@ function aplicarFiltros(){
           const _zML = (typeof _zonaPorTarifaML === 'function') ? (_zonaPorTarifaML(r.tarifaML || 0) || '') : '';
           const _k = (_zML) + '§' + (_g ? (_g.celda + '|' + _g.cordon) : '|');
           S.flexVenta = S.flexVenta || {};
-          const _V = S.flexVenta[_k] || (S.flexVenta[_k] = { u:0, bonif:0, desp:0 });
+          const _V = S.flexVenta[_k] || (S.flexVenta[_k] = { u:0, bonif:0, desp:0, uComp:0 });
           _V.u += unidades;
           _V.bonif += descuentos;
           /* DESPACHOS, que es lo que realmente se paga (v53.3). Una orden de 7
@@ -8152,9 +8209,18 @@ function aplicarFiltros(){
              por ítem, que es el criterio conservador: sobreestima el costo un
              poco antes que regalarlo. Los reportes cargados de nuevo traen la
              participación real. */
-          _V.desp += (r.esCarrito ? (r.fracPaquete != null ? r.fracPaquete : 1) : 1);
+          /* Las ventas donde el envío lo paga el comprador NO pagan tarifa: su
+             flete ya lo cubrió el comprador y aplicarles una tarifa estimada
+             encima inventa un costo. Cuentan en unidades —para que el costo por
+             unidad de la publicación se diluya bien— pero no en despachos, que
+             es la base del cobro. Ver envioLoPagaComprador. */
+          if (r.envioCompradorPaga) _V.uComp += unidades;
+          else _V.desp += (r.esCarrito ? (r.fracPaquete != null ? r.fracPaquete : 1) : 1);
         }
-        const _verif = (costo_envio || 0) < 0 || CANALES_CON_COSTO.indexOf(_ce) >= 0;
+        /* Un envío que pagó el comprador no deja ningún costo sin medir: no hay
+           nada que cubrir, así que cuenta como verificado. Sin esto la alerta
+           ENVÍO S/ COSTO aparecía sobre publicaciones cuyo margen ya es correcto. */
+        const _verif = (costo_envio || 0) < 0 || CANALES_CON_COSTO.indexOf(_ce) >= 0 || !!r.envioCompradorPaga;
         if (_verif) S.ibEnvioVerif = (S.ibEnvioVerif || 0) + ingresos_brutos;
         else { S.ibEnvioSinCosto = (S.ibEnvioSinCosto || 0) + ingresos_brutos;
                S.uEnvioSinCosto  = (S.uEnvioSinCosto  || 0) + unidades; }
@@ -8897,14 +8963,22 @@ function renderDashboard(renderData){
     const bruto = s.ingresos_brutos || 0;
     // Venta neta: base del margen para RI (sin IVA débito; MX excluye exentos)
     const ventaNeta = ventaNetaDe(s, _fc);
-    // Recibido ML con fees NETOS de IVA (costo real para RI)
-    const recibidoML = bruto + ((s.cargo_venta||0) + (s.costo_envio||0) + (s.ing_envio||0)
+    /* Lo recibido y el margen salen de calcNEXUS y no se recalculan acá (v53.5).
+       Hasta v53.4 esta tabla repetía la fórmula a mano y se había quedado sin el
+       envío propio: mostraba un Rev Neto y un Margen% más altos que la tabla
+       NEXUS de la misma pantalla, por exactamente la tarifa de despacho propio.
+       Una sola definición, consumida en los dos lados. */
+    const _nR = (typeof calcNEXUS === 'function') ? calcNEXUS(s) : null;
+    const recibidoML = _nR ? _nR.recibidoML
+      : bruto + ((s.cargo_venta||0) + (s.costo_envio||0) + (s.ing_envio||0)
                      + (s.costo_fijo||0) + (s.cuotas||0) + (s.descuentos||0) + (s.costo_devolucion||0)) * _netFee + (s.impuestos||0);
     // Fiscal del seller: IVA débito + IIBB sobre venta neta, menos las retenciones que son pago a cuenta
-    const fiscalSeller = ivaDebitoDe(s, _fc) + ventaNeta * _iibbRate - retACuentaDe(s, _fc);
+    const fiscalSeller = _nR ? _nR.fiscalTotal : (ivaDebitoDe(s, _fc) + ventaNeta * _iibbRate - retACuentaDe(s, _fc));
     const neto = recibidoML - fiscalSeller;
     // Margen sobre venta neta (RI) o sobre bruto (MONO, factorIva=0 → ventaNeta=bruto)
     const margen = ventaNeta > 0 ? neto / ventaNeta : 0;
+    const flexNetoR = _nR ? ((_nR.flexTotal || 0) - (_nR.bonifFlex || 0)) : 0;
+    const margenNoCompR = !!(_nR && _nR.margenNoComputable);
     
     // Envío real del seller (neto de IVA)
     const envioNetoCalc = (s.costo_envio || 0) + (s.ing_envio || 0);
@@ -8918,7 +8992,8 @@ function renderDashboard(renderData){
     const costoFijoShare = ventaNeta > 0 ? Math.abs((s.costo_fijo||0)*_netFee) / ventaNeta : 0;
     const impShare = ventaNeta > 0 ? Math.abs(s.impuestos||0) / ventaNeta : 0;
     const cuotasShare = ventaNeta > 0 ? Math.abs((s.cuotas||0)*_netFee) / ventaNeta : 0;
-    return { ...s, bruto, neto, ventaNeta, margen, envioNeto, envioShare, comisionShare, costoFijoShare, impShare, cuotasShare };
+    return { ...s, bruto, neto, ventaNeta, margen, envioNeto, envioShare, comisionShare, costoFijoShare, impShare, cuotasShare,
+             flexNetoR, margenNoCompR };
   }).filter(s => {
     // No filtrar items con inversión en Ads (críticos para análisis)
     const tieneAds = s.id && (
@@ -8963,7 +9038,13 @@ function renderDashboard(renderData){
       const fijo     = Math.abs((s.costo_fijo||0) * _netFee);
       const cuotas   = Math.abs((s.cuotas||0) * _netFee);
       const ads      = nP ? (nP.inversionAds || 0) : 0;
-      const abs = comision + envio + fijo + cuotas + ads;
+      /* Envío propio neto de bonificación: se paga fuera de la plataforma pero
+         sale de la misma plata, igual que en el KPI de cuenta. Sin él la columna
+         no reproducía el Costos de canal % de la tarjeta. Queda FUERA del costo
+         estructural que se compara contra la familia: es una tarifa estimada y
+         mete dispersión que no es del producto. */
+      const propio   = nP ? Math.max(0, (nP.flexTotal || 0) - (nP.bonifFlex || 0)) : 0;
+      const abs = comision + envio + propio + fijo + cuotas + ads;
       canalPorId.set(s.id, { abs, pct: s.ventaNeta > 0 ? abs / s.ventaNeta : 0,
                              /* Costo ESTRUCTURAL = canal sin Ads. Es el que se compara contra la
                                 familia. Ads es discrecional —dos productos gemelos pueden tener uno
@@ -8981,7 +9062,7 @@ function renderDashboard(renderData){
                                 además sube la mediana, lo que tapa desvíos reales en las demás. */
                              pctComparable: (s.ventaNeta - cuotas) > 0 ? (comision + envio + fijo) / (s.ventaNeta - cuotas) : 0,
                              cond: _condDominante(s), unidades: s.unidades || 0,
-                             comision, envio, fijo, cuotas, ads });
+                             comision, envio, propio, fijo, cuotas, ads });
     });
     const anomCanal = detectarAnomaliasCanal(rentArr, s => canalPorId.get(s.id) || null);
     // Se exponen para que el informe PDF pueda cruzarlas sin recalcular
@@ -9019,7 +9100,7 @@ function renderDashboard(renderData){
       /* Costos de canal del producto. El color NO sale de un umbral fijo, sino
          de comparar contra la mediana de su propia familia (ver
          detectarAnomaliasCanal). Sin familia comparable no se colorea. */
-      const cp = canalPorId.get(s.id) || { abs:0, pct:0, comision:0, envio:0, fijo:0, cuotas:0, ads:0 };
+      const cp = canalPorId.get(s.id) || { abs:0, pct:0, comision:0, envio:0, propio:0, fijo:0, cuotas:0, ads:0 };
       const an2 = anomCanal.get(s.id);
       const canalClrP = !an2 ? 'var(--muted)'
         : an2.nivel === 'crit' ? 'var(--danger)'
@@ -9027,6 +9108,7 @@ function renderDashboard(renderData){
       const partesP = [];
       if (cp.comision > 0) partesP.push('Comisión ' + ARS(cp.comision));
       if (cp.envio > 0)    partesP.push('Envío ' + ARS(cp.envio));
+      if (cp.propio > 0)   partesP.push('Envío propio neto ' + ARS(cp.propio));
       if (cp.fijo > 0)     partesP.push('Costo fijo ' + ARS(cp.fijo));
       if (cp.cuotas > 0)   partesP.push('Cuotas ' + ARS(cp.cuotas));
       if (cp.ads > 0)      partesP.push('Ads ' + ARS(cp.ads));
@@ -9058,7 +9140,7 @@ function renderDashboard(renderData){
         <td class="num" style="color:var(--muted);cursor:help;border-bottom:1px dotted rgba(255,255,255,.15)" title="Revenue bruto ${ARS(s.bruto)} − IVA débito ${ARS(s.bruto - s.ventaNeta)} = ${ARS(s.ventaNeta)}">${ARS(s.ventaNeta)}</td>
         <td class="num" style="color:${canalClrP};cursor:help;border-bottom:1px dotted rgba(255,255,255,.15)" title="${canalTtl.replace(/"/g,'&quot;')}">${PCT(cp.pct)}</td>
         <td class="num">${ARS(s.neto)}</td>
-        <td><div class="margin-cell"><span class="margin-dot ${mDot}"></span><span style="font-family:var(--mono);font-size:12px">${PCT(s.margen)}</span></div></td>
+        <td><div class="margin-cell"><span class="margin-dot ${mDot}"></span><span style="font-family:var(--mono);font-size:12px${s.margenNoCompR?';color:var(--warn);cursor:help':''}"${s.margenNoCompR?' title="El margen da por encima del 100% de la venta neta, que es imposible: el envío que paga el comprador se está contando como ingreso y su costo no está en el reporte porque el despacho es propio. Cargá el costo de envío propio y el margen pasa a ser real."':''}>${s.margenNoCompR?'n/d':PCT(s.margen)}</span></div></td>
         <td>${alerts.join(' ')}</td>
       </tr>`;
     });
@@ -9879,7 +9961,14 @@ function exportarExcel(){
       _hdrRes.push(resumenRows.length - 1);
       resumenRows.push(['Cantidad de publicaciones apagadas', _Ap.n]);
       resumenRows.push(['Días apagadas (promedio)', _Ap.diasProm]);
-      resumenRows.push(['Facturación apagada (por mes)', _Ap.tasaMes]);
+      /* Bruto o neto: el export no lo declaraba y un lector no tenía cómo saberlo.
+         tasaMes suma Ingresos por productos, o sea PRECIO CON IVA. Va rotulado y
+         con su equivalente en venta neta al lado, que es la base con la que se
+         compara contra cualquier otra cifra del archivo. */
+      resumenRows.push(['Facturación apagada por mes (bruto, con IVA)', _Ap.tasaMes]);
+      { const _fcA2 = fiscalCfg();
+        if (_fcA2.esRI) resumenRows.push(['  la misma cifra en venta neta (sin IVA)', _Ap.tasaMes * (1 - _fcA2.factorIva)]); }
+      resumenRows.push(['Base del cálculo', 'tasa mensual: lo que facturaban en sus últimos 30 días activos · NO es un acumulado']);
       resumenRows.push(['Descartadas por producto vivo en otro ML', _Ap.vivasOtroML]);
       resumenRows.push(['  detectadas por SKU', _Ap.porSku]);
       resumenRows.push(['  detectadas por título y precio', _Ap.porTitulo]);
@@ -9981,15 +10070,38 @@ function exportarExcel(){
      imposible porque Mercado Ads las agrupa bajo un único ID. Con estas dos
      columnas la agrupación deja de ser una inferencia por título y precio. */
   const rentRows=[[idLabel,'Producto','Familia','Condición','Rev Bruto','Venta neta','Costos de canal %','Rev Neto','Margen%',
-                   'Comisión%','Envío Neto%','Cobertura envío%','Impuestos%','Cuotas%','Depósito ML','Alertas']];
+                   'Comisión%','Envío Neto%','Envío propio $ (neto de bonif.)','Cobertura envío%','Impuestos%','Cuotas%','Depósito ML','Alertas']];
+  /* Rev Neto y Margen% salen de calcNEXUS y NO se recalculan acá (v53.5).
+     Hasta v53.4 esta hoja repetía la fórmula de lo recibido a mano y se había
+     quedado sin el envío propio, que calcNEXUS sí descuenta desde v52.4. El
+     resultado: Σ Rev Neto de esta hoja daba exactamente la tarifa de envío
+     propio POR ENCIMA de Σ NEXUS sin Ads —en una cuenta real, $2.084.009 contra
+     $1.655.079, con la diferencia de $428.930 igual al total de envío propio al
+     centavo— y siete publicaciones mostraban márgenes arriba del 85%, una de
+     ellas 102,7%. Un lector del Excel que sumara esta columna llegaba a un
+     resultado que no existe.
+     La causa raíz era la fórmula duplicada, no el signo olvidado: por eso ahora
+     hay una sola definición y esta hoja la consume. Si vuelve a aparecer un
+     costo nuevo en calcNEXUS, esta hoja lo toma sin que nadie se acuerde. */
+  const _nexCache = new Map();
+  const _nexDe = s => {
+    if (!_nexCache.has(s.id)) _nexCache.set(s.id, (typeof calcNEXUS === 'function') ? calcNEXUS(s) : null);
+    return _nexCache.get(s.id);
+  };
   const _rentCalc = s => {
     const bruto = s.ingresos_brutos || 0;
+    const n = _nexDe(s);
+    if (n) return { bruto, ventaNeta: n.ventaNeta, neto: n.recibidoNEXUS_sinAds_total,
+                    margen: n.margenUnitario, noComp: !!n.margenNoComputable,
+                    flexNeto: (n.flexTotal || 0) - (n.bonifFlex || 0) };
+    /* Sin precio ni pauta calcNEXUS no devuelve nada: se reconstruye sin envío
+       propio porque tampoco hay unidades sobre las que aplicarlo. */
     const ventaNeta = ventaNetaDe(s, _fcR);
     const recibidoML = bruto + ((s.cargo_venta||0)+(s.costo_envio||0)+(s.ing_envio||0)
                      + (s.costo_fijo||0)+(s.cuotas||0)+(s.descuentos||0)+(s.costo_devolucion||0)) * _fcR.netFee + (s.impuestos||0);
     const fiscal = ivaDebitoDe(s, _fcR) + ventaNeta * _fcR.iibbRate - retACuentaDe(s, _fcR);
     const neto = recibidoML - fiscal;
-    return { bruto, ventaNeta, neto, margen: ventaNeta > 0 ? neto / ventaNeta : 0 };
+    return { bruto, ventaNeta, neto, margen: ventaNeta > 0 ? neto / ventaNeta : 0, noComp: false, flexNeto: 0 };
   };
   Object.values(skuMap).filter(s=>s.ingresos_brutos>0)
     .sort((a,b)=> _rentCalc(a).margen - _rentCalc(b).margen).forEach(s=>{
@@ -10003,9 +10115,13 @@ function exportarExcel(){
     const fijoShare=Math.abs((s.costo_fijo||0)*_fcR.netFee)/base;
     const impShare=Math.abs(s.impuestos||0)/base;
     const cuotasShare=Math.abs((s.cuotas||0)*_fcR.netFee)/base;
-    const nX = (typeof calcNEXUS==='function') ? calcNEXUS(s) : null;
+    const nX = _nexDe(s);
     const adsX = nX ? (nX.inversionAds||0) : 0;
-    const canalShare = (Math.abs((s.cargo_venta||0)*_fcR.netFee) + envAbs
+    /* Costos de canal % incluye el envío propio neto de bonificación, igual que
+       el KPI de cuenta: se paga fuera de la plataforma pero sale de la misma
+       plata. Sin él, esta columna no reproducía el Costos de canal % del Resumen
+       en las cuentas con despacho propio. */
+    const canalShare = (Math.abs((s.cargo_venta||0)*_fcR.netFee) + envAbs + (c.flexNeto||0)
                       + Math.abs((s.costo_fijo||0)*_fcR.netFee) + Math.abs((s.cuotas||0)*_fcR.netFee) + adsX) / base;
     const alerts=[];
     if(c.margen<0.10) alerts.push('BAJA RENT.');
@@ -10027,11 +10143,12 @@ function exportarExcel(){
     rentRows.push([s.id,titleFor(s.id)||'',
                    (typeof familiaKey==='function' ? familiaKey(titleFor(s.id)) : '') || '',
                    (typeof _condDominante==='function' ? _condDominante(s) : '') || '',
-                   c.bruto,c.ventaNeta,canalShare,c.neto,c.margen,
-                   comShare+fijoShare,envioShare,_cobR?_cobR.verificado:1,impShare,cuotasShare,s.liquidez||0,alerts.join(', ')]);
+                   c.bruto,c.ventaNeta,canalShare,c.neto,
+                   c.noComp ? 'n/d · envío propio sin costo cargado' : c.margen,
+                   comShare+fijoShare,envioShare,c.flexNeto||0,_cobR?_cobR.verificado:1,impShare,cuotasShare,s.liquidez||0,alerts.join(', ')]);
   });
-  addSheet('Rentabilidad',rentRows,[25,42,22,14,16,16,15,16,12,12,12,14,12,12,16,30],
-    { tipos:['general','general','general','general','money','money','percent','money','percent','percent','percent','percent','percent','percent','money','general'] });
+  addSheet('Rentabilidad',rentRows,[25,42,22,14,16,16,15,16,12,12,12,20,14,12,12,16,30],
+    { tipos:['general','general','general','general','money','money','percent','money','percent','percent','percent','money','percent','percent','percent','money','general'] });
 
   const dormidos=calcDormidos(useML);
   const dormRows=[[idLabel,'Último Q activo','Revenue pico','Q sin ventas','Revenue perdido est.']];
@@ -10367,11 +10484,13 @@ function exportarExcel(){
       if (_Ax && _Ax.n > 0) {
         cab.push(['PUBLICACIONES APAGADAS FUERA DEL PERÍODO']);
         cab.push(['Apagadas', _Ax.n, 'hace ' + _Ax.diasProm + ' días en promedio']);
-        cab.push(['Facturación apagada (por mes)', _Ax.tasaMes, 'ritmo de sus últimos 30 días activos · NO acumulado']);
+        cab.push(['Facturación apagada por mes (bruto, con IVA)', _Ax.tasaMes, 'Ingresos por productos, o sea precio CON IVA · ritmo de sus últimos 30 días activos · NO acumulado']);
+        { const _fcA3 = fiscalCfg();
+          if (_fcA3.esRI) cab.push(['  la misma cifra en venta neta (sin IVA)', _Ax.tasaMes * (1 - _fcA3.factorIva), 'Base comparable con el resto del archivo']); }
         cab.push(['Descartadas por producto vivo en otro ML', _Ax.vivasOtroML,
                   _Ax.porSku + ' por SKU · ' + _Ax.porTitulo + ' por título y precio']);
         cab.push([]);
-        cab.push(['# Publicación','Producto','Última venta','Días apagada','Facturación/mes']);
+        cab.push(['# Publicación','Producto','Última venta','Días apagada','Facturación/mes (bruto, con IVA)']);
         _Ax.items.slice(0, 40).forEach(x => {
           const d = new Date(x.ultVenta);
           cab.push([x.id, String(x.titulo||'').slice(0,60),
@@ -11252,9 +11371,16 @@ function parseFlex(wb) {
    En modo UNIDAD la tarifa se cobra por unidad y la función no hace nada. */
 function _flexTarifaAUnidad(s, tarifa) {
   if (!(tarifa > 0)) return 0;
-  if (FLEX_MODO === 'UNIDAD') return tarifa;
-  const u = _flexUnidadesDe(s), n = _flexDespachosDe(s);
-  return (u > 0 && n > 0) ? tarifa * n / u : tarifa;
+  const u = _flexUnidadesDe(s);
+  if (!(u > 0)) return tarifa;
+  if (FLEX_MODO === 'UNIDAD') {
+    /* Las unidades cuyo flete pagó el comprador no pagan tarifa ni en este modo. */
+    const uc = _flexUnidadesCompradorDe(s);
+    return tarifa * Math.max(0, u - uc) / u;
+  }
+  /* Cero despachos cobrables con unidades vendidas quiere decir que el flete de
+     todas lo pagó el comprador: el costo es cero, no la tarifa entera. */
+  return tarifa * _flexDespachosDe(s) / u;
 }
 function getFlexCost(s) {
   if (!s) return null;
@@ -11284,8 +11410,8 @@ function getFlexCost(s) {
      envío. Ver _zonaPorTarifaML. Lo que no declara ML se resuelve por código
      postal, y recién lo que no resuelve ninguna de las dos vías paga el
      promedio. Ya no es inventar precisión: es leer un dato que estaba. */
-  const pi = _flexPorZonaDe(s);   // ya viene efectivo por unidad
-  if (pi > 0) {
+  const pi = _flexPorZonaDe(s);   // ya viene efectivo por unidad · null = sin dato
+  if (pi !== null) {
     const nd = _flexDespachosDe(s), uu = _flexUnidadesDe(s);
     return { costo: pi, tarifa: nd > 0 ? pi * uu / nd : pi, titulo: '', via: 'ZONAS_ITEM', estimado: true };
   }
@@ -12574,8 +12700,8 @@ function _flexTarifasDefault() {
    Lo que no se puede ubicar por ninguna de las dos vías queda aparte y no se
    prorratea sobre el resto: se informa. */
 function _flexZonasDeItem(s) {
-  const porZona = {}; _ZONA_ORDEN.forEach(z => porZona[z] = { u:0, bonif:0, uML:0, desp:0 });
-  const sinZona = { u:0, bonif:0, desp:0 };
+  const porZona = {}; _ZONA_ORDEN.forEach(z => porZona[z] = { u:0, bonif:0, uML:0, desp:0, uComp:0 });
+  const sinZona = { u:0, bonif:0, desp:0, uComp:0 };
   const src = (s && s.flexVenta) || {};
   Object.keys(src).forEach(k => {
     const v = src[k]; if (!(v.u > 0)) return;
@@ -12589,8 +12715,8 @@ function _flexZonasDeItem(s) {
       const cordon = c > 0 ? (parseInt(geo.slice(c + 1), 10) || 0) : -1;
       if (celda) z = zonaDeCelda(celda, cordon);
     }
-    if (z && porZona[z]) { porZona[z].u += v.u; porZona[z].bonif += v.bonif; porZona[z].desp += (v.desp || 0); if (zML) porZona[z].uML += v.u; }
-    else { sinZona.u += v.u; sinZona.bonif += v.bonif; sinZona.desp += (v.desp || 0); }
+    if (z && porZona[z]) { porZona[z].u += v.u; porZona[z].bonif += v.bonif; porZona[z].desp += (v.desp || 0); porZona[z].uComp += (v.uComp || 0); if (zML) porZona[z].uML += v.u; }
+    else { sinZona.u += v.u; sinZona.bonif += v.bonif; sinZona.desp += (v.desp || 0); sinZona.uComp += (v.uComp || 0); }
   });
   return { porZona, sinZona };
 }
@@ -12602,6 +12728,13 @@ function _flexDespachosDe(s) {
   const d = _flexZonasDeItem(s);
   let n = d.sinZona.desp || 0;
   _ZONA_ORDEN.forEach(z => n += d.porZona[z].desp || 0);
+  return n;
+}
+/* Unidades de despacho propio cuyo flete pagó el comprador: no pagan tarifa. */
+function _flexUnidadesCompradorDe(s) {
+  const d = _flexZonasDeItem(s);
+  let n = d.sinZona.uComp || 0;
+  _ZONA_ORDEN.forEach(z => n += d.porZona[z].uComp || 0);
   return n;
 }
 
@@ -12618,7 +12751,11 @@ function _flexPorZonaDe(s) {
      una vez por orden. En modo UNIDAD —para logísticas que cobran por bulto—
      la base vuelve a ser la unidad. Ver FLEX_MODO. */
   const porDesp = FLEX_MODO !== 'UNIDAD';
-  const baseDe = o => porDesp ? (o.desp || 0) : (o.u || 0);
+  /* Las unidades cuyo envío pagó el comprador quedan fuera de la base del cobro
+     en los dos modos: no hay tarifa que aplicarles. Siguen contando en el
+     denominador de unidades, así que el costo por unidad de la publicación se
+     diluye correctamente. */
+  const baseDe = o => porDesp ? (o.desp || 0) : Math.max(0, (o.u || 0) - (o.uComp || 0));
   let costo = 0, base = 0, sin = 0, uTot = 0;
   _ZONA_ORDEN.forEach(z => {
     const b = baseDe(d.porZona[z]); uTot += d.porZona[z].u || 0;
@@ -12628,14 +12765,28 @@ function _flexPorZonaDe(s) {
   });
   uTot += d.sinZona.u || 0;
   sin += baseDe(d.sinZona);
+  /* Tres resultados distintos, y confundirlos cuesta plata:
+       null  → no hay nada que decir sobre este item (no tiene despacho propio, o
+               hay despachos que cobrar y ninguna tarifa cargada). Quien llama
+               sigue con el promedio de la cuenta.
+       0     → el costo ES cero: todas sus unidades salieron con el flete a cargo
+               del comprador. Devolver 0 acá y no null es la diferencia entre
+               costear bien y caer al promedio: en una cuenta real, una
+               publicación de zócalos con las 3.511 unidades a cargo del
+               comprador se llevaba $27 millones de tarifa inventada.
+       >0    → el costo ponderado por unidad. */
+  if (!(uTot > 0)) return null;
+  const cobrable = base + sin;
+  if (!(cobrable > 0)) return 0;
   if (sin > 0) {
     const fb = base > 0 ? costo / base : _flexPromedioZonas();
-    if (fb > 0) { costo += fb * sin; base += sin; }
+    if (!(fb > 0)) return null;      // hay qué cobrar pero no hay tarifa
+    costo += fb * sin;
   }
   /* Se devuelve el costo EFECTIVO POR UNIDAD para no tocar nada de lo que viene
      después: todo el motor multiplica por unidades y así el producto vuelve a
      dar exactamente el total. */
-  return uTot > 0 ? costo / uTot : 0;
+  return costo / uTot;
 }
 
 /* ═══════════ MEZCLA CALCULADA DESDE EL REPORTE ═══════════
@@ -14639,6 +14790,9 @@ function buildNexusTable(cache, mode) {
           /* Reparto por anillo de ESTA publicación (v53.2). El promedio de la
              celda esconde que un item despachó todo a zona lejana y otro todo a
              zona cercana pagando tarifas que difieren en más del doble. */
+          const uComp = (C.uEnvioComprador || 0);
+          if (uComp > 0) partes.push('      ' + uComp + ' u con el envío a cargo del comprador: no pagan tarifa'
+            + ((C.ingEnvioComprador || 0) > 0 ? ' (el comprador pagó ' + ARS((C.ingEnvioComprador || 0) * nf) + ', fuera del resultado)' : ''));
           if (typeof _flexZonasDeItem === 'function' && n.flexTotal > 0) {
             const dz = _flexZonasDeItem(s);
             _ZONA_ORDEN.forEach(z => {
