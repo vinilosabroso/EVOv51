@@ -1210,7 +1210,7 @@ const _GLOSARIO = [
   ['Publicaciones de catálogo y la insignia Ad','El anuncio corre bajo OTRO # de publicación','Cuando un producto compite en catálogo, el anuncio se factura contra la publicación de catálogo, no contra la publicación propia del vendedor. En el reporte aparecen como dos números distintos: uno Activo con impresiones y otro Deshabilitado en cero. Caso verificado: MLA3784034608 activo con 294.284 impresiones y MLA1803956621 deshabilitado, ambos del SKU TGH-HOME-THEATER. En vista SKU se agrupan y la insignia aparece; en vista # Publicación la publicación propia figura sin insignia, que es lo correcto porque no es la que tiene la pauta. Si el panel de ML muestra el anuncio al buscar la publicación propia, es porque exhibe el anuncio de catálogo que la cubre.'],
   ['Recorte del panel','Top 80 por contribución por visita','La tabla no muestra todo el catálogo. El subtítulo indica cuántas se muestran sobre el total y cuántas tienen pauta activa en pantalla contra el total de la cuenta, para no confundir el recorte con anuncios faltantes.'],
   ['Visitas y conversión','Reporte de Rendimiento de publicaciones','Visitas únicas y conversión de visitas a ventas del período. El panel sólo aparece si ese reporte está cargado; sin él EVO no tiene la variable de tráfico.'],
-  ['ASP','Precio promedio de venta','Precio de lista promedio del período, con IVA.'],
+  ['ASP','Precio promedio de venta','Lo que efectivamente se cobró por unidad en el período, con IVA, promediado por unidad vendida. Sale de la columna de precio unitario del reporte de ventas, así que ya tiene aplicadas las promociones y los cupones: no es el precio de lista. La diferencia entre el precio de lista publicado y este número es el descuento promedio del período. Una publicación sin ventas no tiene ASP, y ahí EVO usa el precio del catálogo como referencia, siempre marcado como tal.'],
  ]],
  ['Columnas de señales', [
   ['Alertas','Marcas automáticas de la fila','En Rentabilidad: BAJA RENT. cuando el margen queda por debajo del 10%, y ENVÍO +X% VS FAMILIA cuando el costo logístico se desvía de productos comparables. En Publicidad e Inversión Sin Retorno: la acción recomendada.'],
@@ -4482,6 +4482,37 @@ function importPublicacionesXLSX(file) {
       // Grupo de stock compartido entre publicaciones (v51.6)
       const cProd     = findCol('número de producto', 'numero de producto');
 
+      /* ── Precios de catálogo (v53.6) ───────────────────────────────────
+         Este template es la única fuente de precio para las publicaciones que
+         no vendieron en el período: si no hay venta, el reporte de ventas no
+         las nombra y EVO se queda sin referencia de precio.
+
+         Se toman por keyword y no por posición porque la planilla cambia entre
+         países: AR trae "Precio" y "Precio en promoción", CL y MX sólo traen
+         "Precio". Un archivo sin columna de promoción no está incompleto: es
+         el template de un país que no publica ese dato.
+
+         Se busca primero la de promoción y después la de precio salteando su
+         índice, porque ambas empiezan igual y el match parcial las confunde.
+         Las de precio mayorista y precio por unidad quedan afuera: son la
+         escala de venta al por mayor, no el precio de la publicación. */
+      const findPrecioCol = (keys, skipIdx) => {
+        const sirve = (h, j) => j !== skipIdx && !h.includes('mayorista')
+                             && !h.includes('cada unidad') && !h.includes('total');
+        for (const k of keys) {
+          const i = headers.findIndex((h, j) => h === k && sirve(h, j));
+          if (i >= 0) return i;
+        }
+        for (const k of keys) {
+          const i = headers.findIndex((h, j) => h.includes(k) && sirve(h, j));
+          if (i >= 0) return i;
+        }
+        return -1;
+      };
+      const cPromo  = findPrecioCol(['precio en promoción', 'precio en promocion',
+                                     'precio promocional', 'promoción', 'promocion', 'promo'], -1);
+      const cPrecio = findPrecioCol(['precio'], cPromo);
+
       if (cMLA < 0) {
         showForecastAlert('error', 'No se encontró la columna "Número de publicación".');
         return;
@@ -4494,6 +4525,7 @@ function importPublicacionesXLSX(file) {
       const stockPorSku = {};     // sku → Map(grupo → {flex, full}): cada grupo se suma una sola vez
       const titulosNuevos = {};
       const categoriasNuevas = {};
+      const preciosPadre = {};    // mla → precio de la fila padre, respaldo de sus variantes
       let filasProcesadas = 0;
       let mlasSinVariantes = 0;
       let variantesIndividuales = 0;
@@ -4503,6 +4535,15 @@ function importPublicacionesXLSX(file) {
         if (v == null || v === '' || v === '-') return null;
         const n = parseFloat(String(v).replace(/[^\d.-]/g, ''));
         return isNaN(n) ? null : n;
+      };
+      /* El precio viene con el símbolo de moneda y con el separador de miles
+         del país, así que se limpia el símbolo y se deja que parseNum resuelva
+         si el punto es decimal o de miles. Un precio en 0 es un dato ausente,
+         no un producto gratis: vuelve null para no pisar nada con un cero. */
+      const parsePrecio = v => {
+        if (v == null || v === '' || v === '-') return null;
+        const n = parseNum(String(v).replace(/[^\d.,-]/g, ''));
+        return n > 0 ? n : null;
       };
 
       // Pasada 1: identificar qué MLAs tienen filas hijas (con Número de variante poblado)
@@ -4539,6 +4580,8 @@ function importPublicacionesXLSX(file) {
         const flex       = cFlex >= 0 ? parseStock(row[cFlex]) : null;
         const full       = cFull >= 0 ? parseStock(row[cFull]) : null;
         const categoria  = cCategoria >= 0 ? String(row[cCategoria] || '').trim() : '';
+        const pLista     = cPrecio >= 0 ? parsePrecio(row[cPrecio]) : null;
+        const pPromo     = cPromo  >= 0 ? parsePrecio(row[cPromo])  : null;
 
         const tieneHijasReales = mlasConHijas.has(mla);
         const esFilaHija = !!numVar;  // Heurística correcta: tiene Número de variante
@@ -4547,9 +4590,13 @@ function importPublicacionesXLSX(file) {
         if (tieneHijasReales && !esFilaHija) {
           // Fila padre con hijas → saltear (las hijas se procesan individualmente)
           filasPadreSalteadas++;
-          // Aún capturar título y categoría del padre
+          // Aún capturar título, categoría y precio del padre
           if (titulo) titulosNuevos[mla] = titulo;
           if (categoria) categoriasNuevas[mla] = categoria;
+          /* El precio de la fila padre queda de respaldo para las variantes que
+             no traen el suyo. ML deja el precio en la hija cuando difiere entre
+             variantes y lo omite cuando todas comparten el de la publicación. */
+          if (pLista != null) preciosPadre[mla] = { pLista, pPromo };
           continue;
         } else if (esFilaHija) {
           // Fila variante real (tiene Número de variante)
@@ -4568,10 +4615,28 @@ function importPublicacionesXLSX(file) {
            forecast en vista # Publicación. Además, en vista SKU cada fila pisaba
            a la anterior del mismo SKU y quedaba el stock de la última leída. */
         const prod = cProd >= 0 ? String(row[cProd] || '').trim() : '';
-        stockData[id] = { flex, full, pool: prod || null, sinSku: !skuRow };
+        const resp = (pLista == null && preciosPadre[mla]) ? preciosPadre[mla] : null;
+        const precioL = pLista != null ? pLista : (resp ? resp.pLista : null);
+        const precioP = pLista != null ? pPromo : (resp ? resp.pPromo : null);
+        stockData[id] = { flex, full, pool: prod || null, sinSku: !skuRow,
+                          pLista: precioL, pPromo: precioP };
         if (skuRow) {
           if (!stockPorSku[skuRow]) stockPorSku[skuRow] = new Map();
-          stockPorSku[skuRow].set(prod || id, { flex, full });
+          const clave = prod || id;
+          /* El stock del pool se pisa a propósito: dos publicaciones del mismo
+             grupo comparten depósito y contarlo dos veces lo duplicaría. El
+             precio no puede pisarse igual, porque esas dos publicaciones pueden
+             tener precios distintos y quedarse con la última leída hace que el
+             resultado dependa del orden de las filas del archivo. Se conserva
+             el par completo (lista y promoción) de la publicación con el precio
+             de lista más alto, que es la menos descontada. El par viaja junto:
+             mezclar el lista de una con la promoción de otra inventaría un
+             descuento que ninguna de las dos tiene. */
+          const prev = stockPorSku[skuRow].get(clave);
+          const gana = (prev && (prev.pLista || 0) >= (precioL || 0))
+            ? { pLista: prev.pLista, pPromo: prev.pPromo }
+            : { pLista: precioL, pPromo: precioP };
+          stockPorSku[skuRow].set(clave, { flex, full, pLista: gana.pLista, pPromo: gana.pPromo });
         }
         if (titulo) titulosNuevos[mla] = titulo;
         if (categoria) categoriasNuevas[mla] = categoria;
@@ -4583,14 +4648,18 @@ function importPublicacionesXLSX(file) {
         return;
       }
 
-      // Stock por SKU = suma de sus grupos de stock compartido
+      /* Stock por SKU = suma de sus grupos de stock compartido. El precio NO se
+         suma: un SKU publicado en varias publicaciones no vale la suma de sus
+         precios. Se toma el par de la publicación con el precio de lista más
+         alto, con el mismo criterio que dentro del pool. */
       for (const s of Object.keys(stockPorSku)) {
-        let f = null, u = null;
+        let f = null, u = null, pl = null, pp = null;
         stockPorSku[s].forEach(p => {
           if (p.flex != null) f = (f || 0) + p.flex;
           if (p.full != null) u = (u || 0) + p.full;
+          if (p.pLista != null && p.pLista > (pl || 0)) { pl = p.pLista; pp = p.pPromo != null ? p.pPromo : null; }
         });
-        stockData[s] = { flex: f, full: u, pools: stockPorSku[s].size };
+        stockData[s] = { flex: f, full: u, pools: stockPorSku[s].size, pLista: pl, pPromo: pp };
       }
 
       // Validación post-parse: cuántos IDs de la VISTA ACTIVA matchean con el skuMap
@@ -4640,7 +4709,7 @@ function importPublicacionesXLSX(file) {
       }
 
       const aplicar = (modo) => {
-        let nuevos = 0, sobrescritos = 0, omitidos = 0;
+        let nuevos = 0, sobrescritos = 0, omitidos = 0, conPrecio = 0;
         if (G) G.pubsImportadas = true;   // el reporte de Publicaciones define qué es variante real
         
         // Enriquecer records de ventas con SKU faltante usando el reporte de publicaciones
@@ -4666,6 +4735,11 @@ function importPublicacionesXLSX(file) {
           const yaTeniaStock = (inp.stockFlex != null) || (inp.stockFull != null);
           if (data.pool) inp.pool = data.pool;
           if (data.pools != null) inp.pools = data.pools;
+          /* El precio viene de ML, no del usuario: se pisa siempre, igual que
+             el pool, sin importar el modo de importación. El modo elige qué
+             hacer con lo que cargó el usuario a mano, y el precio nunca lo es. */
+          if (data.pLista != null) { inp.precioLista = data.pLista; conPrecio++; }
+          if (data.pPromo != null) inp.precioPromo = data.pPromo;
           const cuenta = _clavesVista.has(id);   // los contadores hablan de la vista activa
 
           if (modo === 'fill_empty' && yaTeniaStock) {
@@ -4708,6 +4782,9 @@ function importPublicacionesXLSX(file) {
           `  • ${nuevos} SKUs nuevos\n` +
           `  • ${sobrescritos} SKUs actualizados${modo === 'fill_empty' ? ' (solo campos vacíos)' : ''}\n` +
           (omitidos > 0 ? `  • ${omitidos} omitidos (ya tenían datos)\n` : '') +
+          (cPrecio >= 0
+            ? `  • ${conPrecio} precios de lista cargados${cPromo >= 0 ? ' (con precio en promoción)' : ' (el template no trae precio en promoción)'}\n`
+            : `  • Sin columna de precio: las publicaciones sin ventas quedan sin referencia\n`) +
           `  • Coincidencias con reporte de ventas: ${idsMatcheados.length}/${idsImportados.length} (${(matchRate*100).toFixed(0)}%)` +
           (Object.keys(categoriasNuevas).length > 0 ? `\n  • ${Object.keys(categoriasNuevas).length} categorías ML cargadas` : '') +
           extraMsg);
@@ -10226,7 +10303,10 @@ function exportarExcel(){
      alto que el real y un piso de ticket que no era. La bonificación ya estaba
      dentro del margen —viene en "Descuentos y bonificaciones" del reporte de
      ventas— pero no tenía columna donde verse. */
-  const unitHdr = [idLabel,'Producto','Tipo','Precio Prom.','Comisión%','Envío/u (neto IVA)','Envío propio/u (tarifa)','Bonif. envío/u','Envío propio/u (neto)','Cobertura envío%','Recibido ML/u','NEXUS $/u (Break Even)','Margen Unit% (s/ venta neta)'];
+  /* "Origen del precio" (v53.6) separa el ASP del precio de catálogo. Sin esa
+     columna las dos cosas comparten celda y no hay forma de saber cuál se está
+     leyendo: una es lo que se cobró y la otra lo que se pide hoy. */
+  const unitHdr = [idLabel,'Producto','Tipo','Precio Prom.','Origen del precio','Comisión%','Envío/u (neto IVA)','Envío propio/u (tarifa)','Bonif. envío/u','Envío propio/u (neto)','Cobertura envío%','Recibido ML/u','NEXUS $/u (Break Even)','Margen Unit% (s/ venta neta)'];
   const plHdr = [idLabel,'Producto','Tipo','Unidades','Rev. Bruto','Comisión%','Envío $ total (neto IVA)','Envío propio $ (tarifa)','Bonif. envío $','Envío propio $ (neto)','Cobertura envío%','Inversión Ads (neta IVA)','TACOS%','Recibido ML','NEXUS $ Período','Margen P&L% (s/ venta neta)'];
   if (cogsOn) {
     unitHdr.push('COGS /u','Costo matcheado','Match','Margen Unit $ (post COGS)','Margen Unit % (post COGS, s/ venta neta)');
@@ -10245,9 +10325,26 @@ function exportarExcel(){
        número: se exporta el motivo, para que nadie lo tome como dato. */
     const _cobPct = n.coberturaEnvio ? n.coberturaEnvio.verificado : 1;
     const _noComp = 'n/d · envío propio sin costo cargado';
-    const unitRow = [s.id,titleFor(s.id)||'',n.desgloseTipo||'-',n.precioProm,n.comision,n.envioUnit,
-                     n.flexUnitEfectivo||0,n.bonifFlexUnit||0,n.flexNetoUnitEfectivo||0,_cobPct,n.recibidoMLUnit||0,beUnit,
-                     n.margenNoComputable ? _noComp : mUnit];
+    /* Sin ventas en el período no hay ASP ni cargos reales que informar. Se
+       exporta el precio publicado y una columna que dice de dónde salió, en vez
+       de mezclar la aclaración dentro del número: la columna tiene que seguir
+       siendo numérica para que Excel la promedie y el lector la grafique.
+       Todo lo que se calcula por unidad vendida va "n/d", porque exportar el
+       cero deja un margen del 0% que se lee como una publicación que no gana
+       nada, cuando lo que pasó es que no vendió. */
+    const _sinVta = !!n.sinPrecioReal;
+    const _noVta  = 'n/d · sin ventas en el período';
+    const _precioCol = _sinVta ? (n.precioRef || '') : n.precioProm;
+    const _origenPrecio = !_sinVta ? 'venta del período'
+                        : n.precioRef > 0
+                          ? (n.precioRefEsPromo ? 'catálogo · precio en promoción' : 'catálogo · precio de lista')
+                          : 'sin dato';
+    const unitRow = _sinVta
+      ? [s.id,titleFor(s.id)||'',n.desgloseTipo||'-',_precioCol,_origenPrecio,
+         _noVta,_noVta,_noVta,_noVta,_noVta,_cobPct,_noVta,_noVta,_noVta]
+      : [s.id,titleFor(s.id)||'',n.desgloseTipo||'-',_precioCol,_origenPrecio,n.comision,n.envioUnit,
+         n.flexUnitEfectivo||0,n.bonifFlexUnit||0,n.flexNetoUnitEfectivo||0,_cobPct,n.recibidoMLUnit||0,beUnit,
+         n.margenNoComputable ? _noComp : mUnit];
     const plRow = [s.id,titleFor(s.id)||'',n.desgloseTipo||'-',s.unidades||0,s.ingresos_brutos||0,n.comision,n.envioAbsorbido||0,
                    n.flexTotal||0,n.bonifFlex||0,n.flexNetoTotal||0,_cobPct,
                    n.inversionAds>0?n.inversionAds:'Sin inversión',n.inversionAds>0?n.tacos:'',n.recibidoML||0,n.recibidoNEXUS||0,
@@ -10255,14 +10352,25 @@ function exportarExcel(){
     if (cogsOn) {
       const cg = getCOGS(s);
       if (cg) {
-        const margenPostU = beUnit - cg.costo;
-        // Misma base que el dashboard: venta neta (v52.8)
-        const _baseU = (n.precioProm || 0) * (1 - (n.factorIva || 0));
-        const margenPostPct = _baseU > 0 ? margenPostU / _baseU : 0;
+        /* El margen post-COGS parte del break even, que se calcula por unidad
+           VENDIDA. Sin ventas vale cero, y restarle el COGS daba una pérdida
+           por unidad igual al COGS entero —una pérdida que nunca ocurrió,
+           porque no se vendió ninguna unidad—. Con el precio del catálogo
+           tampoco se puede estimar: faltan los cargos reales de esa venta que
+           no existió. Se informa el costo y se dice que el margen no se puede
+           calcular. */
         const cogsTotal = cg.costo * (s.unidades||0);
         const rentFinal = (n.recibidoNEXUS||0) - cogsTotal;
         const margenFinal = (n.ventaNeta||0) > 0 ? rentFinal / n.ventaNeta : 0;
-        unitRow.push(cg.costo, cg.titulo||'', cg.match||'EXACTO', margenPostU, margenPostPct);
+        if (_sinVta) {
+          unitRow.push(cg.costo, cg.titulo||'', cg.match||'EXACTO', _noVta, _noVta);
+        } else {
+          const margenPostU = beUnit - cg.costo;
+          // Misma base que el dashboard: venta neta (v52.8)
+          const _baseU = (n.precioProm || 0) * (1 - (n.factorIva || 0));
+          const margenPostPct = _baseU > 0 ? margenPostU / _baseU : 0;
+          unitRow.push(cg.costo, cg.titulo||'', cg.match||'EXACTO', margenPostU, margenPostPct);
+        }
         plRow.push(cg.costo, cogsTotal, rentFinal, margenFinal);
       } else {
         unitRow.push('','','SIN COGS','','');
@@ -10273,7 +10381,7 @@ function exportarExcel(){
     nexusPLRows.push(plRow);
     if(n.inversion>0) tacosRows.push([s.id,titleFor(s.id)||'',n.inversion,s.ingresos_brutos,n.tacos,n.roas||'']);
   });
-  addSheet('NEXUS Unit',nexusUnitRows, cogsOn ? [25,45,12,14,12,12,16,14,16,14,14,20,14,12,30,10,18,18] : [25,45,12,14,12,12,16,14,16,14,14,20,14]);
+  addSheet('NEXUS Unit',nexusUnitRows, cogsOn ? [25,45,12,14,22,12,12,16,14,16,14,14,20,14,12,30,10,18,18] : [25,45,12,14,22,12,12,16,14,16,14,14,20,14]);
   addSheet('NEXUS P&L',nexusPLRows, cogsOn ? [25,45,12,10,16,12,14,16,14,16,14,16,10,16,16,14,12,18,20,14] : [25,45,12,10,16,12,14,16,14,16,14,16,10,16,16,14]);
   if(tacosRows.length>1) addSheet('TACOS',tacosRows,[25,45,16,18,12,10]);
 
@@ -11963,6 +12071,38 @@ function _bonifOtrasDe(s) {
   return (s.descuentos || 0) * nf - _bonifFlexDe(s);
 }
 
+/* ═══════════ PRECIO DE CATÁLOGO · la referencia cuando no hubo ventas ═══════════
+   El ASP sale del reporte de ventas: es el precio que se cobró, promediado por
+   unidad vendida. Una publicación que no vendió en el período no figura en ese
+   reporte y se queda sin precio.
+
+   El template de stock cubre ese hueco porque trae el precio publicado. NO es
+   el mismo número y por eso nunca pisa al ASP: es el precio de hoy, no el del
+   período, y es lo que se pide, no lo que se cobró. Viaja aparte y marcado.
+
+   Donde hay promoción vigente se toma esa, que es lo que el comprador paga; el
+   precio de lista se conserva al lado para poder medir el descuento. */
+function precioCatalogo(s) {
+  if (!s || typeof FORECAST_INPUTS === 'undefined') return null;
+  const ids = [];
+  [String(s.id || '').trim(), String(s.id_pub_raw || '').trim()].forEach(k => {
+    if (!k || k === 'SIN_SKU' || k === 'SIN_ID') return;
+    ids.push(k);
+    const sp = (typeof splitVariantId === 'function') ? splitVariantId(k) : null;
+    if (sp && sp.baseId && sp.baseId !== k) ids.push(sp.baseId);
+  });
+  for (const id of ids) {
+    const inp = FORECAST_INPUTS[id];
+    if (!inp) continue;
+    const lista = inp.precioLista > 0 ? inp.precioLista : 0;
+    const promo = inp.precioPromo > 0 ? inp.precioPromo : 0;
+    if (lista || promo) {
+      return { precio: promo || lista, lista, promo, esPromo: !!promo };
+    }
+  }
+  return null;
+}
+
 function calcNEXUS(s) {
   let precioProm = s.precio_count > 0 ? s.precio_sum / s.precio_count : 0;
   if (precioProm <= 0 && s.unidades > 0 && s.ingresos_brutos > 0) {
@@ -11976,6 +12116,19 @@ function calcNEXUS(s) {
   // Solo retornar null si NO tiene precio Y NO tiene inversión (item irrelevante)
   // Una publicación que sólo tuvo devoluciones con costo también cuenta (v51.3)
   if (precioProm <= 0 && (!ads || !ads.inversion || ads.inversion <= 0) && !((s.costo_devolucion || 0) < 0)) return null;
+
+  /* El precio de catálogo se busca DESPUÉS del filtro de arriba, a propósito.
+     Antes, una publicación con stock y precio pero sin ventas ni Ads pasaría el
+     filtro por tener precio y entraría a todas las tablas con revenue cero: en
+     esta cuenta son 332 sobre 516, y Rentabilidad pasaría a estar hecha en sus
+     dos terceras partes de filas vacías. El catálogo enriquece a las que ya
+     entraron por mérito propio; no decide quién entra. */
+  const _cat = precioProm <= 0 ? precioCatalogo(s) : null;
+  /* Sin ASP, todo lo que se calcula sobre el precio da cero: comisión, recibido,
+     break even, margen. Ese cero no es un resultado, es la ausencia del dato, y
+     leído como precio convierte la publicación en un margen del 0%. El flag
+     viaja para que las tablas muestren "n/d" donde hoy muestran un cero. */
+  const sinPrecioReal = precioProm <= 0;
 
   // ═══════════════════════════════════════════════════════════
   // NEXUS v2 · cálculo HÍBRIDO con datos reales del reporte
@@ -12185,6 +12338,11 @@ function calcNEXUS(s) {
 
   return {
     precioProm, comision, tacos,
+    // Referencia de precio para las publicaciones sin ventas en el período
+    sinPrecioReal,
+    precioRef: _cat ? _cat.precio : 0,
+    precioRefLista: _cat ? _cat.lista : 0,
+    precioRefEsPromo: !!(_cat && _cat.esPromo),
     ivaRate, iibbRate, fiscalTotal, factorIva, netFee, ventaNeta, esRI,
     envioUnit, cogs: 0,
     // Costos por unidad consolidados (reemplazan la tabla "Desglose de Costos")
@@ -14852,6 +15010,31 @@ function buildNexusTable(cache, mode) {
     + '">sin ventas por ' + _CANAL_LABEL[NEXUS_CANAL] + ' · '
     + fmtCurrency(s.ingresos_brutos || 0) + ' facturados por otros canales</td></tr>';
 
+  /* La publicación entró a la tabla por su inversión en Ads o por una devolución
+     con costo, pero no vendió ninguna unidad en el período. Todo lo que ocupa
+     esta fila se calcula por unidad vendida, así que da cero: precio, comisión,
+     envío, recibido y break even. Mostrados como números, esos ceros se leen
+     como un margen del 0% —y con COGS cargado la fórmula llegaba a marcar
+     −100% y PÉRDIDA POST-COGS por el costo entero de una unidad que nunca se
+     vendió—. Se muestra el precio publicado, que es el único dato real que hay,
+     y se dice por qué no hay margen. Misma técnica de colspan que la fila de
+     arriba: sobra a propósito para no contar columnas por variante. */
+  const filaSinVentas = (s, n) => {
+    const ref = n.precioRef > 0
+      ? fmtCurrency(n.precioRef) + (n.precioRefEsPromo ? ' en promoción' : ' de lista')
+      : 'sin precio de catálogo cargado';
+    const ayuda = n.precioRef > 0
+      ? 'No registra ventas en el período, así que no tiene precio promedio ni cargos reales: todo lo que va por unidad vendida quedaría en cero. '
+        + 'El precio sale del reporte de Publicaciones (el mismo que importa el stock) y es el de hoy, no el del período. '
+        + 'Para verle margen hace falta una venta, o el tarifario de la categoría.'
+      : 'No registra ventas en el período y tampoco hay precio de catálogo cargado. '
+        + 'Importá el reporte de Publicaciones desde Forecast → "Stock desde reporte ML" para recuperar el precio.';
+    return '<tr class="evo-apagada"><td>' + idWithTitle(s.id) + adStateChip(s.id) + '</td>'
+      + '<td colspan="20" style="font-size:11px;color:var(--muted);font-style:italic;cursor:help" title="'
+      + ayuda.replace(/"/g,'&quot;') + '">sin ventas en el período · margen n/d · publicado a '
+      + ref + '</td></tr>';
+  };
+
   const desgloseBadgeFor = (n) => n.desgloseTipo === 'DETALLADO'    ? '<span style="background:rgba(52,211,153,.10);color:var(--ok);padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px;margin-left:6px;" title="Reporte de ventas trae desglose detallado de impuestos/cuotas/cargos extra">DETALLADO</span>'
     : '<span style="background:rgba(251,146,60,.10);color:var(--warn);padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px;margin-left:6px;" title="Comisión calculada como promedio. En categorías con altas comisiones puede subestimar costos.">PROMEDIO</span>';
 
@@ -14917,6 +15100,11 @@ function buildNexusTable(cache, mode) {
     nexusArr.forEach(s => {
       if (s._sinCanal) { html += filaSinCanal(s); return; }
       const n = s.nexus;
+      /* Sólo en la vista UNIT. En la vista P&L los ceros son reales y valiosos:
+         ahí la fila dice que gastó en Ads y facturó cero, que es justamente lo
+         que hay que ver. Acá, en cambio, cada columna es una división por
+         unidades vendidas. */
+      if (n.sinPrecioReal) { html += filaSinVentas(s, n); return; }
       const mU = n.margenUnitario !== undefined ? n.margenUnitario : n.margenNEXUS;
       const beU = n.breakEvenUnit !== undefined ? n.breakEvenUnit : n.recibidoNEXUSUnit;
       const mDot = mU < 0 ? 'danger' : mU < MARGIN_LOW ? 'danger' : mU < MARGIN_MED ? 'warn' : 'ok';
@@ -16343,7 +16531,10 @@ function renderFichaML(s) {
   const n = (typeof calcNEXUS === 'function') ? calcNEXUS(s) : null;
   const cogsRec = (typeof getCOGS === 'function') ? getCOGS(s) : null;
   const cogsU = cogsRec ? (cogsRec.costo || 0) : 0;
-  const margenUnitPostCogs = (n && cogsU > 0) ? (n.breakEvenUnit - cogsU) : null;
+  /* Sin ventas en el período el break even unitario es cero por falta de
+     unidades, no por falta de margen: restarle el COGS marcaba PÉRDIDA
+     POST-COGS por el costo entero en publicaciones que no vendieron nada. */
+  const margenUnitPostCogs = (n && cogsU > 0 && !n.sinPrecioReal) ? (n.breakEvenUnit - cogsU) : null;
   // Venta neta unitaria: misma convención que el resto del código (precio × (1 − factorIva))
   const ventaNetaUnit = n ? (n.precioProm || 0) * (1 - (n.factorIva || 0)) : 0;
 
@@ -16406,11 +16597,23 @@ function renderFichaML(s) {
   const kpis = [];
   kpis.push(KPI('Revenue período', ARS(ventaNetaDe(s)),
     (s.unidades || 0) + ' u' + (NEXUS_FISCAL === 'RI' ? ' · neto IVA' : '')));
-  if (n) {
-    kpis.push(KPI('Precio promedio', ARS(n.precioProm || 0), 'precio de lista'));
+  if (n && n.sinPrecioReal) {
+    /* No vendió en el período: el único precio que existe es el publicado, y
+       los cargos por unidad no tienen de dónde salir. Mostrarlos en cero daba
+       un "Margen Unit 0%" que se leía como una publicación sin rentabilidad. */
+    if (n.precioRef > 0) {
+      kpis.push(KPI('Precio publicado', ARS(n.precioRef),
+        n.precioRefEsPromo ? 'en promoción · del catálogo, no del período' : 'precio de lista · del catálogo, no del período'));
+    }
+    kpis.push(KPI('Margen Unit', 'n/d', 'sin ventas en el período', 'var(--muted)'));
+  } else if (n) {
+    kpis.push(KPI('Precio promedio', ARS(n.precioProm || 0), 'promedio cobrado en el período'));
     kpis.push(KPI('Recibido neto/u', ARS(n.breakEvenUnit || 0), 'tras fees, envío e IVA'));
     const mgColor = (n.margenUnitario || 0) < 0 ? 'var(--danger)' : (n.margenUnitario || 0) < 0.10 ? 'var(--warn)' : 'var(--ok)';
     kpis.push(KPI('Margen Unit (pre-COGS)', PCT(n.margenUnitario || 0), 'sobre venta neta', mgColor));
+  }
+  if (cogsU > 0 && n && n.sinPrecioReal) {
+    kpis.push(KPI('COGS /u', ARS(cogsU), cogsRec.match === 'EXACTO' ? 'match exacto' : 'match por SKU'));
   }
   if (cogsU > 0 && margenUnitPostCogs !== null) {
     const c = margenUnitPostCogs < 0 ? 'var(--danger)' : 'var(--ok)';
