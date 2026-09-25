@@ -1425,7 +1425,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v53.7';
+const EVO_VERSION = 'v53.8';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -3740,6 +3740,22 @@ function importInputsJSON(file) {
             notes: inp?.notes || ''
           };
         }
+      }
+      /* Pool y precios vienen del template de Publicaciones, no del usuario
+         (v53.8). Antes este import reemplazaba FORECAST_INPUTS con sólo los
+         campos manuales, y cargar un JSON de inputs después del template dejaba
+         a Publicidad y Rentabilidad sin precio de catálogo. Se toman del JSON si
+         los trae y, si no, se conservan los que ya estaban cargados. */
+      const _ML_CAMPOS = ['pool', 'pools', 'precioLista', 'precioPromo'];
+      const _previos = FORECAST_INPUTS || {};
+      for (const k of new Set([...Object.keys(migrated), ...Object.keys(_previos)])) {
+        const src = payload.skus[k], prev = _previos[k];
+        _ML_CAMPOS.forEach(c => {
+          const v = (src && src[c] != null) ? src[c] : (prev && prev[c] != null ? prev[c] : null);
+          if (v == null) return;
+          if (!migrated[k]) migrated[k] = { stockFlex: null, stockFull: null, cogs: null, leadTimeFlex: null, leadTimeFull: null, notes: '' };
+          migrated[k][c] = v;
+        });
       }
       FORECAST_INPUTS = migrated;
 
