@@ -1336,8 +1336,8 @@ const _GLOSARIO = [
   ['Envío propio en el estado de resultados','Tiene línea propia desde v52.9','El envío propio se paga fuera de la plataforma, así que no está en el reporte y hasta v52.8 el estado de resultados no lo listaba. La plata estaba bien restada —calcNEXUS ya la descontaba— pero como no había línea, la diferencia se colaba por el cálculo de retenciones y salía impresa bajo "Retenciones de la plataforma": sobre un caso de $20.000 de envío propio, el estado mostraba $4.959 de costo logístico y $20.000 de retenciones inexistentes. El resultado final nunca cambió; la etiqueta, sí. Va en línea separada y no sumada al envío de ML porque son cosas distintas: uno es un cargo de la plataforma y el otro un pago a un tercero.'],
   ['Ocultar apagados','Check en el header de cada panel que las tenga','Una fila apagada es la que existe pero no tiene nada que decir en la vista activa: una publicación sin ventas por el canal de la lente, un anuncio pausado o movido sobre el que ya no hay puja que tocar. Mostrarlas sigue siendo lo correcto —si desaparecieran, nadie sabría que existen— pero al ordenar por margen ascendente se amontonan arriba y tapan lo accionable. El check las esconde y dice cuántas son. Es filtro de VISTA: no toca los cálculos, los totales ni los exports. Se instala solo en los paneles que tengan filas marcadas, así que un panel nuevo lo hereda sin configurar nada, y recuerda su estado al cambiar de lente o de filtro.'],
   ['Alertas de Inversión Sin Retorno como filtro','Cada card abre su propio listado','El panel acumuló casos —sigue gastando, pérdida completa, no repaga, pausar, revisar, soportar— y todos caían en una sola tabla. En cuentas con muchas publicaciones sin ventas había que barrer cientos de filas para encontrar un caso puntual. Ahora la card es el botón de su listado: al tocarla la tabla se recorta a ese caso y aparece el botón Ver todo. El total que muestra la card sigue siendo el de la cuenta entera y los exports no cambian.'],
-  ['ACOS proyectado sin ventas propias','Contra el ticket promedio de la cuenta','Una publicación que no vendió nada no tiene precio propio, y ni el reporte de Anuncios ni el de Rendimiento lo traen. Hasta v52.9 esas filas mostraban — en AOV y en ACOS, justo donde más importa: el panel existe para responder qué parte de una venta se está comiendo la pauta, y la pregunta más urgente es sobre la publicación que todavía no registró su primera venta. Ahora se proyecta contra el ticket promedio de la cuenta del período, marcado con ref. en la celda para no confundirlo con un precio propio.'],
-  ['NO REPAGA','ACOS proyectado de 100% o más','El punto de corte. La inversión ya superó lo que dejaría una venta entera: aunque la publicación vendiera ahora mismo, esa venta no alcanza a devolver lo gastado, y mientras el anuncio siga activo el pozo se profundiza. Va primero entre las alertas porque es la que manda a cortar. En las publicaciones sin ninguna venta se calcula contra el ticket de referencia.'],
+  ['ACOS proyectado sin ventas propias','Contra su precio de catálogo, o el ticket de la cuenta','Una publicación que no vendió nada no tiene precio cobrado, y ni el reporte de Anuncios ni el de Rendimiento lo traen. Si está cargado el template de Publicaciones en Forecast, se proyecta contra su precio de hoy (el de promoción si tiene, si no el de lista), marcado con cat. en la celda. Si el template no la trae, se usa el ticket promedio de la cuenta del período, marcado con ref.: es una referencia, no un precio propio.'],
+  ['NO REPAGA','ACOS proyectado de 100% o más','El punto de corte. La inversión ya superó lo que dejaría una venta entera: aunque la publicación vendiera ahora mismo, esa venta no alcanza a devolver lo gastado, y mientras el anuncio siga activo el pozo se profundiza. Va primero entre las alertas porque es la que manda a cortar. En las publicaciones sin ninguna venta se calcula contra su precio de catálogo, o contra el ticket de referencia si el template de Publicaciones no la trae.'],
   ['Formato de múltiplos en el export','ROAS y uplift con dos decimales','Un múltiplo no es dinero ni porcentaje, así que caía en el tipo general y salía sin formato: una celda de ROAS se imprimía 7,3546370693720675. Tienen tipo propio con formato 0,00. Mismo caso en las filas de metadatos del mapa de calor y en los parámetros de la hoja de metodología, que llevaban el double crudo.'],
   ['Costo de envío por canal (tarjetas)','Una card por canal de despacho','En la cabecera de Rentabilidad, el costo de envío del período abierto por ME2, FULL y Flex/propio, con las unidades despachadas y cuánto pesa sobre la facturación de cada canal. Va ahí porque es la cifra que explica el margen de toda la pestaña: en cuentas reales el envío se lleva más que la comisión. Las tres no son comparables sin aclararlo, y por eso cada tarjeta declara su origen en el tooltip: ME2 y FULL salen del costo que informa ML venta por venta; Flex sale del template.'],
   ['Por qué Flex dice "sin medir" y no $0','Un cero diría que despachar por cuenta propia es gratis','Mientras falten publicaciones en el template, la tarjeta de Flex no muestra un importe: muestra cuántas publicaciones y cuántas unidades quedaron sin medir. Mostrar $0 sería la lectura más peligrosa del tablero. Al cargar el template pasa a mostrar el costo real y el detalle de unidades.'],
@@ -1425,7 +1425,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v53.5';
+const EVO_VERSION = 'v53.7';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -15932,6 +15932,32 @@ function renderNEXUS(skuMap, useML, idLabel) {
     allSkuArr.forEach(o => { _uCta += o.unidades || 0; _ibCta += o.ingresos_brutos || 0; });
     const aovCuenta = _uCta > 0 ? _ibCta / _uCta : 0;
 
+    /* Precio de catálogo por número de publicación (v53.7). Desde v53.6 el
+       template de Publicaciones trae el precio de las que no vendieron, pero
+       este panel seguía proyectando todas contra el ticket de la cuenta: el
+       precio estaba cargado y nadie lo consultaba acá.
+
+       Se indexa por el número sin prefijo porque el reporte de Anuncios a veces
+       trae el ID numérico pelado, y por la publicación base porque una con
+       variantes sólo queda guardada bajo la clave de cada variante. Entre
+       variantes de precio distinto se toma la de lista más alta, el mismo
+       criterio que usa la importación para los SKUs repartidos en varias. */
+    const _catPorNum = {};
+    if (typeof FORECAST_INPUTS !== 'undefined') {
+      Object.keys(FORECAST_INPUTS).forEach(k => {
+        const inp = FORECAST_INPUTS[k];
+        if (!inp || !/^ML[A-Z]/i.test(k)) return;
+        const lista = inp.precioLista > 0 ? inp.precioLista : 0;
+        const promo = inp.precioPromo > 0 ? inp.precioPromo : 0;
+        if (!lista && !promo) return;
+        const num = splitVariantId(k).baseId.toUpperCase().replace(/^ML[A-Z]+0*/, '').replace(/\D/g, '');
+        if (!num) return;
+        const prev = _catPorNum[num];
+        if (prev && prev.lista >= lista) return;
+        _catPorNum[num] = { precio: promo || lista, lista, esPromo: !!promo };
+      });
+    }
+
     for (const s of allSkuArr) {
       const enrich = getEnrichment(s);
       if (!enrich.ads || enrich.ads.inversion <= 0) continue;
@@ -15951,6 +15977,10 @@ function renderNEXUS(skuMap, useML, idLabel) {
 
       let aov = s.precio_count > 0 ? s.precio_sum / s.precio_count : 0;
       if (aov <= 0 && s.unidades > 0 && s.ingresos_brutos > 0) aov = s.ingresos_brutos / s.unidades;
+      /* Figura en ventas pero sin precio cobrado (sólo cancelaciones o
+         devoluciones): el catálogo es mejor referencia que dejarla SIN PRECIO. */
+      const _catS = aov <= 0 ? precioCatalogo(s) : null;
+      if (_catS) aov = _catS.precio;
 
       const acosProyectado = aov > 0 ? (inv / aov) : null;
 
@@ -15970,6 +16000,7 @@ function renderNEXUS(skuMap, useML, idLabel) {
       }
 
       zeroReturnArr.push({ s, inv, aov, acosProyectado, accion, accionClass, accionDesc, sinVentaAlguna: false, pubLiqSales,
+        aovCatalogo: _catS,
         /* Estado y campaña del anuncio: pausar lo que ya está pausado no es una
            acción, y sin el estado la tabla mandaba a revisar publicaciones sobre
            las que no hay nada que tocar. */
@@ -16002,15 +16033,21 @@ function renderNEXUS(skuMap, useML, idLabel) {
         if (!a || !(a.inversion > 0)) return;
         vistos.add(num);
         const idMostrar = /^ML[A-Z]/i.test(k) ? k : ('MLA' + num);
-        const _acosRef = aovCuenta > 0 ? (a.inversion / aovCuenta) : null;
+        // Primero el precio propio del catálogo; el ticket de la cuenta sólo si el template no la trae
+        const _cat = _catPorNum[num] || null;
+        const _aovRef = _cat ? _cat.precio : aovCuenta;
+        const _acosRef = _aovRef > 0 ? (a.inversion / _aovRef) : null;
         zeroReturnArr.push({
           s: { id: idMostrar, unidades: 0 },
-          inv: a.inversion, aov: aovCuenta, acosProyectado: _acosRef, aovEsReferencia: true,
+          inv: a.inversion, aov: _aovRef, acosProyectado: _acosRef,
+          aovCatalogo: _cat, aovEsReferencia: !_cat,
           accion: 'SIN VENTAS', accionClass: 'zr-row-danger',
           accionDesc: 'No registra ninguna venta en el período (ni atribuida a Ads ni orgánica). '
             + 'La inversión es pérdida completa. Verificá que el período del reporte de Ads coincida con el filtro de fechas antes de decidir.'
             + (_acosRef !== null
-                ? ' Proyectado contra el ticket promedio de la cuenta (' + fmtCurrency(aovCuenta) + '), la pauta ya se lleva '
+                ? (_cat
+                    ? ' Proyectado contra su precio ' + (_cat.esPromo ? 'en promoción' : 'de lista') + ' del catálogo (' + fmtCurrency(_cat.precio) + '), la pauta ya se lleva '
+                    : ' Proyectado contra el ticket promedio de la cuenta (' + fmtCurrency(aovCuenta) + '), la pauta ya se lleva ')
                   + PCT(_acosRef) + ' de lo que dejaría su primera venta'
                   + (_acosRef >= 1 ? ': la primera venta NO alcanza a cubrir lo invertido.' : '.')
                 : '')
@@ -16069,7 +16106,7 @@ function renderNEXUS(skuMap, useML, idLabel) {
         alertsHtml += `<div class="zr-alert zr-alert-ok"><span class="zr-icon">✓</span><div class="zr-body"><div class="zr-title zr-title-ok">Ningún anuncio activo sin retorno</div><div class="zr-desc">Las ${noActivosZR} publicaciones del listado ya están pausadas, movidas o deshabilitadas: el gasto es histórico del período y no hay nada que frenar.</div></div></div>`;
       }
       if (noRepagaArr.length > 0) {
-        alertsHtml += `<div class="zr-alert" data-zr-tag="norepaga" onclick="_zrFiltrar(this,'norepaga')"><span class="zr-icon">💸</span><div class="zr-body"><div class="zr-title">NO REPAGA · ${noRepagaArr.length} ${noRepagaArr.length>1?'publicaciones':'publicación'} donde una venta no cubre lo gastado</div><div class="zr-desc">${fmtCurrency(noRepagaInv)} de inversión con ACOS proyectado de 100% o más: aunque vendieran ahora mismo, esa venta no alcanza a devolver lo que ya se gastó. Es el punto de corte: mientras el anuncio siga activo, el pozo se profundiza. En las publicaciones sin ninguna venta el ACOS se proyecta contra el ticket promedio de la cuenta, porque no tienen precio propio.</div></div></div>`;
+        alertsHtml += `<div class="zr-alert" data-zr-tag="norepaga" onclick="_zrFiltrar(this,'norepaga')"><span class="zr-icon">💸</span><div class="zr-body"><div class="zr-title">NO REPAGA · ${noRepagaArr.length} ${noRepagaArr.length>1?'publicaciones':'publicación'} donde una venta no cubre lo gastado</div><div class="zr-desc">${fmtCurrency(noRepagaInv)} de inversión con ACOS proyectado de 100% o más: aunque vendieran ahora mismo, esa venta no alcanza a devolver lo que ya se gastó. Es el punto de corte: mientras el anuncio siga activo, el pozo se profundiza. En las publicaciones sin ninguna venta el ACOS se proyecta contra su precio de catálogo, y contra el ticket promedio de la cuenta sólo si el template de Publicaciones no las trae.</div></div></div>`;
       }
       if (sinVentaCount > 0) {
         alertsHtml += `<div class="zr-alert" data-zr-tag="sinventa" onclick="_zrFiltrar(this,'sinventa')"><span class="zr-icon">⛔</span><div class="zr-body"><div class="zr-title">PÉRDIDA COMPLETA · ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin NINGUNA venta</div><div class="zr-desc">${fmtCurrency(sinVentaInv)} de inversión en publicaciones que no vendieron nada en el período, ni por Ads ni de forma orgánica. Antes de pausar, verificá que el período del reporte de Ads coincida con el filtro de fechas: si el reporte de ventas cubre una ventana más corta, algunas pueden haber vendido fuera de ella.</div></div></div>`;
@@ -16121,7 +16158,9 @@ function renderNEXUS(skuMap, useML, idLabel) {
           + `<td>${_adEstadoChip(z.estado)}</td>`
           + `<td class="num" style="color:var(--warn)">${ARS(z.inv)}</td>`
           + `<td class="num">${z.aov > 0
-              ? (z.aovEsReferencia
+              ? (z.aovCatalogo
+                  ? `<span style="cursor:help" title="Sin ventas propias en el período: es el precio ${z.aovCatalogo.esPromo ? 'en promoción' : 'de lista'} que trae el template de Publicaciones, el de hoy, no uno cobrado.">${ARS(z.aov)} <span style="font-size:9px;color:var(--muted)">cat.</span></span>`
+              : z.aovEsReferencia
                   ? `<span style="color:var(--muted);cursor:help" title="Esta publicación no vendió nada en el período, así que no tiene precio propio: ni el reporte de Anuncios ni el de Rendimiento lo traen. Se usa el ticket promedio de la cuenta como referencia para poder proyectar el ACOS.">${ARS(z.aov)} <span style="font-size:9px">ref.</span></span>`
                   : ARS(z.aov))
               : '<span style="color:var(--muted)">—</span>'}</td>`
@@ -16147,7 +16186,7 @@ function renderNEXUS(skuMap, useML, idLabel) {
         (activosZR.length > 0 ? ` · ${fmtCurrency(invActivosZR)} en ${activosZR.length} ${activosZR.length>1?'anuncios activos':'anuncio activo'} (lo único frenable hoy)` : '') +
         (sinVentaCount > 0 ? ` · ${fmtCurrency(sinVentaInv)} en ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin ninguna venta` : '') +
         ` · ACOS proyectado = inversión ÷ precio promedio` +
-        (aovCuenta > 0 ? ` · sin ventas propias se proyecta contra el ticket de la cuenta (${fmtCurrency(aovCuenta)})` : '') +
+        (aovCuenta > 0 ? ` · sin ventas propias se proyecta contra el precio de catálogo, o el ticket de la cuenta (${fmtCurrency(aovCuenta)})` : '') +
         ` · tocá una alerta para ver sólo ese caso`,
         html,
         true
