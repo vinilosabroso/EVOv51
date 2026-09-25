@@ -1425,7 +1425,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v53.8';
+const EVO_VERSION = 'v53.9';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1559,6 +1559,7 @@ function _metodologiaIA() {
     ['Pauta sin ventas', 'Inversión del período − la atribuida a publicaciones con ventas', 'Se resta a nivel cuenta; no figura en las filas por publicación.'],
     ['TACOS', 'Inversión bruta ÷ Ingresos por productos brutos', 'Con IVA de los dos lados, comparable con el panel de Mercado Ads. No es el costo neto que usan los resultados.'],
     ['ROAS', 'Ingresos atribuidos ÷ inversión, ambos del reporte de Anuncios', ''],
+    ['ACOS proyectado (hoja Inversión Sin Retorno)', 'Inversión ÷ precio de referencia de UNA venta', 'Publicaciones con inversión y sin ventas atribuidas a Ads. Precio de referencia: el promedio cobrado en el período si vendió; si no, el de catálogo del template de Publicaciones (promoción si tiene, si no lista); si el template no la trae, el ticket promedio de la cuenta. La columna Origen del precio dice cuál se usó. No repaga = ACOS de 100% o más.'],
    ]],
    ['Carritos', [
     ['Estructura del reporte', 'Fila "Paquete de N productos" + una fila por ítem', 'La fila del paquete trae ingresos, cargos, impuestos, descuentos y Total; los ítems traen precio y unidades, sin Total. Es el formato de ML, no un faltante.'],
@@ -10288,6 +10289,32 @@ function exportarExcel(){
   addSheet('Publicidad',pubRows,[25,45,16,20,18,20,10,18,16,16,12,22],
     { tipos:['general','general','money','money','money','ratio','ratio','money','money','money','percent','general'] });
 
+  /* Inversión Sin Retorno (v53.9): las filas del panel de Publicidad, en su
+     mismo orden. El origen del precio va en su propia columna porque el ACOS
+     proyectado no significa lo mismo contra lo cobrado, contra el precio de
+     catálogo de hoy o contra el ticket de toda la cuenta. */
+  const _zr = G._zeroReturn;
+  if (_zr && _zr.rows.length) {
+    const zrRows = [[idLabel, 'Producto', 'Estado anuncio', 'Campaña', 'Inversión Ads', 'Precio de referencia',
+                     'Origen del precio', 'ACOS proyectado (1 venta)', 'No repaga', 'Situación', 'Acción']];
+    _zr.rows.forEach(z => {
+      const origen = !(z.aov > 0) ? 'Sin precio'
+        : z.aovCatalogo ? (z.aovCatalogo.esPromo ? 'Catálogo · precio en promoción' : 'Catálogo · precio de lista')
+        : z.aovEsReferencia ? 'Ticket promedio de la cuenta'
+        : 'Precio promedio del período';
+      const situacion = z.sinVentaAlguna ? 'Sin ninguna venta'
+        : z.pubLiqSales > 0 ? 'Ventas por sesión de Ads, sin atribución propia'
+        : 'Vendió, pero sin venta atribuida a Ads';
+      zrRows.push([z.s.id, titleFor(z.s.id) || '', z.estado || '', z.campana || '', z.inv,
+                   z.aov > 0 ? z.aov : '', origen,
+                   z.acosProyectado !== null ? z.acosProyectado : '',
+                   (z.acosProyectado !== null && z.acosProyectado >= 1) ? 'SÍ' : '',
+                   situacion, z.accion]);
+    });
+    addSheet('Inversión Sin Retorno', zrRows, [25,45,14,30,16,18,30,16,10,40,14],
+      { tipos:['general','general','general','general','money','money','general','percent','general','general','general'] });
+  }
+
   // Top Combos de Carrito
   if (G.comboMap) {
     const comboRows = [['#','Combinación de artículos','Cantidad de artículos','Revenue Total','Unidades Totales','Veces comprado juntos']];
@@ -15698,6 +15725,8 @@ function renderNEXUS(skuMap, useML, idLabel) {
   if (typeof _invalidarZonas === 'function') _invalidarZonas();
   const ARS = fmtCurrency;
   const hasAnyAds = Object.keys(ADS_DATA).length > 0;
+  // Lo publica el panel Inversión Sin Retorno más abajo; se vacía para no exportar el de un render anterior
+  if (G) G._zeroReturn = null;
 
   const rentGrid = document.getElementById('grid-rent-tab');
   const pubGrid  = document.getElementById('grid-pub-tab');
@@ -16088,6 +16117,9 @@ function renderNEXUS(skuMap, useML, idLabel) {
       const od = (orden[a.accion] || 0) - (orden[b.accion] || 0);
       return od !== 0 ? od : b.inv - a.inv;
     });
+    /* El export lee estas mismas filas (v53.9): recalcularlas allá duplicaría
+       la lógica y el xlsx podría decir otra cosa que el panel. */
+    if (G) G._zeroReturn = { rows: zeroReturnArr, aovCuenta };
 
     if (zeroReturnArr.length === 0) {
       panelTo(pubGrid,
