@@ -1240,7 +1240,7 @@ const _GLOSARIO = [
   ['ASP','Precio promedio de venta','Lo que efectivamente se cobró por unidad en el período, con IVA, promediado por unidad vendida. Sale de la columna de precio unitario del reporte de ventas, así que ya tiene aplicadas las promociones y los cupones: no es el precio de lista. La diferencia entre el precio de lista publicado y este número es el descuento promedio del período. Una publicación sin ventas no tiene ASP, y ahí EVO usa el precio del catálogo como referencia, siempre marcado como tal.'],
  ]],
  ['Columnas de señales', [
-  ['Alertas','Marcas automáticas de la fila','En Rentabilidad: BAJA RENT. cuando el margen queda por debajo del 10%, y ENVÍO +X% VS FAMILIA cuando el costo logístico se desvía de productos comparables. En Publicidad e Inversión Sin Retorno: la acción recomendada.'],
+  ['Alertas','Marcas automáticas de la fila','En Rentabilidad: BAJA RENT. cuando el margen queda por debajo del piso del semáforo (35%, desde v54.1; antes 10%), y ENVÍO +X% VS FAMILIA cuando el costo logístico se desvía de productos comparables. En Publicidad e Inversión Sin Retorno: la acción recomendada.'],
   ['Situación','Por qué una publicación entra al panel de Inversión Sin Retorno','Distingue tres casos: sin ninguna venta en el período, vendió pero sin venta atribuida a Ads, o tiene ventas marcadas por sesión de Ads pero el reporte de Anuncios no le atribuye ingresos (típico de venta indirecta).'],
   ['Estado en Inversión Sin Retorno','Columna propia y los activos primero','Pausar lo que ya está pausado no es una acción. El panel ordena por estado antes que por cualquier otro criterio: arriba los anuncios ACTIVOS, que son los únicos donde frenar el gasto cambia algo, y al final, atenuados, los pausados, movidos o deshabilitados, cuyo gasto ya es historia del período. La primera alerta del panel es cuánta plata está gastando HOY la pauta activa sin retorno, que es lo accionable; el resto del monto expuesto se declara aparte.'],
   ['Impacto','Prioridad de una oportunidad o accionable','Ordena por cuánto mueve la aguja, no por urgencia temporal.'],
@@ -1329,7 +1329,7 @@ const _GLOSARIO = [
   ['Nombre del archivo','Análisis EVO Mercadolibre - Cliente-Fecha','El navegador propone como nombre el título del documento. Sin cambiarlo, todos los informes se descargaban igual y se pisaban entre sí. Se arma con el cliente y la fecha del formulario, y el título original se restaura al terminar de imprimir para no dejar el dashboard renombrado.'],
   ['Secciones condicionales','Sólo se imprime lo que tiene datos','FULL, Forecast, Ads y COGS pueden no estar cargados. Cada bloque se evalúa antes de renderizar y, si queda vacío, no se imprime ni su título. No hay cajas ni tablas huérfanas.'],
   ['Evolución de la facturación','GMV diario + media móvil de 7 días','Se reconstruye desde la fecha de cada venta, que EVO conserva en los registros. La media móvil existe porque el día a día tiene ruido extremo y la línea cruda se lee como sierra. Los días sin venta se rellenan con cero para que el promedio no mienta.'],
-  ['Umbrales de acción','Diagnóstico antes que alerta','Por debajo del 20% de margen final con COGS, o del 45% de margen P&L sin COGS, ambos sobre venta neta (v52.8; entre v51.3 y v52.7 fueron 40% y 85% porque la base era lo recibido sin IVA, y dejarlos ahí con la base nueva marcaría casi todo el catálogo), cada publicación recibe un diagnóstico y su acción: margen negativo antes de Ads es problema de precio y pausar la pauta no lo corrige; TACOS que se come el margen es pauta; margen unitario ajustado es estructural; envío desalineado de su familia es configuración del paquete.'],
+  ['Umbrales de acción','Diagnóstico antes que alerta','Por debajo del 15% de margen final con COGS, o del 35% de margen P&L sin COGS, ambos sobre venta neta: son los pisos del semáforo desde v54.1 (antes 20% y 45%; v52.8; entre v51.3 y v52.7 fueron 40% y 85% porque la base era lo recibido sin IVA, y dejarlos ahí con la base nueva marcaría casi todo el catálogo), cada publicación recibe un diagnóstico y su acción: margen negativo antes de Ads es problema de precio y pausar la pauta no lo corrige; TACOS que se come el margen es pauta; margen unitario ajustado es estructural; envío desalineado de su familia es configuración del paquete.'],
   ['Alertas cruzadas','Combinaciones que sólo se ven cruzando módulos','Falso héroe con pauta activa, quiebre dentro del Pareto 80%, costo de canal desviado de su familia y margen unitario negativo antes de Ads. Son las cuatro que más plata mueven y ninguna se detecta mirando un módulo aislado.'],
  ]],
  ['Alerta de reposición por mail', [
@@ -1452,7 +1452,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.0';
+const EVO_VERSION = 'v54.1';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -2240,7 +2240,10 @@ function _infSerie(){
    publicación desde v52.8. Entre v51.3 y v52.7 fueron 40% y 85% porque la base
    era lo recibido sin IVA; dejarlos ahí con la base nueva marcaría casi todo el
    catálogo, porque sobre venta neta los márgenes son estructuralmente menores. */
-const UMBRAL_ALERTA_COGS = 0.20, UMBRAL_ALERTA_SIN_COGS = 0.45;
+/* v54.1: alineados con los pisos del semáforo (UMBRAL_PISO_POST y
+   UMBRAL_PISO_PRE). Se repiten los valores porque esta línea se evalúa antes
+   de que existan esas constantes: si cambian allá, cambian acá. Antes 20 % y 45 %. */
+const UMBRAL_ALERTA_COGS = 0.15, UMBRAL_ALERTA_SIN_COGS = 0.35;
 function _infAlertas(M){
   const out = [];
   const conCogs = COGS_DATA.loaded;
@@ -2256,7 +2259,11 @@ function _infAlertas(M){
     let causa, accion, prio;
     const tacosAltoVsMargen = (n.inversionAds||0) > 0 && n.ventaNeta>0 &&
       (n.inversionAds/n.ventaNeta) >= 0.6 * Math.max(0.01, n.margenUnitario||0);
-    const unitSano = (n.margenUnitario||0) >= 0.15;
+    /* El margen antes de Ads ya cumple el piso: si no, el problema es de
+       precio o de costo y no de pauta. Con COGS se mide después de COGS (v54.1). */
+    const unitSano = (conCogs && f.cg && (n.ventaNeta||0) > 0)
+      ? (((n.margenUnitario||0) * n.ventaNeta - f.cg.costo*(s.unidades||0)) / n.ventaNeta) >= UMBRAL_ALERTA_COGS
+      : (n.margenUnitario||0) >= UMBRAL_ALERTA_SIN_COGS;
     const an = anomEnv && anomEnv.get ? anomEnv.get(s.id) : null;
     if ((n.margenUnitario||0) < 0) {
       causa='Pierde margen antes de Ads'; accion='Revisión urgente de precio o de costo de reposición. Pausar la pauta no lo corrige.'; prio=1;
@@ -3045,7 +3052,7 @@ function generarInforme(){
   /* ── Publicaciones bajo umbral de margen ── */
   const al = _infAlertas(M);
   if (al.length){
-    const umbTxt = conCogs ? '20% después de costo de mercadería' : '45% antes de costo de mercadería';
+    const umbTxt = conCogs ? '15% después de costo de mercadería' : '35% antes de costo de mercadería';
     H.push(SEC('Publicaciones por debajo del umbral de margen',true));
     H.push('<div class="rp-nota" style="margin-bottom:2mm">'+al.length+' publicaciones quedan por debajo del '+umbTxt
       + '. Se listan las 15 de mayor facturación, con el diagnóstico y la acción que corresponde a cada caso.</div>');
@@ -9206,7 +9213,8 @@ function renderDashboard(renderData){
     rentArr.slice(0,80).forEach(s=>{
       const mDot=bandaMargen(s.margen,false)||'ok';
       const alerts=[];
-      if(s.margen<MARGIN_LOW) alerts.push(`<span class="tag tag-danger">BAJA RENT.</span>`);
+      /* v54.1: BAJA RENT. salta por debajo del piso del semáforo, no del 10 %. */
+      if(s.margen<UMBRAL_PISO_PRE) alerts.push(`<span class="tag tag-danger">BAJA RENT.</span>`);
       const an = anomEnvio.get(s.id);
       if(an){
         const ttl = `Envío ${ARS(an.envio)}/u contra una mediana de ${ARS(an.medianaFam)}/u en su familia ("${an.familia}", ${an.nFam} publicaciones). Revisar dimensiones, peso declarado o modalidad de envío.`;
@@ -10248,7 +10256,7 @@ function exportarExcel(){
     const canalShare = (Math.abs((s.cargo_venta||0)*_fcR.netFee) + envAbs + (c.flexNeto||0)
                       + Math.abs((s.costo_fijo||0)*_fcR.netFee) + Math.abs((s.cuotas||0)*_fcR.netFee) + adsX) / base;
     const alerts=[];
-    if(c.margen<0.10) alerts.push('BAJA RENT.');
+    if(c.margen<UMBRAL_PISO_PRE) alerts.push('BAJA RENT.');   // piso del semáforo (v54.1)
     /* Las dos anomalías por familia existían en el dashboard y el glosario las
        declaraba, pero el export sólo escribía BAJA RENT.: el consultor las veía
        en pantalla y desaparecían del archivo que se manda al cliente. */
@@ -16171,19 +16179,29 @@ function renderNEXUS(skuMap, useML, idLabel) {
 
       const acosProyectado = aov > 0 ? (inv / aov) : null;
 
+      /* v54.1: la acción sale de comparar el ACOS proyectado contra el
+         break-even de la publicación (el margen antes de Ads, en la base del
+         ACoS), no contra un 15 % / 30 % fijo. Si la publicación no tiene
+         margen calculable se usa el break-even de la cuenta. */
+      const _beProp = beAcosItem(s);
+      const _bePropOk = _beProp !== null && isFinite(_beProp);
+      const _beZ = _bePropOk ? _beProp : _beCta();
+      const _bZ = acosProyectado === null ? null : bandaAcos(acosProyectado, _beZ);
+      const _beTxt = (_beZ !== null && _beZ !== undefined && isFinite(_beZ))
+        ? ' contra un break-even de ' + PCT(_beZ) + (_bePropOk ? '' : ' (el de la cuenta)') : '';
       let accion, accionClass, accionDesc;
       if (acosProyectado === null) {
         accion = 'SIN PRECIO'; accionClass = 'zr-row-warn';
         accionDesc = 'Sin datos de precio para calcular ACOS';
-      } else if (acosProyectado > 0.30) {
+      } else if (_bZ === 'bad' || _bZ === 'bad2') {
         accion = 'PAUSAR ADS'; accionClass = 'zr-row-danger';
-        accionDesc = `Inversión representa ${PCT(acosProyectado)} del precio. Detener hasta optimizar.`;
-      } else if (acosProyectado > 0.15) {
+        accionDesc = `ACOS proyectado ${PCT(acosProyectado)}${_beTxt}: aunque venda, la venta por Ads pierde plata. Detener hasta optimizar.`;
+      } else if (_bZ === 'warn' || _bZ === null) {
         accion = 'REVISAR'; accionClass = 'zr-row-warn';
-        accionDesc = `ACOS proyectado ${PCT(acosProyectado)}. Monitorear; puede necesitar ajuste de puja.`;
+        accionDesc = `ACOS proyectado ${PCT(acosProyectado)}${_beTxt}: a menos de 10 puntos del break-even. Monitorear; puede necesitar ajuste de puja.`;
       } else {
         accion = 'SOPORTAR'; accionClass = '';
-        accionDesc = `Inversión baja (${PCT(acosProyectado)} del precio). Producto reciente en campaña. Dar más tiempo.`;
+        accionDesc = `ACOS proyectado ${PCT(acosProyectado)}${_beTxt}: le queda margen para absorber la pauta. Probablemente recién incorporada a campaña. Dar más tiempo.`;
       }
 
       zeroReturnArr.push({ s, inv, aov, acosProyectado, accion, accionClass, accionDesc, sinVentaAlguna: false, pubLiqSales,
@@ -16302,13 +16320,13 @@ function renderNEXUS(skuMap, useML, idLabel) {
         alertsHtml += `<div class="zr-alert" data-zr-tag="sinventa" onclick="_zrFiltrar(this,'sinventa')"><span class="zr-icon">⛔</span><div class="zr-body"><div class="zr-title">PÉRDIDA COMPLETA · ${sinVentaCount} ${sinVentaCount>1?'publicaciones':'publicación'} sin NINGUNA venta</div><div class="zr-desc">${fmtCurrency(sinVentaInv)} de inversión en publicaciones que no vendieron nada en el período, ni por Ads ni de forma orgánica. Antes de pausar, verificá que el período del reporte de Ads coincida con el filtro de fechas: si el reporte de ventas cubre una ventana más corta, algunas pueden haber vendido fuera de ella.</div></div></div>`;
       }
       if (pausarCount > 0) {
-        alertsHtml += `<div class="zr-alert" data-zr-tag="pausar" onclick="_zrFiltrar(this,'pausar')"><span class="zr-icon">🚨</span><div class="zr-body"><div class="zr-title">ACCIÓN URGENTE · ${pausarCount} ${pausarCount>1?'publicaciones':'publicación'} a PAUSAR</div><div class="zr-desc">Tienen inversión que supera el 30% del precio promedio sin ninguna venta ADS. Revisalas y pausalas inmediatamente para frenar el gasto sin retorno.</div></div></div>`;
+        alertsHtml += `<div class="zr-alert" data-zr-tag="pausar" onclick="_zrFiltrar(this,'pausar')"><span class="zr-icon">🚨</span><div class="zr-body"><div class="zr-title">ACCIÓN URGENTE · ${pausarCount} ${pausarCount>1?'publicaciones':'publicación'} a PAUSAR</div><div class="zr-desc">No tienen ninguna venta ADS y su ACOS proyectado supera el break-even: aunque vendan, la venta por Ads pierde plata. Revisalas y pausalas para frenar el gasto sin retorno.</div></div></div>`;
       }
       if (revisarCount > 0) {
-        alertsHtml += `<div class="zr-alert zr-alert-ok" data-zr-tag="revisar" onclick="_zrFiltrar(this,'revisar')"><span class="zr-icon">⚠️</span><div class="zr-body"><div class="zr-title zr-title-ok">MONITOREAR · ${revisarCount} ${revisarCount>1?'publicaciones':'publicación'} a REVISAR</div><div class="zr-desc">ACOS proyectado entre 15% y 30%. Ajustá las pujas o revisá el contenido de la publicación para mejorar la conversión.</div></div></div>`;
+        alertsHtml += `<div class="zr-alert zr-alert-ok" data-zr-tag="revisar" onclick="_zrFiltrar(this,'revisar')"><span class="zr-icon">⚠️</span><div class="zr-body"><div class="zr-title zr-title-ok">MONITOREAR · ${revisarCount} ${revisarCount>1?'publicaciones':'publicación'} a REVISAR</div><div class="zr-desc">ACOS proyectado a menos de 10 puntos de su break-even. Ajustá las pujas o revisá el contenido de la publicación para mejorar la conversión.</div></div></div>`;
       }
       if (soportarCount > 0) {
-        alertsHtml += `<div class="zr-alert" data-zr-tag="soportar" onclick="_zrFiltrar(this,'soportar')" style="background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.2)"><span class="zr-icon">💡</span><div class="zr-body"><div class="zr-title" style="color:var(--ok)">SOPORTAR · ${soportarCount} ${soportarCount>1?'publicaciones':'publicación'} con inversión baja</div><div class="zr-desc">Inversión menor al 15% del precio promedio. Probablemente recién incorporadas a campaña. Dales tiempo antes de tomar decisiones.</div></div></div>`;
+        alertsHtml += `<div class="zr-alert" data-zr-tag="soportar" onclick="_zrFiltrar(this,'soportar')" style="background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.2)"><span class="zr-icon">💡</span><div class="zr-body"><div class="zr-title" style="color:var(--ok)">SOPORTAR · ${soportarCount} ${soportarCount>1?'publicaciones':'publicación'} con inversión baja</div><div class="zr-desc">ACOS proyectado con más de 10 puntos de colchón contra su break-even. Probablemente recién incorporadas a campaña. Dales tiempo antes de tomar decisiones.</div></div></div>`;
       }
 
       let html = alertsHtml;
