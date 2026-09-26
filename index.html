@@ -229,6 +229,20 @@
   .acc-body>.panel{border-top:1px solid var(--border);}
   .acc-nota{padding:var(--sp-3) var(--gutter) var(--sp-4);font-size:var(--fs-body);color:var(--muted);}
   @media(max-width:900px){.analysis-grid{grid-template-columns:1fr;}}
+  /* v54.8 · Ficha de publicación en panel lateral. Se abre desde el buscador o
+     al hacer clic en cualquier ID; el fondo oscurecido la cierra. */
+  #ficha-backdrop{position:fixed;inset:0;background:rgba(5,5,10,.55);opacity:0;pointer-events:none;transition:opacity .2s;z-index:80;}
+  #ficha-drawer{position:fixed;top:0;right:0;height:100vh;width:min(480px,100vw);overflow-y:auto;z-index:90;background:var(--surface);
+    border-left:1px solid var(--border);box-shadow:-20px 0 60px rgba(0,0,0,.45);transform:translateX(100%);visibility:hidden;
+    transition:transform .22s ease,visibility 0s linear .22s;}
+  body.drawer-open #ficha-backdrop{opacity:1;pointer-events:auto;}
+  body.drawer-open #ficha-drawer{transform:none;visibility:visible;transition:transform .22s ease;}
+  #ficha-drawer .ficha-wrap{border:0;border-radius:0;margin:0;padding:var(--sp-5);}
+  #ficha-drawer .ficha-kpis{grid-template-columns:1fr 1fr;}
+  #ficha-drawer .ficha-cand-id{min-width:0;}
+  @media(prefers-reduced-motion:reduce){#ficha-drawer,#ficha-backdrop{transition:none;}}
+  .id-link{cursor:pointer;border-bottom:1px dotted rgba(var(--accent-rgb),.6);}
+  .id-link:hover{color:var(--accent2);border-bottom-style:solid;}
   /* v54.5 · Selector de dos vistas de una misma tabla (Pareto) */
   .seg-sw{display:inline-flex;margin-left:auto;}
   .seg-sw button{padding:3px 10px;font-size:var(--fs-micro);font-weight:500;letter-spacing:.5px;font-family:var(--mono);cursor:pointer;
@@ -997,7 +1011,9 @@
     </div>
   </div>
 
-  <div id="ficha-ml"></div>
+  <!-- v54.8: la ficha vive en un panel lateral -->
+  <div id="ficha-backdrop" onclick="cerrarFichaML()"></div>
+  <aside id="ficha-drawer" aria-label="Ficha de publicación"><div id="ficha-ml"></div></aside>
 
   <div id="view-salud">
     <div class="alerts-strip" id="salud-alertas"></div>
@@ -1291,6 +1307,7 @@ const _GLOSARIO = [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
   ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
+  ['Ficha en panel lateral (v54.8)','Buscador o clic en cualquier ID','La ficha de una publicación se abre en un panel a la derecha, sin empujar el contenido: desde el buscador de la barra de filtros o con un clic en el ID de cualquier tabla (el título sigue en el tooltip). Se cierra con ✕, con Esc o tocando el fondo. "Ver en…" esconde el panel para dejar ver la fila resaltada y lo vuelve a mostrar si la fila no está en la tabla visible.'],
   ['Ventas, Diagnóstico y Estrategia (v54.7)','El Dashboard General se repartió','Ventas queda con la franja y el Pareto. Diagnóstico reúne lo que se revisa cada tanto: falsos héroes, dormidos (con el revenue perdido estimado de todos, no sólo de los 25 de la tabla), concentración del catálogo, geografía y logística, tiendas oficiales (sólo con más de una) y clientes (sólo con Evolución de Negocio o Desempeño de Producto). Estrategia reúne las herramientas de una decisión puntual: contribución por visita, rangos de precio, combos de carrito, el mapa de calor y el simulador SOV. Cada bloque muestra su resumen en el encabezado y abre su tabla a demanda.'],
   ['Pestaña Stock (v54.6)','Forecast + Inventario FULL','Stock reúne las viejas pestañas Forecast e Inventario FULL. Arriba, la franja con la card Stock de Salud; después la reposición sugerida, y en acordeones los indicadores del forecast, la proyección semana a semana, los eventos comerciales y la configuración manual. Debajo, la cobertura por variante de FULL. El reporte de Publicaciones se carga en la pantalla inicial junto con el resto: se importa al generar el dashboard y el forecast se calcula solo, con los lead times por defecto (propio 14 días, FULL 21) hasta que se ajusten en Configurar forecast.'],
   ['Pareto en una tabla (v54.5)','Selector Facturación | Unidades','Pareto Facturación y Pareto Volumen compartían estructura: son una sola tabla con dos vistas. La de Unidades marca los falsos héroes en rojo. El selector recuerda la vista elegida al cambiar filtros.'],
@@ -1659,7 +1676,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.7';
+const EVO_VERSION = 'v54.8';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -17521,6 +17538,7 @@ function buscarML() {
 }
 
 function cerrarFichaML() {
+  document.body.classList.remove('drawer-open');
   const c = document.getElementById('ficha-ml'); if (c) c.innerHTML = '';
   const i = document.getElementById('ml-search'); if (i) i.value = '';
   _MLSEL = null;
@@ -17691,8 +17709,8 @@ function renderFichaML(s) {
   destinos.push(['general', 'Pareto']);
   destinos.push(['rent', 'Rentabilidad']);
   if (ads && (ads.inversion || 0) > 0) destinos.push(['pub', 'Publicidad']);
-  if (full || pub) destinos.push(['full', 'Inventario']);
-  if (full || pub || (typeof FORECAST_DATA !== 'undefined' && FORECAST_DATA.calculated)) destinos.push(['forecast', 'Forecast']);
+  // v54.8: FULL y Forecast viven en la pestaña Stock
+  if (full || pub || (typeof FORECAST_DATA !== 'undefined' && FORECAST_DATA.calculated)) destinos.push(['stock', 'Stock']);
   const botones = destinos.map(([tab, lab]) =>
     `<button class="btn ficha-goto" onclick="irAML('${tab}','${s.id}')">Ver en ${lab} →</button>`).join('');
 
@@ -17715,6 +17733,7 @@ function renderFichaML(s) {
 /* Salta a la tab, hace scroll a la fila y la resalta.
    Si la fila quedó fuera del corte de esa tabla, lo dice en vez de fallar en silencio. */
 function irAML(tab, id) {
+  document.body.classList.remove('drawer-open');   // v54.8: dejar ver la fila resaltada
   switchTab(tab);
   _MLSEL = id;
   setTimeout(() => {
@@ -17729,6 +17748,7 @@ function irAML(tab, id) {
           + 'Los valores de esta ficha son igualmente los reales del período.';
         const wrap = cont.querySelector('.ficha-wrap');
         if (wrap) wrap.appendChild(w);
+        document.body.classList.add('drawer-open');   // la fila no está visible: se muestra el aviso
       }
     }
   }, 60);
@@ -17804,7 +17824,8 @@ function idWithTitle(id) {
   if (!partes.length) return id;
   const ttl = partes.join(' — ');
   const marca = vars ? '<span style="color:var(--accent2);font-size:9px;margin-left:3px" title="Tiene variantes declaradas">◆</span>' : '';
-  return `<span style="cursor:help;border-bottom:1px dotted rgba(255,255,255,.2);" title="${String(ttl).replace(/"/g,'&quot;')}">${id}</span>${marca}`;
+  /* v54.8: el ID abre la ficha de la publicación (clic) y el título sigue en el tooltip */
+  return `<span class="id-link" data-evo-id="${String(id).replace(/"/g,'&quot;')}" title="${String(ttl).replace(/"/g,'&quot;')}">${id}</span>${marca}`;
 }
 
 function relationshipChip(id) {
@@ -18010,6 +18031,33 @@ wireSecondaryDZ('dz-desempeno', 'file-desempeno', parseDesempeno, 'Desempeño Pr
 wireSecondaryDZ('dz-evolucion', 'file-evolucion', parseEvolucion, 'Evolución Negocio');
 wireSecondaryDZ('dz-campaigns', 'file-campaigns', (wb)=>parseCampaigns(wb,false), 'Campañas SOV');
 _wirePubsDZ();
+/* Ficha en panel lateral (v54.8): se abre cuando la ficha recibe contenido
+   (buscador, coincidencias, sin resultados) y un clic en cualquier ID de
+   publicación la abre. Esc y el fondo la cierran. */
+(function _wireFichaDrawer() {
+  const cont = document.getElementById('ficha-ml');
+  if (cont && typeof MutationObserver !== 'undefined') {
+    new MutationObserver(() => {
+      if (cont.children.length) document.body.classList.add('drawer-open');
+      else document.body.classList.remove('drawer-open');
+    }).observe(cont, { childList: true });
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.body.classList.contains('drawer-open')) cerrarFichaML();
+  });
+  document.addEventListener('click', e => {
+    const el = e.target.closest && e.target.closest('[data-evo-id]');
+    if (!el || el.closest('#ficha-drawer')) return;
+    if (!G || !G._lastRender || typeof resolverML !== 'function') return;
+    const id = el.getAttribute('data-evo-id');
+    const r = resolverML(id);
+    if (!r || !r.exacto) return;
+    e.stopPropagation();
+    const inp = document.getElementById('ml-search'); if (inp) inp.value = id;
+    renderFichaML(r.exacto);
+    document.body.classList.add('drawer-open');
+  });
+})();
 
 function sovEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 /* ═══════════════════════════════════════════════════════════════
