@@ -94,6 +94,19 @@
   .kpi-value{font-family:var(--display);font-size:26px;font-weight:700;color:var(--text);line-height:1;}
   .kpi-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;}
   .kpi-value.ok{color:var(--ok);}.kpi-value.warn{color:var(--warn);}.kpi-value.accent{color:var(--accent2);}
+  /* v54.0 · danger y muted se usaban en el HTML pero no estaban definidas:
+     "Inversión sin retorno" nunca salía en rojo. */
+  .kpi-value.danger{color:var(--danger);}.kpi-value.muted{color:var(--muted);}
+  /* v54.0 · Sistema de estado. El JS decide la banda (umbrales inteligentes)
+     y la escribe en data-st; el color sale de acá. ok2 y bad2 son las bandas
+     extremas y llevan halo, para que la intensidad no dependa sólo del tono. */
+  [data-st]{--st:var(--text);--st-rgb:232,232,240;}
+  [data-st="ok2"],[data-st="ok"]{--st:var(--ok);--st-rgb:var(--ok-rgb);}
+  [data-st="warn"]{--st:var(--warn);--st-rgb:var(--warn-rgb);}
+  [data-st="bad"],[data-st="bad2"]{--st:var(--danger);--st-rgb:var(--danger-rgb);}
+  .st-val{color:var(--st);}
+  .st-dot{width:10px;height:10px;border-radius:50%;background:var(--st);display:inline-block;flex-shrink:0;}
+  [data-st="ok2"] .st-dot,[data-st="bad2"] .st-dot{box-shadow:0 0 0 4px rgba(var(--st-rgb),.28);}
 
   .pub-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
   .pub-half{background:var(--surface);padding:20px 24px;}
@@ -416,6 +429,9 @@
   .margin-dot.ok{background:var(--ok);}
   .margin-dot.warn{background:var(--warn);}
   .margin-dot.danger{background:var(--danger);}
+  .margin-dot.ok2{background:var(--ok);box-shadow:0 0 0 3px rgba(var(--ok-rgb),.28);}
+  .margin-dot.bad{background:var(--danger);}
+  .margin-dot.bad2{background:var(--danger);box-shadow:0 0 0 3px rgba(var(--danger-rgb),.28);}
 
   .tag{display:inline-block;font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:4px;border:1px solid;white-space:nowrap;}
   .tag-danger{color:var(--danger);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.08);}
@@ -1062,6 +1078,7 @@ const _GLOSARIO = [
   ['Margen Unit','Recibido neto/u ÷ Venta neta unitaria','Margen por venta SIN Ads. Es la base para decisiones de pricing: responde si el precio aguanta la estructura de costos.'],
   ['Margen NEXUS (P&L)','(Recibido − Ads) ÷ Venta neta','Resultado del período CON la pauta prorrateada. Si Unit es positivo y P&L negativo, el problema es sobreinversión publicitaria, no el precio.'],
   ['Margen post-COGS','Break Even/u − COGS/u','Margen unitario real, ya con el costo de producto. Requiere el template de COGS cargado.'],
+  ['Semáforo de margen (v54.0)','Piso 35 % antes de COGS · 15 % con COGS · escalones de 10 puntos','Umbral inteligente: todos los márgenes del tablero, sobre venta neta, se colorean contra el mismo piso. Antes de COGS: verde intenso desde 45 %, verde de 35 a 45 %, naranja de 25 a 35 %, rojo de 15 a 25 % y rojo intenso por debajo de 15 %. Con COGS el piso es 15 % y los escalones son 25, 15, 5 y −5 %. A nivel cuenta, el margen final manda sólo si el COGS cubre el 93 % o más del revenue. La alerta de texto BAJA RENT. y los umbrales de acción del informe no cambiaron.'],
   ['COGS','Columna "Costo del producto (S/ IVA)" del template','Costo de reposición NETO de IVA, coherente con el break-even que también es neto. Se matchea por # de publicación y, si no hay match, por SKU.'],
   ['Precio break-even','(COGS + fijos netos) ÷ (1 − factorIVA − IIBB × (1 − factorIVA) − fees × netFee)','Precio cobrado mínimo para no perder plata en la unidad. Fijos netos = costos propios + (envío + cargo fijo − bonificación Flex) × netFee; fees = comisión + cuotas + Ads, más los buffers de devolución y costo financiero. Es la misma fórmula que la calculadora NEXUS de Google Sheets (PVP_NEXUS_V3 con margen 0). Hasta v52.1 el glosario mostraba (COGS + envío) × (1 + IVA) ÷ (1 − comisión), que ignoraba el IIBB y el crédito fiscal de los cargos.'],
   ['Precio a margen objetivo','(COGS + fijos netos) ÷ (1 − factorIVA − (margen + IIBB) × (1 − factorIVA) − fees × netFee)','Precio cobrado necesario para que quede el margen pedido sobre venta neta. Para el precio publicado se divide además por (1 − promo) × (1 − cupón). En México se suman a los fees el ISR retenido si es costo y, sin RFC, el IVA retenido (con factorIVA = 0). Misma fórmula que PVP_NEXUS_V3.'],
@@ -1071,6 +1088,8 @@ const _GLOSARIO = [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
   ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
+  ['Semáforo de TACoS (v54.0)','Según el margen que deja la pauta','El TACoS no tiene un porcentaje fijo: se colorea por el margen P&L que le queda al producto (o a la cuenta) después de pagar la pauta, con el piso del semáforo de margen: 35 % antes de COGS, 15 % con COGS. El badge TACOS↑ aparece cuando la pauta perfora el piso: naranja dentro de los primeros 10 puntos, rojo por debajo.'],
+  ['Semáforo de ACoS y ROAS (v54.0)','Contra el break-even','El break-even de ACoS es el margen antes de Ads (después de COGS si hay costo cargado), medido sobre el bruto y dividido por el factor neto de los cargos, porque el ACoS compara inversión e ingresos con IVA. Verde intenso con 20 puntos o más de colchón, verde entre 10 y 20, naranja a menos de 10, rojo por encima del break-even y rojo intenso a más de 10 puntos. El ROAS usa la misma banda (ROAS = 1 ÷ ACoS). Por publicación se usa el break-even de la publicación; en campañas y anuncios, el de la cuenta.'],
   ['ACOS','Inversión ÷ Ingresos por ventas con publicidad','Definición textual del glosario de Mercado Ads. Se calcula sólo sobre revenue atribuido, no sobre el total.'],
   ['ROAS','Ingresos atribuidos ÷ Inversión','Cuántas veces se recupera la inversión. Poco confiable a nivel publicación por las ventas indirectas: conviene leerlo a nivel campaña.'],
   ['Ing. atribuidos Ads','Columna Ingresos del reporte de Anuncios','Se acredita a la publicación ANUNCIADA. Incluye ventas directas (clickeó su anuncio y compró ese producto) e indirectas (clickeó su anuncio y compró otro producto del vendedor). Por eso una publicación puede tener ventas y aparecer con 0 acá.'],
@@ -1433,7 +1452,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54';
+const EVO_VERSION = 'v54.0';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -8841,7 +8860,7 @@ function renderDashboard(renderData){
     const m = _mgPareto.get(o.id);
     if (m.v === null) return '<td class="num" style="color:var(--muted)">—</td>';
     const sinCogs = COGS_DATA.loaded && !m.final;
-    const clr = sinCogs ? 'var(--muted)' : m.v < 0 ? 'var(--danger)' : m.v < 0.10 ? 'var(--warn)' : 'var(--ok)';
+    const clr = sinCogs ? 'var(--muted)' : stClr(bandaMargen(m.v, m.final));
     const ttl = sinCogs ? 'Sin COGS cargado para esta publicación: margen P&L antes de mercadería, sobre venta neta'
       : m.final ? 'Margen final del P&L: NEXUS − COGS, sobre venta neta'
       : 'Margen P&L antes de mercadería: NEXUS sobre venta neta';
@@ -8999,8 +9018,8 @@ function renderDashboard(renderData){
     let html=`<table><thead><tr><th>${idLabel}</th><th class="r">Inversión Ads${tipInv}</th><th class="r">Ing. atrib. Ads${tipIngAds}</th><th class="r">ROAS</th><th class="r">Rev. sesión${tipRevSesion}</th><th class="r">Revenue total</th><th>Peso Ads${tipPeso}</th></tr></thead><tbody>`+
       pubArr.map(i=>{
         const roas = i._adsInv>0 ? i._adsIng/i._adsInv : 0;
-        const roasClr = roas>=4 ? 'var(--ok)' : roas>=2 ? 'var(--warn)' : roas>0 ? 'var(--danger)' : 'var(--muted)';
-        const invClr = i._adsInv>0 ? 'var(--warn)' : 'var(--muted)';
+        const roasClr = roas>0 ? stClr(bandaAcos(1/roas, beAcosItem(i))) : 'var(--muted)';
+        const invClr = i._adsInv>0 ? 'var(--text)' : 'var(--muted)';
         // Peso publicitario: % del revenue de la publicación que vino de ads (flag de ventas)
         const pesoAds = i.ingresos_brutos > 0 ? (i.pubBruto || 0) / i.ingresos_brutos : 0;
         /* La comparación honesta es bruto contra bruto: el atribuido del reporte
@@ -9181,11 +9200,11 @@ function renderDashboard(renderData){
       ${th('Venta neta','Revenue bruto menos el IVA débito. '+baseIvaTxt+' Es la base sobre la que se mide el margen.','class="r"')}
       ${th('Costos de canal','Lo que cuesta operar en la plataforma, sobre la venta neta: comisión + envío que absorbe el seller + cargo fijo + cuotas + Ads. Los cargos van netos de su IVA (crédito fiscal recuperable para un Responsable). No incluye carga fiscal ni retenciones. EL COLOR no usa un umbral fijo: compara cada publicación contra la mediana de su propia familia, y sólo sobre los costos ESTRUCTURALES (comisión, envío y cargo fijo). Ads y el costo de ofrecer cuotas quedan afuera por ser decisiones comerciales, y el porcentaje se mide sobre el precio sin el recargo de cuotas, porque el vendedor suele trasladarlo al PVP. Si la familia mezcla condiciones de venta cuyo costo no se puede separar (Clásica y Premium, o cuotas en reportes con cargos consolidados), cada publicación se compara contra las de su misma condición. Amarillo a partir de +4pp y rojo a partir de +8pp sobre esa mediana; el rojo exige al menos 5 unidades vendidas. Umbrales calibrados sobre 1.003 publicaciones de 6 cuentas en 3 países: el desvío típico dentro de una familia es de 1,3pp y el p90 es 8,1pp. En familias naturalmente dispersas el umbral se agranda solo. Sin al menos 3 productos similares no se colorea. Pasá el cursor sobre cada valor para ver el desglose en $ y la comparación.','class="r"')}
       ${th('Revenue neto','Lo que le queda al seller después de los cargos de ML y de la carga fiscal (IVA débito e IIBB). NO descuenta Ads ni COGS: es margen de contribución pre-Ads y pre-COGS.','class="r"')}
-      ${th('Margen','Revenue neto ÷ Venta neta. Qué proporción de la venta (sin IVA) sobrevive a los cargos del canal y del fisco. Verde >25%, amarillo 10-25%, rojo <10%.')}
+      ${th('Margen','Revenue neto ÷ Venta neta. Qué proporción de la venta (sin IVA) sobrevive a los cargos del canal y del fisco. El color sale de un piso de 35 % en escalones de 10 puntos: verde por encima de 35 % (con halo desde 45 %), naranja de 25 a 35 %, rojo por debajo de 25 % (con halo por debajo de 15 %).')}
       ${th('Alertas','Señales automáticas: baja rentabilidad y envío desalineado respecto de productos de la misma familia.')}
     </tr></thead><tbody>`;
     rentArr.slice(0,80).forEach(s=>{
-      const mDot=s.margen<MARGIN_LOW?'danger':s.margen<MARGIN_MED?'warn':'ok';
+      const mDot=bandaMargen(s.margen,false)||'ok';
       const alerts=[];
       if(s.margen<MARGIN_LOW) alerts.push(`<span class="tag tag-danger">BAJA RENT.</span>`);
       const an = anomEnvio.get(s.id);
@@ -9254,7 +9273,7 @@ function renderDashboard(renderData){
           ? `${nAnom} con envío anómalo vs su familia · ${cob.evaluadas} publicaciones comparadas en ${cob.familias} familias`
           : `sin anomalías de envío · ${cob.evaluadas} publicaciones comparadas en ${cob.familias} familias`);
     const baseMargen = _esRI ? 'Venta neta (sin IVA)' : 'Venta bruta';
-    panel('grid-rent-tab',`Rentabilidad por ${idLabel}`,`Margen = Revenue neto / ${baseMargen} · pre-Ads y pre-COGS · umbral saludable >10% · ${subAnom}`,html+'</tbody></table>',true);
+    panel('grid-rent-tab',`Rentabilidad por ${idLabel}`,`Margen = Revenue neto / ${baseMargen} · pre-Ads y pre-COGS · semáforo con piso 35 % · ${subAnom}`,html+'</tbody></table>',true);
   }
 
   /* La tabla "Desglose de Costos" se eliminó por redundante: mostraba los mismos
@@ -9384,9 +9403,12 @@ function renderDashboard(renderData){
 
   // FIX: NEXUS se genera SIEMPRE con el reporte de ventas (datos reales del reporte)
   // Las columnas Ads/Tacos se enriquecen cuando hay reporte de publicidad
+  /* Rentabilidad va primero: calcula la señal de la cuenta (G._semaforo) que
+     usan los semáforos de NEXUS, campañas y Publicidad (v54.0). */
+  renderRentKPIs(skuMap);
   renderNEXUS(skuMap, useML, idLabel);
   renderPubKPIs(skuMap);
-  renderRentKPIs(skuMap);
+  _pintarSemaforoPauta();
 
   // Activar y construir tab Forecast
   const tabFc = document.getElementById('tab-forecast');
@@ -14117,6 +14139,108 @@ function renderFULLTab(useML, idLabel) {
   grid.appendChild(d);
 }
 
+/* ═══════════ UMBRALES INTELIGENTES (v54.0) ═══════════
+   El color de un margen, del TACoS y del ACoS deja de salir de un porcentaje
+   fijo y pasa a salir de lo que le hace al margen. Una sola regla para todo el
+   tablero, con escalones de 10 puntos por encima y por debajo del piso:
+
+     Margen antes de COGS (sobre venta neta): piso 35 %.
+     Margen con COGS (final, sobre venta neta): piso 15 %.
+       ≥ piso + 10 → ok2 · piso a piso + 10 → ok · piso − 10 a piso → warn
+       piso − 20 a piso − 10 → bad · < piso − 20 → bad2
+
+     TACoS: no tiene umbral propio. Se colorea por el margen que deja la pauta
+     (el P&L de NEXUS, que ya la descuenta): con COGS cargado para ese
+     producto, el margen final; si no, el margen antes de COGS.
+
+     ACoS (y ROAS, que es su inversa): contra el break-even, que es el margen
+     antes de Ads (y después de COGS si lo hay). Llevado a la base del ACoS:
+     el ACoS divide inversión con IVA por ingresos con IVA, así que el margen
+     se mide sobre el bruto y se divide por el factor neto de los cargos
+     (para un Responsable, la pauta cuesta su neto de IVA).
+       ACoS ≤ BE − 20 → ok2 · BE − 20 a BE − 10 → ok · BE − 10 a BE → warn
+       BE a BE + 10 → bad · > BE + 10 → bad2
+
+   A nivel cuenta, Rentabilidad calcula el margen (G._semaforo) y el resto lo
+   lee: el color del TACoS de cabecera y el del margen salen de la misma señal.
+   El margen final manda a nivel cuenta sólo si el COGS cubre ≥ 93 % del
+   revenue; por debajo, manda el margen antes de COGS. */
+const UMBRAL_PISO_PRE = 0.35, UMBRAL_PISO_POST = 0.15, UMBRAL_PASO = 0.10, UMBRAL_COB_COGS = 0.93;
+const ST_CLR = { ok2:'var(--ok)', ok:'var(--ok)', warn:'var(--warn)', bad:'var(--danger)', bad2:'var(--danger)' };
+const ST_KPI = { ok2:'ok', ok:'ok', warn:'warn', bad:'danger', bad2:'danger' };
+function stClr(b, dflt) { return (b && ST_CLR[b]) || (dflt === undefined ? 'var(--text)' : dflt); }
+function bandaMargen(m, conCogs) {
+  if (m === null || m === undefined || !isFinite(m)) return null;
+  const d = m - (conCogs ? UMBRAL_PISO_POST : UMBRAL_PISO_PRE);
+  return d >= UMBRAL_PASO ? 'ok2' : d >= 0 ? 'ok' : d >= -UMBRAL_PASO ? 'warn' : d >= -2 * UMBRAL_PASO ? 'bad' : 'bad2';
+}
+function bandaAcos(acos, be) {
+  if (!(acos > 0) || be === null || be === undefined || !isFinite(be)) return null;
+  const d = acos - be;
+  return d <= -2 * UMBRAL_PASO ? 'ok2' : d <= -UMBRAL_PASO ? 'ok' : d <= 0 ? 'warn' : d <= UMBRAL_PASO ? 'bad' : 'bad2';
+}
+/* COGS total del producto en el período, o null si no tiene costo cargado. */
+function _cogsItemTotal(s) {
+  if (!s || !COGS_DATA.loaded || typeof getCOGS !== 'function') return null;
+  const cg = getCOGS(s);
+  return (cg && cg.costo > 0) ? cg.costo * (s.unidades || 0) : null;
+}
+/* Banda del TACoS de un producto: el margen que le deja la pauta. */
+function bandaPautaItem(s, n) {
+  n = n || (s && s.nexus) || (typeof calcNEXUS === 'function' ? calcNEXUS(s) : null);
+  if (!n || !(n.ventaNeta > 0) || n.margenNoComputable) return null;
+  const cg = _cogsItemTotal(s);
+  return cg !== null ? bandaMargen((n.recibidoNEXUS - cg) / n.ventaNeta, true) : bandaMargen(n.margenNEXUS, false);
+}
+/* Break-even de ACoS de un producto, en la base del ACoS. */
+function beAcosItem(s, n) {
+  n = n || (s && s.nexus) || (typeof calcNEXUS === 'function' ? calcNEXUS(s) : null);
+  const bruto = (s && s.ingresos_brutos) || 0;
+  if (!n || !(bruto > 0) || n.margenNoComputable) return null;
+  const mU = n.margenUnitario !== undefined ? n.margenUnitario : n.margenNEXUS;
+  const preAds = (mU || 0) * (n.ventaNeta || 0);
+  const cg = _cogsItemTotal(s);
+  const nf = (typeof fiscalNetFactor === 'function') ? fiscalNetFactor() : 1;
+  return ((preAds - (cg || 0)) / bruto) / (nf > 0 ? nf : 1);
+}
+/* Señal de la cuenta, calculada por renderRentKPIs. */
+function semaforoCuenta() {
+  const S = (typeof G !== 'undefined' && G) ? G._semaforo : null;
+  if (!S) return null;
+  const usaPost = S.mPost !== null && S.cobCogs >= UMBRAL_COB_COGS;
+  const margen = usaPost ? S.mPost : S.mPre;
+  const nf = (typeof fiscalNetFactor === 'function') ? fiscalNetFactor() : 1;
+  const be = S.bruto > 0 ? ((S.preAds - (usaPost ? S.cogs : 0)) / S.bruto) / (nf > 0 ? nf : 1) : null;
+  return { banda: bandaMargen(margen, usaPost), margen, usaPost, be };
+}
+function _beCta() { const sc = semaforoCuenta(); return sc ? sc.be : null; }
+/* Pinta TACoS y ACoS de cabecera en Publicidad. Se llama al dibujar Publicidad
+   y al final de Rentabilidad, porque cargar COGS o Flex re-dibuja Rentabilidad
+   sin volver a dibujar Publicidad. */
+function _pintarSemaforoPauta() {
+  const row = document.getElementById('pub-kpi-row');
+  if (!row) return;
+  const sc = semaforoCuenta();
+  const t = row.querySelector('[data-kpi="tacos"]');
+  if (t) {
+    t.classList.remove('ok', 'warn', 'danger');
+    if (sc && sc.banda) t.classList.add(ST_KPI[sc.banda]);
+    t.title = sc ? 'El color sale del margen que le deja la pauta a la cuenta: ' + PCT(sc.margen)
+      + (sc.usaPost ? ' de margen final (con COGS), contra un piso de 15 %' : ' de margen antes de COGS, contra un piso de 35 %')
+      + ', en escalones de 10 puntos.' : '';
+    t.style.cursor = sc ? 'help' : '';
+  }
+  const a = row.querySelector('[data-kpi="acos"]');
+  const P = (typeof G !== 'undefined' && G) ? G._pautaCuenta : null;
+  if (a && P) {
+    const b = sc ? bandaAcos(P.acos, sc.be) : null;
+    a.classList.remove('ok', 'warn', 'danger');
+    if (b) a.classList.add(ST_KPI[b]);
+    const sub = row.querySelector('[data-kpi-sub="acos"]');
+    if (sub && sc && sc.be !== null && isFinite(sc.be)) sub.textContent = 'Inversión / Revenue Ads · break-even ' + PCT(sc.be);
+  }
+}
+
 function renderRentKPIs(skuMap) {
   const kpiRow = document.getElementById('rent-kpi-row');
   const kpiPeriod = document.getElementById('rent-kpi-period');
@@ -14250,6 +14374,9 @@ function renderRentKPIs(skuMap) {
   const margenNexusPct = baseRecSinIva > 0 ? rentabilidadNexus / baseRecSinIva : 0;
   // Mismo resultado sobre ventas netas, la base contable del estado de resultados (v51.8)
   const margenVNPre = ventaNetaTotal > 0 ? rentabilidadNexus / ventaNetaTotal : 0;
+  /* Señal de la cuenta para los umbrales inteligentes (v54.0). */
+  if (G) G._semaforo = { mPre: margenVNPre, mPost: null, cobCogs: 0, cogs: 0,
+    preAds: rentabilidadNexus + inversionAds, bruto: revBruto };
   const _tipVN = 'Resultado sobre las ventas netas: ingresos por productos sin el IVA contenido en el precio. '
     + 'Es la base contable del estado de resultados y la comparable con otros negocios e informes.\n\n'
     + 'El margen sobre lo recibido sin IVA mide la misma ganancia contra la plata que entró de Mercado Libre, '
@@ -14296,7 +14423,9 @@ function renderRentKPIs(skuMap) {
   const envGratisClr = pctEnvioGratis > 0.25 ? 'danger' : pctEnvioGratis > 0.15 ? 'warn' : 'muted';
   
   // Colores semáforo
-  const margenClr = margenNexusPct < 0.10 ? 'danger' : margenNexusPct < 0.25 ? 'warn' : 'ok';
+  /* Las dos tarjetas de margen antes de mercadería toman el color de la misma
+     señal: el margen sobre venta neta, que es la base del piso (v54.0). */
+  const margenClr = ST_KPI[bandaMargen(margenVNPre, false)] || '';
   const adsClr = pctAds > 0.20 ? 'danger' : pctAds > 0.10 ? 'warn' : 'muted';
   const envioClr = pctEnvio > 0.15 ? 'danger' : pctEnvio > 0.08 ? 'warn' : 'muted';
   const comisionClr = pctComision > 0.20 ? 'danger' : pctComision > 0.15 ? 'warn' : 'muted';
@@ -14343,7 +14472,7 @@ function renderRentKPIs(skuMap) {
       <div class="kpi-sub">NEXUS / recibido ${esRI?'sin IVA':'de ML'}</div></div>
     ${!COGS_DATA.loaded ? `<div class="kpi" title="${_tipVN}\n\nRentabilidad NEXUS ${fmtCurrency(rentabilidadNexus)} ÷ ventas netas ${fmtCurrency(ventaNetaTotal)}." style="cursor:help">
       <div class="kpi-label">Margen s/ ventas netas</div>
-      <div class="kpi-value ${margenVNPre < 0 ? 'danger' : margenVNPre < 0.06 ? 'warn' : 'ok'}">${(margenVNPre*100).toFixed(1)}%</div>
+      <div class="kpi-value ${margenClr}">${(margenVNPre*100).toFixed(1)}%</div>
       <div class="kpi-sub">Antes de mercadería · base contable</div></div>` : ''}
     <div class="kpi" title="Comisión ${fmtCurrency(comisionAbs)} · Envío ${fmtCurrency(costoEnvioAbs)}${costoFijoAbs>0?' · Costo fijo '+fmtCurrency(costoFijoAbs):''}${cuotasAbs>0?' · Cuotas '+fmtCurrency(cuotasAbs):''}${inversionAds>0?' · Ads '+fmtCurrency(inversionAds):''} — Total ${fmtCurrency(costosCanal)}. No incluye carga fiscal ni retenciones." style="cursor:help">
       <div class="kpi-label">Costos de canal</div>
@@ -14510,7 +14639,10 @@ function renderRentKPIs(skuMap) {
     const baseReal = recibMatch - ivaDebMatch + retBaseMatch;
     const margenReal = baseReal > 0 ? rentReal / baseReal : 0;
     const rentClr = rentReal < 0 ? 'danger' : 'ok';
-    const margenClr = margenReal < 0 ? 'danger' : margenReal < 0.10 ? 'warn' : 'ok';
+    const _mVNpost = vnetaMatch > 0 ? rentReal / vnetaMatch : 0;
+    const margenClr = ST_KPI[bandaMargen(_mVNpost, true)] || '';
+    if (G && G._semaforo) Object.assign(G._semaforo, { mPost: _mVNpost,
+      cobCogs: revBruto > 0 ? revMatcheado / revBruto : 0, cogs: cogsTotal });
     
     kpis += `<div class="kpi" style="border-color:var(--accent);">
       <div class="kpi-label">COGS total período</div>
@@ -14539,13 +14671,14 @@ function renderRentKPIs(skuMap) {
     const margenVN = vnetaMatch > 0 ? rentReal / vnetaMatch : 0;
     kpis += `<div class="kpi" style="border-color:var(--accent);cursor:help" title="${_tipVN}\n\nRentabilidad real ${fmtCurrency(rentReal)} ÷ ventas netas de las publicaciones con COGS ${fmtCurrency(vnetaMatch)}.">
       <div class="kpi-label">Margen s/ ventas netas</div>
-      <div class="kpi-value ${margenVN < 0 ? 'danger' : margenVN < 0.06 ? 'warn' : 'ok'}">${(margenVN*100).toFixed(1)}%</div>
+      <div class="kpi-value ${margenClr}">${(margenVN*100).toFixed(1)}%</div>
       <div class="kpi-sub">Resultado operativo · base contable</div></div>`;
   }
   
   kpis += _kpisEnvioPorCanal(skuMap);
 
   kpiRow.innerHTML = kpis;
+  _pintarSemaforoPauta();
 }
 
 /* ═══════════ COSTO DE ENVÍO POR CANAL ═══════════
@@ -14707,8 +14840,9 @@ function renderPubKPIs(skuMap) {
   const acos = revAdsTotal > 0 ? (invTotal / revAdsTotal) : 0;
   const tacos = revenueBruto > 0 ? (invTotal / revenueBruto) : 0;
   
-  const acosClr = acos > 0.30 ? 'danger' : acos > 0.15 ? 'warn' : 'ok';
-  const tacosClr = tacos > 0.20 ? 'danger' : tacos > 0.10 ? 'warn' : 'ok';
+  /* El color de ACoS y TACoS lo pone _pintarSemaforoPauta con los umbrales
+     inteligentes (v54.0); acá sólo se guarda el ACoS de la cuenta. */
+  if (G) G._pautaCuenta = { acos };
   
   if (invTotal === 0) {
     kpiRow.innerHTML = `<div class="kpi" style="grid-column:span 5;text-align:center;"><div class="kpi-label">Sin reporte de publicidad cargado</div><div class="kpi-sub">Cargá un reporte de Ads para ver estas métricas</div></div>`;
@@ -14777,19 +14911,19 @@ function renderPubKPIs(skuMap) {
   
   kpiRow.innerHTML = `
     <div class="kpi"><div class="kpi-label">Inversión Ads</div>
-      <div class="kpi-value warn">${fmtCurrency(invTotal)}</div>
+      <div class="kpi-value">${fmtCurrency(invTotal)}</div>
       <div class="kpi-sub">Inversión publicitaria en el período</div></div>
     <div class="kpi"><div class="kpi-label">Revenue Ads</div>
-      <div class="kpi-value ok">${fmtCurrency(revAdsTotal)}</div>
+      <div class="kpi-value">${fmtCurrency(revAdsTotal)}</div>
       <div class="kpi-sub">Ventas atribuidas a publicidad</div></div>
     <div class="kpi"><div class="kpi-label">Ventas Ads</div>
       <div class="kpi-value">${NUM(Math.round(ventasAdsTotal))}</div>
       <div class="kpi-sub">Unidades vendidas vía Ads</div></div>
     <div class="kpi"><div class="kpi-label">ACoS</div>
-      <div class="kpi-value ${acosClr}">${(acos*100).toFixed(1)}%</div>
-      <div class="kpi-sub">Inversión / Revenue Ads</div></div>
+      <div class="kpi-value" data-kpi="acos">${(acos*100).toFixed(1)}%</div>
+      <div class="kpi-sub" data-kpi-sub="acos">Inversión / Revenue Ads</div></div>
     <div class="kpi"><div class="kpi-label">TACoS</div>
-      <div class="kpi-value ${_adsDesalineado ? '' : tacosClr}" ${_adsDesalineado
+      <div class="kpi-value"${_adsDesalineado ? '' : ' data-kpi="tacos"'} ${_adsDesalineado
         ? 'style="color:var(--muted)" title="El TACOS divide la inversión del reporte de Ads por el revenue del rango filtrado. Con rangos distintos el numerador queda fijo y el denominador se achica, así que el porcentaje sube sin que la pauta pese más. No es un número defendible: alineá los rangos con el botón del aviso."'
         : ''}>${_adsDesalineado ? '—' : (tacos*100).toFixed(1)+'%'}</div>
       <div class="kpi-sub">${_adsDesalineado
@@ -15158,7 +15292,7 @@ function buildNexusTable(cache, mode) {
       if (n.sinPrecioReal) { html += filaSinVentas(s, n); return; }
       const mU = n.margenUnitario !== undefined ? n.margenUnitario : n.margenNEXUS;
       const beU = n.breakEvenUnit !== undefined ? n.breakEvenUnit : n.recibidoNEXUSUnit;
-      const mDot = mU < 0 ? 'danger' : mU < MARGIN_LOW ? 'danger' : mU < MARGIN_MED ? 'warn' : 'ok';
+      const mDot = bandaMargen(mU, false) || 'ok';
       const gainColor = beU < 0 ? 'color:var(--danger)' : beU < 100 ? 'color:var(--warn)' : 'color:var(--ok)';
       let cogsCells = '';
       if (COGS_DATA.loaded) {
@@ -15168,7 +15302,7 @@ function buildNexusTable(cache, mode) {
           // Sobre venta neta por unidad, misma base que todos los márgenes (v52.8)
           const baseU = (n.precioProm || 0) * (1 - (n.factorIva || 0));
           const margenPostPct = baseU > 0 ? margenPostU / baseU : (margenPostU < 0 ? -1 : 0);
-          const mpDot = margenPostPct < 0 ? 'danger' : margenPostPct < MARGIN_LOW ? 'danger' : margenPostPct < MARGIN_MED ? 'warn' : 'ok';
+          const mpDot = bandaMargen(margenPostPct, true) || 'ok';
           const mpColor = margenPostU < 0 ? 'color:var(--danger)' : 'color:var(--ok)';
           cogsCells = '<td class="num" style="color:var(--muted)">' + ARS(cg.costo) + '</td>'
             + '<td class="num" style="' + mpColor + '"><strong>' + ARS(margenPostU) + '</strong></td>'
@@ -15213,11 +15347,11 @@ function buildNexusTable(cache, mode) {
       if (s._sinCanal) { html += filaSinCanal(s); return; }
       const n = s.nexus;
       const mP = n.margenNEXUS;
-      const mDot = mP < 0 ? 'danger' : mP < MARGIN_LOW ? 'danger' : mP < MARGIN_MED ? 'warn' : 'ok';
+      const mDot = bandaMargen(mP, false) || 'ok';
       const gainColor = n.recibidoNEXUS < 0 ? 'color:var(--danger)' : 'color:var(--ok)';
       const envioTotal = n.envioAbsorbido || 0;   // neto de IVA, como el resto de los cargos
       const adsCell = n.inversionAds > 0
-        ? '<span style="color:' + (n.tacos > 0.15 ? 'var(--danger)' : n.tacos > 0.08 ? 'var(--warn)' : 'var(--text)') + '">' + ARS(n.inversionAds) + ' <span style="font-size:9px;color:var(--muted)">(' + PCT(n.tacos) + ')</span></span>'
+        ? '<span style="color:' + stClr(bandaPautaItem(s, n)) + '">' + ARS(n.inversionAds) + ' <span style="font-size:9px;color:var(--muted)">(' + PCT(n.tacos) + ')</span></span>'
         : '<span style="color:var(--muted);font-size:10px;font-style:italic;">Sin inversión</span>';
       let cogsCells = '';
       if (COGS_DATA.loaded) {
@@ -15228,7 +15362,7 @@ function buildNexusTable(cache, mode) {
           // Margen final sobre venta neta del período (v52.8)
           const baseFin = n.ventaNeta || 0;   // venta neta, como el resto (v52.8)
           const margenFinal = baseFin > 0 ? rentFinal / baseFin : (rentFinal < 0 ? -1 : 0);
-          const mfDot = margenFinal < 0 ? 'danger' : margenFinal < MARGIN_LOW ? 'danger' : margenFinal < MARGIN_MED ? 'warn' : 'ok';
+          const mfDot = bandaMargen(margenFinal, true) || 'ok';
           const rfColor = rentFinal < 0 ? 'color:var(--danger)' : 'color:var(--ok)';
           cogsCells = '<td class="num" style="color:var(--muted)">' + ARS(cogsTotal) + '</td>'
             + '<td class="num" style="' + rfColor + '"><strong>' + ARS(rentFinal) + '</strong></td>'
@@ -15474,7 +15608,7 @@ function _campanasBodyHTML() {
   let h = '';
   camps.forEach((c, idx) => {
     const abierta = ADS_CAMP_ABIERTAS.has(c.nombre);
-    const roasClr = c.roas >= 5 ? 'var(--ok)' : c.roas >= 2 ? 'var(--warn)' : 'var(--danger)';
+    const roasClr = c.roas > 0 ? stClr(bandaAcos(1 / c.roas, _beCta())) : 'var(--danger)';
     const pesoCuenta = invTotal > 0 ? c.inv / invTotal * 100 : 0;
 
     // ── Cabecera de la campaña: siempre visible, es la fila que se clickea ──
@@ -15608,7 +15742,7 @@ function _campPorAdHTML(c) {
     }
 
     const pesoClr = a.quema ? 'var(--danger)' : (a.vendio ? 'var(--text)' : 'var(--warn)');
-    const roasClr = a.inv <= 0 ? 'var(--muted)' : a.roas >= 5 ? 'var(--ok)' : a.roas >= 2 ? 'var(--warn)' : 'var(--danger)';
+    const roasClr = a.inv <= 0 ? 'var(--muted)' : a.roas > 0 ? stClr(bandaAcos(1 / a.roas, _beCta())) : 'var(--danger)';
     const td = (v, clr, extra, tip) => '<td style="padding:7px 9px;text-align:right;font-family:var(--mono);font-size:11px;color:'
       + (clr || 'var(--text)') + ';' + (extra || '') + (tip ? 'cursor:help;' : '') + '"'
       + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + v + '</td>';
@@ -15691,8 +15825,8 @@ function _campConsolidadoHTML(c, pesoCuenta) {
     + (sub ? '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px;">' + sub + '</div>' : '')
     + '</div>';
 
-  const roasClr = c.roas >= 5 ? 'var(--ok)' : c.roas >= 2 ? 'var(--warn)' : 'var(--danger)';
-  const acosClr = c.acos > 30 ? 'var(--danger)' : c.acos > 15 ? 'var(--warn)' : 'var(--ok)';
+  const roasClr = c.roas > 0 ? stClr(bandaAcos(1 / c.roas, _beCta())) : 'var(--danger)';
+  const acosClr = c.acos > 0 ? stClr(bandaAcos(c.acos / 100, _beCta())) : 'var(--text)';
 
   return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">'
     + tile('Inversión total', ARS(c.inv), pct1(pesoCuenta) + ' del gasto de la cuenta', 'var(--warn)',
@@ -15880,7 +16014,7 @@ function renderNEXUS(skuMap, useML, idLabel) {
         // Base bruta (Ingresos por productos), comparable con el panel de Mercado Ads
         const revenueBase = revBaseTacos(s);
         const tacosReal = revenueBase > 0 ? n.inversion / revenueBase : 0;
-        const tacosClr = tacosReal > 0.20 ? 'var(--danger)' : tacosReal > 0.10 ? 'var(--warn)' : 'var(--ok)';
+        const tacosClr = stClr(bandaPautaItem(s, n));
         /* Peso sobre el margen: la pauta neta de IVA contra el margen de
            contribución previo a Ads (descontando COGS si el template está cargado). */
         let margenBase = n.recibidoNEXUS_sinAds_total || 0;
@@ -15909,10 +16043,10 @@ function renderNEXUS(skuMap, useML, idLabel) {
             + (cg && cg.costo > 0 ? ' (post-COGS)' : ' (pre-COGS: cargá el template para el peso real)')
             + ' · Tras pagar la pauta le queda ' + (mgPostAds !== null ? PCT(mgPostAds) : '—')
             + ' de margen sobre venta neta, contra ' + PCT(margenPromCuenta) + ' de promedio en la cuenta.';
-        const roasClr  = n.roas > 5 ? 'var(--ok)' : n.roas > 2 ? 'var(--warn)' : 'var(--danger)';
+        const roasClr  = n.roas > 0 ? stClr(bandaAcos(1 / n.roas, beAcosItem(s, n))) : 'var(--danger)';
         html += '<tr>'
           + '<td>' + idWithTitle(s.id) + adStateChip(s.id) + relationshipChip(s.id) + '</td>'
-          + '<td class="num" style="color:var(--warn)">' + ARS(n.inversion) + '</td>'
+          + '<td class="num" style="color:var(--text)">' + ARS(n.inversion) + '</td>'
           + '<td class="num">' + ARS(revenueBase) + '</td>'
           + '<td class="num" style="color:' + tacosClr + '"><strong>' + PCT(tacosReal) + '</strong></td>'
           + '<td class="num" style="color:' + pesoClr + ';cursor:help;border-bottom:1px dotted rgba(255,255,255,.15)" title="'
@@ -16704,7 +16838,7 @@ function renderFichaML(s) {
   } else if (n) {
     kpis.push(KPI('Precio promedio', ARS(n.precioProm || 0), 'promedio cobrado en el período'));
     kpis.push(KPI('Recibido neto/u', ARS(n.breakEvenUnit || 0), 'tras fees, envío e IVA'));
-    const mgColor = (n.margenUnitario || 0) < 0 ? 'var(--danger)' : (n.margenUnitario || 0) < 0.10 ? 'var(--warn)' : 'var(--ok)';
+    const mgColor = stClr(bandaMargen(n.margenUnitario || 0, false));
     kpis.push(KPI('Margen Unit (pre-COGS)', PCT(n.margenUnitario || 0), 'sobre venta neta', mgColor));
   }
   if (cogsU > 0 && n && n.sinPrecioReal) {
@@ -16715,19 +16849,19 @@ function renderFichaML(s) {
     const mgBaseU = n ? ((n.precioProm || 0) * (1 - (n.factorIva || 0))) : 0;
     const mgPct = mgBaseU > 0 ? margenUnitPostCogs / mgBaseU : 0;
     kpis.push(KPI('COGS /u', ARS(cogsU), cogsRec.match === 'EXACTO' ? 'match exacto' : 'match por SKU'));
-    kpis.push(KPI('Margen UNIT post-COGS', ARS(margenUnitPostCogs), PCT(mgPct) + ' sobre venta neta · por unidad, sin Ads', c));
+    kpis.push(KPI('Margen UNIT post-COGS', ARS(margenUnitPostCogs), PCT(mgPct) + ' sobre venta neta · por unidad, sin Ads', stClr(bandaMargen(mgPct, true), c)));
     /* P&L del período: misma fórmula que la vista P&L de Rentabilidad
        (NEXUS $ del rango, con Ads prorrateados, menos COGS/u × unidades). */
     if (n) {
       const rentFinalPL = (n.recibidoNEXUS || 0) - cogsU * (s.unidades || 0);
       const mgPctPL = (n.ventaNeta || 0) > 0 ? rentFinalPL / n.ventaNeta : 0;
       const cPL = rentFinalPL < 0 ? 'var(--danger)' : 'var(--ok)';
-      kpis.push(KPI('Margen P&amp;L post-COGS', ARS(rentFinalPL), PCT(mgPctPL) + ' sobre venta neta · período, con Ads', cPL));
+      kpis.push(KPI('Margen P&amp;L post-COGS', ARS(rentFinalPL), PCT(mgPctPL) + ' sobre venta neta · período, con Ads', stClr(bandaMargen(mgPctPL, true), cPL)));
     }
   }
   if (ads && (ads.inversion || 0) > 0) {
     const tacosPct = n && n.tacos ? n.tacos : 0;
-    const tc = tacosPct > 0.20 ? 'var(--danger)' : tacosPct > 0.10 ? 'var(--warn)' : '';
+    const tc = stClr(bandaPautaItem(s, n), '');
     kpis.push(KPI('Inversión Ads', ARS(ads.inversion || 0), (ads.estado || '') + (ads.campana ? ' · ' + ads.campana : '')));
     kpis.push(KPI('TACOS', PCT(tacosPct), 'Ads / revenue', tc));
     if (ads.roas) kpis.push(KPI('ROAS', (ads.roas).toFixed(2) + '×', 'ingresos / inversión'));
@@ -16967,7 +17101,12 @@ function badgesFor(s) {
   
   if (enrich.ads && enrich.ads.inversion > 0) {
     const tacos = s.ingresos_brutos > 0 ? enrich.ads.inversion / s.ingresos_brutos : 0;
-    if (tacos > 0.20) badges.push('<span class="sku-badge sku-badge-danger">TACOS↑</span>');
+    /* v54.0: aparece cuando la pauta deja el margen por debajo del piso, no por
+       un TACOS fijo del 20 %. Naranja si perfora el piso, rojo si lo pasa por
+       más de 10 puntos. */
+    const _bT = tacos > 0 ? bandaPautaItem(s) : null;
+    if (_bT === 'warn') badges.push('<span class="sku-badge sku-badge-warn">TACOS↑</span>');
+    else if (_bT === 'bad' || _bT === 'bad2') badges.push('<span class="sku-badge sku-badge-danger">TACOS↑</span>');
   }
   
   return badges.length > 0 ? '<span class="sku-badges">' + badges.join('') + '</span>' : '';
@@ -17771,8 +17910,8 @@ function setFlexPromedio(forzar) {
   }
   if (G && G._lastRender) {
     const R = G._lastRender;
-    renderNEXUS(R.skuMap, R.useML, R.useML ? '# Publicación' : 'SKU');
     if (typeof renderRentKPIs === 'function') renderRentKPIs(R.skuMap);
+    renderNEXUS(R.skuMap, R.useML, R.useML ? '# Publicación' : 'SKU');
   }
 }
 
@@ -17798,8 +17937,8 @@ function loadFlexTemplate(file) {
       // Re-render: el costo entra en el margen, así que cambia toda la pestaña
       if (G && G._lastRender) {
         const R = G._lastRender;
-        renderNEXUS(R.skuMap, R.useML, R.useML ? '# Publicación' : 'SKU');
         if (typeof renderRentKPIs === 'function') renderRentKPIs(R.skuMap);
+        renderNEXUS(R.skuMap, R.useML, R.useML ? '# Publicación' : 'SKU');
       }
     } catch (err) {
       if (status) { status.textContent = 'Error: ' + err.message; status.style.color = 'var(--danger)'; }
