@@ -84,9 +84,7 @@
   .btn-danger:hover{border-color:var(--danger);color:var(--danger);}
   .btn-apply{border-color:var(--accent);color:var(--accent2);}
   .btn-apply:hover{background:rgba(var(--accent-rgb),.1);color:var(--accent2);}
-  .btn-export{border-color:var(--ok);color:var(--ok);}
-  .btn-export:hover{background:rgba(52,211,153,.1);}
-  .btn-export:disabled{opacity:.5;cursor:not-allowed;}
+  #btn-export:disabled{opacity:.5;cursor:wait;}
 
   .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;border-bottom:1px solid var(--border);background:var(--border);}
   .kpi{background:var(--surface);padding:22px 24px;}
@@ -682,7 +680,6 @@
   .sku-badge-warn{color:var(--warn);border-color:rgba(251,146,60,.4);background:rgba(251,146,60,.1);}
   .sku-badge-ok{color:var(--ok);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);}
   .sku-badge-muted{color:var(--muted);border-color:var(--border);background:transparent;}
-  .sku-badge-orange{color:#f97316;border-color:rgba(249,115,22,.4);background:rgba(249,115,22,.1);}
 
   .rr-ok{color:var(--ok)!important;}
   .rr-warn{color:var(--warn)!important;}
@@ -1340,6 +1337,7 @@ const _GLOSARIO = [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
   ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
+  ['Limpieza (v55)','Detalles del rediseño','El resumen y el estado del stock de FULL quedan en el acordeón Estado del stock FULL. El aviso de reporte de Anuncios desalineado se muestra debajo de la franja de Publicidad. Las opiniones malas entre 40 y 60 % usan el naranja de la paleta en vez de un tono propio. Se quitaron las menciones a Mercado Shops, que ya no existe.'],
   ['Gráfico y deltas de Ventas (v54.9)','Período anterior e interanual','La card Ventas de Salud y la franja de Ventas muestran la variación contra el período anterior de igual duración y contra el mismo período del año anterior, cuando el reporte los cubre. Se calcula sobre ingresos por productos de las ventas no canceladas, igual que la serie del Informe; como el IVA es el mismo en los dos períodos, el % es el mismo sobre venta neta. Ads y stock no tienen delta porque sus reportes traen un solo período. El gráfico de Ventas muestra la facturación promedio por día (por día hasta 45 días, por semana hasta 190 y por tramos de 30 días más allá), el período anterior punteado y las fechas comerciales de impacto alto; al pasar el mouse muestra el detalle de cada tramo.'],
   ['Ficha en panel lateral (v54.8)','Buscador o clic en cualquier ID','La ficha de una publicación se abre en un panel a la derecha, sin empujar el contenido: desde el buscador de la barra de filtros o con un clic en el ID de cualquier tabla (el título sigue en el tooltip). Se cierra con ✕, con Esc o tocando el fondo. "Ver en…" esconde el panel para dejar ver la fila resaltada y lo vuelve a mostrar si la fila no está en la tabla visible.'],
   ['Ventas, Diagnóstico y Estrategia (v54.7)','El Dashboard General se repartió','Ventas queda con la franja y el Pareto. Diagnóstico reúne lo que se revisa cada tanto: falsos héroes, dormidos (con el revenue perdido estimado de todos, no sólo de los 25 de la tabla), concentración del catálogo, geografía y logística, tiendas oficiales (sólo con más de una) y clientes (sólo con Evolución de Negocio o Desempeño de Producto). Estrategia reúne las herramientas de una decisión puntual: contribución por visita, rangos de precio, combos de carrito, el mapa de calor y el simulador SOV. Cada bloque muestra su resumen en el encabezado y abre su tabla a demanda.'],
@@ -1470,7 +1468,7 @@ const _GLOSARIO = [
  ['Geografía y logística', [
   ['Pareto Geográfico','Distribución del revenue por provincia o estado','Si una zona supera el 30% del volumen, conviene evaluar Flex (concentración metropolitana) o inyección de stock FULL (zonas distantes).'],
   ['Forma de entrega','Modalidad logística de cada venta','FULL, Flex, Colecta o a cargo del comprador. Cambia quién paga el envío y el costo que absorbe el vendedor.'],
-  ['Tienda / Canal','Origen de la venta','Separa MercadoLibre de Mercado Shops y otros canales.'],
+  ['Tienda / Canal','Tienda oficial de la venta','Separa la facturación por tienda oficial. Sólo tiene sentido en cuentas con más de una: sin tienda oficial, toda venta figura como Mercado Libre. Está en Diagnóstico y se muestra sólo con dos tiendas o más.'],
  ]],
  ['SKUs dormidos y catálogo', [
   ['SKU dormido','Con historial de venta y sin movimiento en el período','Candidato a reactivación: ya demostró demanda.'],
@@ -1710,7 +1708,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.9';
+const EVO_VERSION = 'v55';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1787,7 +1785,7 @@ function _metodologiaIA() {
       + 'El COGS es el costo sin IVA que carga el vendedor. El reporte de Anuncios no trae detalle diario.'],
    ]],
    ['Fuente y alcance', [
-    ['Reporte base', 'Reporte de ventas de Mercado Libre / Mercado Shops', 'Una fila por venta. En carritos, una fila de paquete y una por ítem (ver Carritos).'],
+    ['Reporte base', 'Reporte de ventas de Mercado Libre', 'Una fila por venta. En carritos, una fila de paquete y una por ítem (ver Carritos).'],
     ['Ventas válidas', 'Estado sin cancelación, anulación, rechazo, devolución, reembolso ni no entrega', '"Mediación finalizada. Te dimos el dinero" es venta válida. Las excluidas no suman unidades ni ingresos.'],
     ['Canceladas', 'No suman ni restan', ''],
     ['Devueltas y no entregadas', 'min(0, Total) × netFee', 'Sólo restan si el Total es negativo: lo que le costó al vendedor, típicamente el envío de vuelta. Un Total positivo no se toma como ingreso porque ML suele revertirlo.'],
@@ -9789,12 +9787,14 @@ function renderDashboard(renderData){
     const oldAlert = document.getElementById('ads-misalign-alert');
     if (oldAlert) oldAlert.remove();
     if (alertHTML) {
-      const container = document.getElementById('view-general') || document.getElementById('dashboard');
-      if (container) {
+      /* v55: va debajo de la franja de Publicidad, que es donde se leen los
+         números que afecta; Salud lo resume en su franja de advertencias. */
+      const band = document.getElementById('pub-band');
+      if (band) {
         const wrap = document.createElement('div');
         wrap.id = 'ads-misalign-alert';
         wrap.innerHTML = alertHTML;
-        container.insertAdjacentElement('afterbegin', wrap);
+        band.insertAdjacentElement('afterend', wrap);
       }
     }
   }
@@ -14291,7 +14291,19 @@ function renderFULLTab(useML, idLabel) {
     <div class="kpi"><div class="kpi-label">Críticos (≤14 días)</div><div class="kpi-value ${criticos > 0 ? 'danger' : 'ok'}">${criticos}</div></div>
     <div class="kpi"><div class="kpi-label">Sin stock</div><div class="kpi-value ${sinStock > 0 ? 'warn' : 'ok'}">${sinStock}</div></div>
   `;
-  grid.appendChild(kpiDiv);
+  /* v55: el resumen y el estado del stock de FULL van plegados; la franja de
+     Stock ya dice lo urgente y la tabla por variante queda a la vista. */
+  const _accFull = document.createElement('details');
+  _accFull.className = 'acc grid-full';
+  if (typeof STOCK_ACC_ABIERTOS !== 'undefined' && STOCK_ACC_ABIERTOS.has('full')) _accFull.open = true;
+  _accFull.addEventListener('toggle', () => { if (typeof STOCK_ACC_ABIERTOS === 'undefined') return;
+    if (_accFull.open) STOCK_ACC_ABIERTOS.add('full'); else STOCK_ACC_ABIERTOS.delete('full'); });
+  _accFull.innerHTML = '<summary><span class="acc-title">Estado del stock FULL</span><span class="acc-kpi">'
+    + NUM(items.length) + ' SKUs activos · stock apto <strong>' + NUM(totalAptas > 0 ? totalAptas : totalClasificado) + '</strong>'
+    + (totalEnCamino > 0 ? ' · en camino <strong>' + NUM(totalEnCamino) + '</strong>' : '') + '</span></summary><div class="acc-body"></div>';
+  grid.appendChild(_accFull);
+  const _accFullBody = _accFull.querySelector('.acc-body');
+  _accFullBody.appendChild(kpiDiv);
 
   const totalAptasDisplay = totalAptas > 0 ? totalAptas : totalClasificado;
 
@@ -14355,7 +14367,7 @@ function renderFULLTab(useML, idLabel) {
         <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px">Pendiente de ingreso al depósito</div>
       </div>` : ''}
     `;
-    grid.appendChild(qualDiv);
+    _accFullBody.appendChild(qualDiv);
   }
 
   /* La agrupación real de variantes la da el "Agrupador de variantes" del
@@ -18086,7 +18098,7 @@ function badgesFor(s) {
   if (enrich.rend) {
     const pct = enrich.rend.opiniones_malas_pct || 0;
     if (pct >= 60)      badges.push('<span class="sku-badge sku-badge-danger">★ ' + pct.toFixed(0) + '% MALAS</span>');
-    else if (pct >= 40) badges.push('<span class="sku-badge sku-badge-orange">★ ' + pct.toFixed(0) + '% MALAS</span>');
+    else if (pct >= 40) badges.push('<span class="sku-badge sku-badge-warn">★ ' + pct.toFixed(0) + '% MALAS</span>');
     else if (pct >= 20) badges.push('<span class="sku-badge sku-badge-warn">★ ' + pct.toFixed(0) + '% MALAS</span>');
     
     if (enrich.rend.calidad === 'profesional')   badges.push('<span class="sku-badge sku-badge-ok">PRO</span>');
