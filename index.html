@@ -985,11 +985,12 @@
   </div>
 
   <div id="view-pub" style="display:none">
-    <div class="kpi-row-wrap" style="position:relative;">
-      <div id="pub-kpi-period" style="position:absolute;top:-6px;right:0;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;background:var(--surface);padding:2px 8px;border-radius:3px;border:1px solid var(--border);"></div>
-      <div class="kpi-row" id="pub-kpi-row"></div>
-    </div>
-    <div class="section-header"><span>Publicidad</span> — Distribución y TACOS por Publicación</div>
+    <!-- v54.4: franja · Inversión Sin Retorno · publicidad por producto · campañas -->
+    <div class="band" id="pub-band"><span class="band-vals" id="pub-band-vals"></span></div>
+    <details class="acc" id="pub-acc-kpis">
+      <summary><span class="acc-title">Detalle de la pauta</span><span class="acc-kpi">inversión, revenue y ventas por Ads, ACoS, TACoS y sin retorno</span></summary>
+      <div class="acc-body"><div class="kpi-row" id="pub-kpi-row"></div></div>
+    </details>
     <div class="grid" id="grid-pub-tab"></div>
   </div>
 
@@ -1231,6 +1232,7 @@ const _GLOSARIO = [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
   ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
+  ['Pestaña Publicidad (v54.4)','Franja · Sin Retorno · por producto · campañas','La franja repite la card Ads de Salud: TACoS y ACoS con su color, break-even, inversión, revenue y ventas por Ads, peso de la venta por publicidad e inversión sin retorno. Debajo, en orden: Inversión Sin Retorno (la acción), la tabla por producto y las campañas. Publicidad por SKU y TACOS por SKU se fusionaron en una sola tabla con inversión, ingresos atribuidos (con la advertencia de ventas indirectas), revenue, TACOS, % del margen, ROAS, revenue de sesión y peso. Sin reporte de Anuncios se muestra la tabla por flag de venta por publicidad, que es la única posible. Las tarjetas de la pauta quedan en el acordeón Detalle de la pauta.'],
   ['Semáforo de TACoS (v54.0)','Según el margen que deja la pauta','El TACoS no tiene un porcentaje fijo: se colorea por el margen P&L que le queda al producto (o a la cuenta) después de pagar la pauta, con el piso del semáforo de margen: 35 % antes de COGS, 15 % con COGS. El badge TACOS↑ aparece cuando la pauta perfora el piso: naranja dentro de los primeros 10 puntos, rojo por debajo.'],
   ['Semáforo de ACoS y ROAS (v54.0)','Contra el break-even','El break-even de ACoS es el margen antes de Ads (después de COGS si hay costo cargado), medido sobre el bruto y dividido por el factor neto de los cargos, porque el ACoS compara inversión e ingresos con IVA. Verde intenso con 20 puntos o más de colchón, verde entre 10 y 20, naranja a menos de 10, rojo por encima del break-even y rojo intenso a más de 10 puntos. El ROAS usa la misma banda (ROAS = 1 ÷ ACoS). Por publicación se usa el break-even de la publicación; en campañas y anuncios, el de la cuenta.'],
   ['ACOS','Inversión ÷ Ingresos por ventas con publicidad','Definición textual del glosario de Mercado Ads. Se calcula sólo sobre revenue atribuido, no sobre el total.'],
@@ -1595,7 +1597,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.3';
+const EVO_VERSION = 'v54.4';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -9218,7 +9220,9 @@ function renderDashboard(renderData){
     const subt = conAds.length>0 
       ? conAds.length+' publicaciones con inversión · Σ Inversión '+ARS(totalInvVisible)+' · Σ Ing. atribuidos '+ARS(totalIngAds)
       : conPubFlag.length+' publicaciones con venta por publicidad · Peso Ads global '+PCT(pesoGlobal)+' · (cargá reporte de Ads para inversión y ROAS)';
-    panel('grid-pub-tab','Publicidad por '+idLabel, subt, html);
+    /* v54.4: con reporte de Anuncios, la tabla por producto la arma NEXUS (con
+       TACOS y % del margen). Ésta queda para cuentas sin ese reporte. */
+    if (conAds.length === 0) panel('grid-pub-tab','Publicidad por '+idLabel, subt, html, true);
 
   }
 
@@ -9579,6 +9583,7 @@ function renderDashboard(renderData){
   renderNEXUS(skuMap, useML, idLabel);
   renderPubKPIs(skuMap);
   _pintarSemaforoPauta();
+  _ordenarPub();
 
   // Activar y construir tab Forecast
   const tabFc = document.getElementById('tab-forecast');
@@ -14392,7 +14397,33 @@ function _beCta() { const sc = semaforoCuenta(); return sc ? sc.be : null; }
 /* Pinta TACoS y ACoS de cabecera en Publicidad. Se llama al dibujar Publicidad
    y al final de Rentabilidad, porque cargar COGS o Flex re-dibuja Rentabilidad
    sin volver a dibujar Publicidad. */
+/* Franja de Publicidad (v54.4): la card Ads de Salud en una línea. */
+function _pintarBandaPub() {
+  const band = document.getElementById('pub-band'), bv = document.getElementById('pub-band-vals');
+  if (!band || !bv || !G) return;
+  const P = G._pautaCuenta, sc = semaforoCuenta(), V = G._ventasCuenta;
+  const val = (txt, b) => '<span class="band-val st-val"' + (b ? ' data-st="' + b + '"' : '') + '>' + (b ? '<span class="st-dot"></span>' : '') + txt + '</span>';
+  const pub = V ? '<span class="m">' + PCT(V.pubPct) + ' de la venta viene de publicidad</span>' : '';
+  if (!P || !(P.inv > 0)) {
+    bv.innerHTML = '<span class="band-q">Ads</span><span class="band-val" style="color:var(--muted)">Sin reporte de Anuncios</span>' + pub;
+    band.removeAttribute('data-st');
+    return;
+  }
+  const bT = P.desalineado ? null : (sc ? sc.banda : null);
+  const bA = sc ? bandaAcos(P.acos, sc.be) : null;
+  const beOk = sc && sc.be !== null && isFinite(sc.be);
+  let h = '<span class="band-q">Ads</span>'
+    + val(P.desalineado ? '—' : PCT(P.tacos), bT) + '<span class="m">TACoS' + (P.desalineado ? ' · el reporte de Anuncios tiene otro período' : '') + '</span>'
+    + val(PCT(P.acos), bA) + '<span class="m">ACoS' + (beOk ? ' · break-even ' + PCT(sc.be) : '') + '</span>'
+    + '<span class="m">Inversión <strong style="color:var(--text)">' + fmtCurrency(P.inv) + '</strong> · revenue Ads '
+    + fmtCurrency(P.revAds || 0) + ' · ' + NUM(Math.round(P.ventasAds || 0)) + ' ventas</span>' + pub;
+  if (P.sinRetorno > 0) h += '<span class="tag tag-danger">' + fmtCurrency(P.sinRetorno) + ' sin retorno</span>';
+  bv.innerHTML = h;
+  const b = _peorBanda(bT, bA);
+  if (b) band.setAttribute('data-st', b); else band.removeAttribute('data-st');
+}
 function _pintarSemaforoPauta() {
+  _pintarBandaPub();
   const row = document.getElementById('pub-kpi-row');
   if (!row) return;
   const sc = semaforoCuenta();
@@ -15276,7 +15307,8 @@ function renderPubKPIs(skuMap) {
   
   /* El color de ACoS y TACoS lo pone _pintarSemaforoPauta con los umbrales
      inteligentes (v54.0); acá sólo se guarda el ACoS de la cuenta. */
-  if (G) G._pautaCuenta = { acos, tacos, inv: invTotal, desalineado: _adsDesalineado, sinRetorno: 0 };
+  if (G) G._pautaCuenta = { acos, tacos, inv: invTotal, desalineado: _adsDesalineado, sinRetorno: 0,
+                           revAds: revAdsTotal, ventasAds: ventasAdsTotal };
   
   if (invTotal === 0) {
     kpiRow.innerHTML = `<div class="kpi" style="grid-column:span 5;text-align:center;"><div class="kpi-label">Sin reporte de publicidad cargado</div><div class="kpi-sub">Cargá un reporte de Ads para ver estas métricas</div></div>`;
@@ -16444,11 +16476,19 @@ function renderNEXUS(skuMap, useML, idLabel) {
 
       const tipPesoMg = '<span class="nexus-tip" title="Qué porción del margen se lleva la pauta: inversión (neta de IVA) sobre el margen de contribución previo a Ads. EL COLOR no usa un umbral fijo sobre este %, porque ceder 20% del margen no significa lo mismo en un producto de margen 80% que en uno de 35%. Se colorea según el margen que SOBREVIVE después de pagar la pauta, comparado con el margen promedio de la cuenta: verde si mantiene al menos el 75% del margen promedio de la cuenta, amarillo si cae por debajo de eso, rojo si baja del 40% del promedio o si la pauta se come todo el margen. Con el template de COGS cargado descuenta el costo de producto; sin COGS el peso real será mayor." style="cursor:help;color:var(--muted);margin-left:3px;font-size:10px;">?</span>';
       const tipRoas = '<span class="nexus-tip" title="ROAS = Revenue atribuido a Ads / Inversión en Ads. Cuántas veces recuperaste la inversión." style="cursor:help;color:var(--muted);margin-left:3px;font-size:10px;">?</span>';
+      /* v54.4: es la tabla única de publicidad por producto. Suma las dos
+         columnas propias de la vieja "Publicidad por SKU": ingresos que el
+         reporte de Anuncios le atribuye y revenue por sesión de Ads. */
+      const tipAtrib = '<span class="nexus-tip" title="Ingresos que el reporte de Mercado Ads atribuye a esta publicación por haber sido la ANUNCIADA (ventas directas e indirectas). Si superan su propia facturación, el anuncio se está acreditando ventas de otros productos: su ROAS no sirve para decidir su presupuesto." style="cursor:help;color:var(--muted);margin-left:3px;font-size:10px;">?</span>';
+      const tipSesion = '<span class="nexus-tip" title="Revenue (venta neta) de esta publicación que el reporte de ventas marcó con el flag Venta por publicidad. Acredita a la publicación VENDIDA, no a la anunciada." style="cursor:help;color:var(--muted);margin-left:3px;font-size:10px;">?</span>';
+      let _sInv = 0, _sAtr = 0;
+      tacosArr.forEach(x => { _sInv += x.nexus.inversion || 0; const e = getEnrichment(x); _sAtr += (e && e.ads && e.ads.ingresos) || 0; });
       let html = '<table><thead><tr>'
         + '<th>' + idLabel + '</th><th class="r">Inversión ADS</th>'
+        + '<th class="r">Ing. atrib. Ads' + tipAtrib + '</th>'
         + '<th class="r">Revenue' + tipRev + '</th><th class="r">TACOS' + tipTacos + '</th>'
         + '<th class="r">% del margen' + tipPesoMg + '</th>'
-        + '<th class="r">ROAS' + tipRoas + '</th><th>Peso ADS</th>'
+        + '<th class="r">ROAS' + tipRoas + '</th><th class="r">Rev. sesión' + tipSesion + '</th><th>Peso ADS</th>'
         + '</tr></thead><tbody>';
       tacosArr.slice(0, 50).forEach(s => {
         const n = s.nexus;
@@ -16488,16 +16528,28 @@ function renderNEXUS(skuMap, useML, idLabel) {
         html += '<tr>'
           + '<td>' + idWithTitle(s.id) + adStateChip(s.id) + relationshipChip(s.id) + '</td>'
           + '<td class="num" style="color:var(--text)">' + ARS(n.inversion) + '</td>'
+          + (() => {
+              const e = getEnrichment(s), ing = (e && e.ads && e.ads.ingresos) || 0;
+              const r = (ing > 0 && revenueBase > 0) ? ing / revenueBase : 0, ind = r > 1.02;
+              const ttl = r > 0 ? 'Ingresos atribuidos ' + ARS(ing) + ' contra ' + ARS(revenueBase) + ' de facturación bruta propia: ' + r.toFixed(2) + '×.'
+                + (ind ? ' Por encima de 1 el anuncio se acredita ventas de otros productos: evaluá esta publicación por TACOS y por margen, no por ROAS.' : '') : '';
+              return '<td class="num" style="color:' + (ind ? 'var(--warn)' : 'var(--muted)') + (ttl ? ';cursor:help' : '') + '"'
+                + (ttl ? ' title="' + ttl.replace(/"/g, '&quot;') + '"' : '') + '>' + (ing > 0 ? ARS(ing) + (ind ? ' ⚠' : '') : '—') + '</td>';
+            })()
           + '<td class="num">' + ARS(revenueBase) + '</td>'
           + '<td class="num" style="color:' + tacosClr + '"><strong>' + PCT(tacosReal) + '</strong></td>'
           + '<td class="num" style="color:' + pesoClr + ';cursor:help;border-bottom:1px dotted rgba(255,255,255,.15)" title="'
             + pesoTtl.replace(/"/g,'&quot;') + '"><strong>' + pesoTxt + '</strong></td>'
           + '<td class="num" style="color:' + roasClr + '">' + (n.roas ? n.roas.toFixed(1) + 'x' : '—') + '</td>'
+          + '<td class="num" style="color:var(--muted)">' + ((s.pubBruto || 0) > 0 ? ARS(s.pub_venta_neta || 0) : '—') + '</td>'
           + '<td>' + pctBarColored(Math.min(tacosReal / maxTacos, 1), '#fb923c') + '</td>'
           + '</tr>';
       });
       html += '</tbody></table>';
-      panelTo(pubGrid, 'TACOS por ' + idLabel, 'TACOS sobre revenue bruto (comparable con Mercado Ads) · % del margen = peso real de la pauta', html);
+      panelTo(pubGrid, 'Publicidad por ' + idLabel,
+        tacosArr.length + ' publicaciones con inversión' + (tacosArr.length > 50 ? ' (se muestran las 50 de TACOS más alto)' : '')
+          + ' · Σ inversión ' + ARS(_sInv) + ' · Σ ingresos atribuidos ' + ARS(_sAtr)
+          + ' · TACOS sobre revenue bruto · % del margen = peso real de la pauta', html, true);
     }
   }
 
@@ -16834,6 +16886,18 @@ function renderNEXUS(skuMap, useML, idLabel) {
       );
     }
   }
+  _ordenarPub();
+}
+/* Orden de la pestaña Publicidad (v54.4): primero la acción (Inversión Sin
+   Retorno), después el desglose por producto y al final las campañas. */
+function _ordenarPub() {
+  const g = document.getElementById('grid-pub-tab');
+  if (!g) return;
+  const rank = p => {
+    const t = ((p.querySelector('.panel-title') || {}).textContent || '');
+    return /Sin Retorno/i.test(t) ? 0 : /^Publicidad por/.test(t) ? 1 : /Campañas/.test(t) ? 2 : 3;
+  };
+  Array.from(g.children).sort((a, b) => rank(a) - rank(b)).forEach(p => g.appendChild(p));
 }
 
 /* ═══════════ ANOMALÍAS DE COSTO DE ENVÍO POR FAMILIA ═══════════
