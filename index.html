@@ -219,6 +219,16 @@
      ocultos porque parte del código todavía los muestra u oculta. */
   .tab-oculta{display:none!important;}
   #view-stock .section-header{border-top:1px solid var(--border);}
+  /* v54.7 · Pestañas de Análisis: contraste menor que Chequeo; cada bloque
+     muestra su KPI en el encabezado y abre su tabla a demanda. */
+  .analysis-intro{padding:var(--sp-4) var(--gutter);font-size:var(--fs-body);color:var(--muted);border-bottom:1px solid var(--border);}
+  .analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+  .analysis-grid>details.acc{background:var(--bg);border-top:0;}
+  .analysis-grid>details.acc[open]{grid-column:1/-1;background:var(--surface);}
+  .analysis-grid .acc-title{font-size:14px;}
+  .acc-body>.panel{border-top:1px solid var(--border);}
+  .acc-nota{padding:var(--sp-3) var(--gutter) var(--sp-4);font-size:var(--fs-body);color:var(--muted);}
+  @media(max-width:900px){.analysis-grid{grid-template-columns:1fr;}}
   /* v54.5 · Selector de dos vistas de una misma tabla (Pareto) */
   .seg-sw{display:inline-flex;margin-left:auto;}
   .seg-sw button{padding:3px 10px;font-size:var(--fs-micro);font-weight:500;letter-spacing:.5px;font-family:var(--mono);cursor:pointer;
@@ -905,7 +915,7 @@
     <div class="tab-group check">
       <span class="tab-group-label">Chequeo</span>
       <button class="tab-btn no-light active" id="tab-salud" onclick="switchTab('salud')">Salud</button>
-      <button class="tab-btn" id="tab-general" onclick="switchTab('general')">Dashboard General</button>
+      <button class="tab-btn" id="tab-general" onclick="switchTab('general')">Ventas</button>
       <button class="tab-btn" id="tab-rent" onclick="switchTab('rent')" style="display:none">Rentabilidad</button>
       <button class="tab-btn" id="tab-pub" onclick="switchTab('pub')" style="display:none">Publicidad</button>
       <button class="tab-btn" id="tab-stock" onclick="switchTab('stock')" style="display:none">Stock</button>
@@ -914,8 +924,10 @@
     </div>
     <div class="tab-group analysis">
       <span class="tab-group-label">Análisis</span>
-      <button class="tab-btn" id="tab-sov" onclick="switchTab('sov')" style="display:none">SOV Modeler</button>
-      <button class="tab-btn" id="tab-heat" onclick="switchTab('heat')" style="display:none">Mapa de Calor</button>
+      <button class="tab-btn" id="tab-diag" onclick="switchTab('diag')" style="display:none">Diagnóstico</button>
+      <button class="tab-btn" id="tab-estr" onclick="switchTab('estr')" style="display:none">Estrategia</button>
+      <button class="tab-btn tab-oculta" id="tab-sov" onclick="switchTab('sov')" style="display:none">SOV Modeler</button>
+      <button class="tab-btn tab-oculta" id="tab-heat" onclick="switchTab('heat')" style="display:none">Mapa de Calor</button>
     </div>
   </div>
 
@@ -996,17 +1008,36 @@
   <div id="view-general" style="display:none">
     <!-- v54.5: la card Ventas de Salud en una línea -->
     <div class="band" id="ventas-band"><span class="band-vals" id="ventas-band-vals"></span></div>
-    <div class="kpi-row" id="kpi-row"></div>
-    <div class="pub-split" id="pub-split"></div>
-
-    <div class="section-header"><span>Pareto</span> — Revenue y Volumen</div>
+    <!-- v54.7: los indicadores y paneles de diagnóstico y estrategia se arman acá
+         y _armarAnalisis los lleva a su pestaña; estos contenedores no se ven. -->
+    <div class="kpi-row" id="kpi-row" style="display:none"></div>
+    <div class="pub-split" id="pub-split" style="display:none"></div>
     <div class="grid" id="grid-pareto"></div>
+    <div class="grid" id="grid-logistica" style="display:none"></div>
+    <div class="grid" id="grid-alerts" style="display:none"></div>
+  </div>
 
-    <div class="section-header"><span>Logística</span> — Distribución Operativa</div>
-    <div class="grid" id="grid-logistica"></div>
+  <div id="view-diag" style="display:none">
+    <div class="analysis-intro">Diagnóstico periódico: no es parte del chequeo de rutina. Cada bloque muestra su resumen y abre su tabla.</div>
+    <div class="analysis-grid">
+      <details class="acc" id="diag-fh"><summary><span class="acc-title">Falsos héroes</span><span class="acc-kpi" id="diag-fh-kpi"></span></summary><div class="acc-body" id="diag-fh-body"></div></details>
+      <details class="acc" id="diag-dorm"><summary><span class="acc-title">Dormidos</span><span class="acc-kpi" id="diag-dorm-kpi"></span></summary><div class="acc-body" id="diag-dorm-body"></div></details>
+      <details class="acc" id="diag-conc"><summary><span class="acc-title">Concentración</span><span class="acc-kpi" id="diag-conc-kpi"></span></summary><div class="acc-body" id="diag-conc-body"></div></details>
+      <details class="acc" id="diag-geo"><summary><span class="acc-title">Geografía y logística</span><span class="acc-kpi" id="diag-geo-kpi"></span></summary><div class="acc-body" id="diag-geo-body"></div></details>
+      <details class="acc" id="diag-tiendas"><summary><span class="acc-title">Tiendas oficiales</span><span class="acc-kpi" id="diag-tiendas-kpi"></span></summary><div class="acc-body" id="diag-tiendas-body"></div></details>
+      <details class="acc" id="diag-clientes"><summary><span class="acc-title">Clientes</span><span class="acc-kpi">CAC, retención y abandono de carrito</span></summary><div class="acc-body" id="diag-clientes-body"></div></details>
+    </div>
+  </div>
 
-    <div class="section-header"><span>Alertas</span> — SKUs Dormidos · Distribución de Precio</div>
-    <div class="grid" id="grid-alerts"></div>
+  <div id="view-estr" style="display:none">
+    <div class="analysis-intro">Herramientas para una decisión puntual. Cada bloque se abre cuando se trabaja esa decisión.</div>
+    <div class="analysis-grid">
+      <details class="acc" id="estr-trafico"><summary><span class="acc-title">Tráfico</span><span class="acc-kpi">dónde empujar visitas o pauta · contribución por visita</span></summary><div class="acc-body" id="estr-trafico-body"></div></details>
+      <details class="acc" id="estr-precios"><summary><span class="acc-title">Precios y promociones</span><span class="acc-kpi">rangos de precio, para cupones y descuentos</span></summary><div class="acc-body" id="estr-precios-body"></div></details>
+      <details class="acc" id="estr-combos"><summary><span class="acc-title">Ofertas y combos</span><span class="acc-kpi">qué se compra junto</span></summary><div class="acc-body" id="estr-combos-body"></div></details>
+      <details class="acc" id="estr-heat"><summary><span class="acc-title">Horarios</span><span class="acc-kpi">cuándo compran · mapa de calor</span></summary><div class="acc-body" id="estr-heat-body"></div></details>
+      <details class="acc" id="estr-sov"><summary><span class="acc-title">Simulador SOV</span><span class="acc-kpi">presupuesto y share of voice por campaña</span></summary><div class="acc-body" id="estr-sov-body"></div></details>
+    </div>
   </div>
 
   <div id="view-pub" style="display:none">
@@ -1260,6 +1291,7 @@ const _GLOSARIO = [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
   ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
+  ['Ventas, Diagnóstico y Estrategia (v54.7)','El Dashboard General se repartió','Ventas queda con la franja y el Pareto. Diagnóstico reúne lo que se revisa cada tanto: falsos héroes, dormidos (con el revenue perdido estimado de todos, no sólo de los 25 de la tabla), concentración del catálogo, geografía y logística, tiendas oficiales (sólo con más de una) y clientes (sólo con Evolución de Negocio o Desempeño de Producto). Estrategia reúne las herramientas de una decisión puntual: contribución por visita, rangos de precio, combos de carrito, el mapa de calor y el simulador SOV. Cada bloque muestra su resumen en el encabezado y abre su tabla a demanda.'],
   ['Pestaña Stock (v54.6)','Forecast + Inventario FULL','Stock reúne las viejas pestañas Forecast e Inventario FULL. Arriba, la franja con la card Stock de Salud; después la reposición sugerida, y en acordeones los indicadores del forecast, la proyección semana a semana, los eventos comerciales y la configuración manual. Debajo, la cobertura por variante de FULL. El reporte de Publicaciones se carga en la pantalla inicial junto con el resto: se importa al generar el dashboard y el forecast se calcula solo, con los lead times por defecto (propio 14 días, FULL 21) hasta que se ajusten en Configurar forecast.'],
   ['Pareto en una tabla (v54.5)','Selector Facturación | Unidades','Pareto Facturación y Pareto Volumen compartían estructura: son una sola tabla con dos vistas. La de Unidades marca los falsos héroes en rojo. El selector recuerda la vista elegida al cambiar filtros.'],
   ['Pestaña Publicidad (v54.4)','Franja · Sin Retorno · por producto · campañas','La franja repite la card Ads de Salud: TACoS y ACoS con su color, break-even, inversión, revenue y ventas por Ads, peso de la venta por publicidad e inversión sin retorno. Debajo, en orden: Inversión Sin Retorno (la acción), la tabla por producto y las campañas. Publicidad por SKU y TACOS por SKU se fusionaron en una sola tabla con inversión, ingresos atribuidos (con la advertencia de ventas indirectas), revenue, TACOS, % del margen, ROAS, revenue de sesión y peso. Sin reporte de Anuncios se muestra la tabla por flag de venta por publicidad, que es la única posible. Las tarjetas de la pauta quedan en el acordeón Detalle de la pauta.'],
@@ -1627,7 +1659,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.6';
+const EVO_VERSION = 'v54.7';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -3330,14 +3362,19 @@ function generarInforme(){
 
 function switchTab(view) {
   if (view === 'full' || view === 'forecast') view = 'stock';   // v54.6: viven en Stock
-  ['salud','general','pub','rent','stock','sov','heat'].forEach(v => {
+  /* v54.7: el mapa de calor y el SOV son bloques de Estrategia */
+  let _abrir = null;
+  if (view === 'heat' || view === 'sov') { _abrir = view; view = 'estr'; }
+  ['salud','general','pub','rent','stock','diag','estr'].forEach(v => {
     const el = document.getElementById('view-'+v);
     if (el) el.style.display = v === view ? 'block' : 'none';
     const btn = document.getElementById('tab-'+v);
     if (btn) btn.classList.toggle('active', v === view);
   });
-  if (view === 'sov' && typeof renderSOVTab === 'function') renderSOVTab();
-  if (view === 'heat' && typeof renderHeatTab === 'function') renderHeatTab();
+  if (_abrir) {
+    const d = document.getElementById('estr-' + _abrir);
+    if (d) { if (d.open) _renderBloqueEstr(_abrir); else d.open = true; }
+  }
 }
 
 /* ═══════════ EXCLUSIONS & HELPERS ═══════════ */
@@ -8996,6 +9033,10 @@ function renderDashboard(renderData){
       <div class="kpi-sub">${arrProv.filter(i=>i.esCore80).length} cubren el 80% del revenue</div></div>
   `;
 
+  /* Datos para los bloques de Diagnóstico (v54.7) */
+  if (G) G._diag = { fh: falsosHeroes.length, core: arrFact.filter(i=>i.esCore80).length, total: Object.keys(skuMap).length,
+    idLabel, provs: Object.keys(provMap).length, provCore: arrProv.filter(i=>i.esCore80).length, clientes: extraKPIs,
+    tiendasOficiales: Object.values(tiendaMap).filter(t => t && t.id && !/^mercado ?libre$/i.test(String(t.id).trim())).length };
   /* ── Pub split ── */
   document.getElementById('pub-split').innerHTML=`
     <div class="pub-half">
@@ -9648,6 +9689,7 @@ function renderDashboard(renderData){
   if (tabFc) tabFc.style.display = 'inline-block';
   const tabSt = document.getElementById('tab-stock');
   if (tabSt) tabSt.style.display = 'inline-block';
+  ['tab-diag', 'tab-estr'].forEach(id => { const b = document.getElementById(id); if (b) b.style.display = 'inline-block'; });
   if (typeof buildForecastInputsView === 'function') buildForecastInputsView();
   /* buildForecastInputsView vacía la pestaña, así que cada redibujado (filtro de
      fechas, COGS, vista SKU/ML, snapshot) borraba los resultados aunque el stock
@@ -9709,6 +9751,7 @@ function renderDashboard(renderData){
   /* El re-render vacía los grids (innerHTML=''), así que el resaltado del
      buscador se pierde. Se repone si hay una ficha abierta. */
   if (typeof reponerResaltadoML === 'function') reponerResaltadoML();
+  _armarAnalisis();
   renderSalud();
   if (PENDIENTE_PUBS && typeof importPublicacionesXLSX === 'function') {
     const _f = PENDIENTE_PUBS; PENDIENTE_PUBS = null;
@@ -14597,6 +14640,79 @@ function fmtCompacto(v) {
   const t = a >= 1e9 ? n(a / 1e9, 1) + ' mil M' : a >= 1e6 ? n(a / 1e6, 1) + ' M' : a >= 1e4 ? n(a / 1e3, 0) + ' k' : NUM(Math.round(a));
   return sg + sym + ' ' + t;
 }
+/* ═══ DIAGNÓSTICO Y ESTRATEGIA (v54.7) ═══
+   Los paneles se siguen armando en el render general, como siempre; acá se
+   ubican por título en su bloque. Cada render los vuelve a crear, así que los
+   cuerpos se vacían antes de ubicarlos. El mapa de calor y el SOV se mueven una
+   sola vez y se dibujan al abrir su bloque. */
+function _renderBloqueEstr(k) {
+  if (k === 'heat' && typeof renderHeatTab === 'function') renderHeatTab();
+  if (k === 'sov' && typeof renderSOVTab === 'function') renderSOVTab();
+}
+function _armarAnalisis() {
+  const D = G && G._diag;
+  if (!D) return;
+  const mover = (vid, bodyId) => {
+    const v = document.getElementById(vid), b = document.getElementById(bodyId);
+    if (v && b && v.parentElement !== b) b.appendChild(v);
+    if (v) v.style.display = '';
+  };
+  mover('view-heat', 'estr-heat-body');
+  mover('view-sov', 'estr-sov-body');
+  ['diag-fh-body', 'diag-dorm-body', 'diag-geo-body', 'diag-tiendas-body', 'diag-conc-body', 'diag-clientes-body',
+   'estr-trafico-body', 'estr-precios-body', 'estr-combos-body'].forEach(id => { const b = document.getElementById(id); if (b) b.innerHTML = ''; });
+  const src = ['grid-pareto', 'grid-logistica', 'grid-alerts'];
+  const ubicar = (re, bodyId) => {
+    const b = document.getElementById(bodyId); if (!b) return 0;
+    let n = 0;
+    src.forEach(gid => {
+      const g = document.getElementById(gid); if (!g) return;
+      Array.from(g.children).forEach(p => {
+        const t = ((p.querySelector('.panel-title') || {}).textContent || '').trim();
+        if (re.test(t)) { p.classList.add('grid-full'); b.appendChild(p); n++; }
+      });
+    });
+    return n;
+  };
+  ubicar(/Falsos Héroes/, 'diag-fh-body');
+  ubicar(/^SKUs Dormidos/, 'diag-dorm-body');
+  ubicar(/^Pareto Geográfico|^Distribución de Envíos/, 'diag-geo-body');
+  const nTiendas = ubicar(/^Tiendas \/ Canales/, 'diag-tiendas-body');
+  ubicar(/^Contribución por visita/, 'estr-trafico-body');
+  ubicar(/^Distribución por (Rango de )?Precio/, 'estr-precios-body');
+  ubicar(/Combos de Carrito/, 'estr-combos-body');
+
+  const set = (id, h) => { const e = document.getElementById(id); if (e) e.innerHTML = h; };
+  const mostrar = (id, si) => { const e = document.getElementById(id); if (e) e.style.display = si ? '' : 'none'; };
+  const lbl = D.idLabel === 'SKU' ? 'SKUs' : 'publicaciones';
+  set('diag-fh-kpi', D.fh ? '<strong>' + NUM(D.fh) + '</strong> ' + lbl + ' con alta rotación y bajo revenue' : 'sin falsos héroes en el período');
+  const dz = (G._lastRender && G._lastRender.dormidosArr) || [];
+  const perdido = dz.reduce((a, d) => a + (d.proyeccion || 0), 0);
+  set('diag-dorm-kpi', dz.length ? '<strong>' + fmtCurrency(perdido) + '</strong> de revenue perdido estimado · ' + NUM(dz.length) + ' sin ventas en el último trimestre' : 'sin dormidos detectados');
+  set('diag-conc-kpi', '<strong>' + NUM(D.core) + '</strong> de ' + NUM(D.total) + ' ' + lbl + ' hacen el 80 % de la facturación');
+  set('diag-conc-body', '<div class="acc-nota">' + NUM(D.core) + ' ' + lbl + ' (' + PCT(D.total > 0 ? D.core / D.total : 0) + ' del catálogo con ventas) concentran el 80 % de la facturación del período. '
+    + 'El detalle, producto por producto, está en el Pareto de Ventas. <button class="btn" type="button" onclick="switchTab(\'general\')">Ver Pareto →</button></div>');
+  set('diag-geo-kpi', '<strong>' + NUM(D.provCore) + '</strong> de ' + NUM(D.provs) + ' provincias o estados concentran el 80 % de la facturación');
+  // Tiendas: sólo con más de una tienda oficial (con una sola o ninguna, la tabla no dice nada)
+  mostrar('diag-tiendas', nTiendas > 0 && D.tiendasOficiales >= 2);
+  set('diag-tiendas-kpi', NUM(D.tiendasOficiales) + ' tiendas oficiales');
+  // Clientes: sólo si se cargó Evolución de Negocio o Desempeño de Producto
+  mostrar('diag-clientes', !!D.clientes);
+  if (D.clientes) set('diag-clientes-body', '<div class="kpi-row">' + D.clientes + '</div>');
+  // Horarios y SOV: se muestran cuando la vieja pestaña se mostraría
+  const vis = id => { const b = document.getElementById(id); return b && b.style.display !== 'none'; };
+  mostrar('estr-heat', vis('tab-heat'));
+  mostrar('estr-sov', vis('tab-sov'));
+  ['estr-heat', 'estr-sov'].forEach(id => {
+    const d = document.getElementById(id);
+    if (!d || d._evo) return;
+    d._evo = true;
+    d.addEventListener('toggle', () => { if (d.open) _renderBloqueEstr(id.slice(5)); });
+  });
+  const hOpen = document.getElementById('estr-heat');
+  if (hOpen && hOpen.open) _renderBloqueEstr('heat');
+}
+
 /* ═══ STOCK (v54.6) ═══
    El forecast borra y vuelve a insertar sus paneles por id cada vez que
    recalcula. _armarStock los agrupa después: reposición arriba y el resto en
