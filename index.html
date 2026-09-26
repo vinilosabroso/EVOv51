@@ -215,6 +215,10 @@
   .acc-ids{margin-left:auto;font-family:var(--mono);font-size:var(--fs-micro);color:var(--muted);}
   .acc-body{padding:0 0 var(--sp-2);}
   .row-alerts{display:flex;flex-wrap:wrap;gap:var(--sp-1);margin-top:var(--sp-1);}
+  /* v54.6 · FULL y Forecast viven en la pestaña Stock; sus botones viejos quedan
+     ocultos porque parte del código todavía los muestra u oculta. */
+  .tab-oculta{display:none!important;}
+  #view-stock .section-header{border-top:1px solid var(--border);}
   /* v54.5 · Selector de dos vistas de una misma tabla (Pareto) */
   .seg-sw{display:inline-flex;margin-left:auto;}
   .seg-sw button{padding:3px 10px;font-size:var(--fs-micro);font-weight:500;letter-spacing:.5px;font-family:var(--mono);cursor:pointer;
@@ -746,6 +750,17 @@
         <span class="up-cta">Cargar</span>
       </div>
 
+      <!-- v54.6: el stock para el forecast se carga con el resto de los reportes -->
+      <div class="up-row optional" id="dz-pubs">
+        <span class="drop-icon">📦</span>
+        <div class="up-txt">
+          <h2>Publicaciones — stock para el Forecast</h2>
+          <p>Stock propio y FULL por publicación · el forecast se calcula solo</p>
+        </div>
+        <span class="up-cta">Cargar</span>
+        <input type="file" id="file-pubs" accept=".xlsx" style="display:none">
+      </div>
+
       <div class="up-row optional" id="dz-rendimiento">
         <span class="drop-icon">📈</span>
         <div class="up-txt">
@@ -893,8 +908,9 @@
       <button class="tab-btn" id="tab-general" onclick="switchTab('general')">Dashboard General</button>
       <button class="tab-btn" id="tab-rent" onclick="switchTab('rent')" style="display:none">Rentabilidad</button>
       <button class="tab-btn" id="tab-pub" onclick="switchTab('pub')" style="display:none">Publicidad</button>
-      <button class="tab-btn" id="tab-full" onclick="switchTab('full')" style="display:none">Inventario FULL</button>
-      <button class="tab-btn" id="tab-forecast" onclick="switchTab('forecast')" style="display:none">Forecast</button>
+      <button class="tab-btn" id="tab-stock" onclick="switchTab('stock')" style="display:none">Stock</button>
+      <button class="tab-btn tab-oculta" id="tab-full" onclick="switchTab('full')" style="display:none">Inventario FULL</button>
+      <button class="tab-btn tab-oculta" id="tab-forecast" onclick="switchTab('forecast')" style="display:none">Forecast</button>
     </div>
     <div class="tab-group analysis">
       <span class="tab-group-label">Análisis</span>
@@ -1026,14 +1042,17 @@
     <div class="grid" id="grid-rent-tab"></div>
   </div>
   
-  <div id="view-full" style="display:none">
-    <div class="section-header"><span>Stock FULL</span> — Proyección y Run Rate</div>
-    <div class="grid" id="grid-full-tab"></div>
-  </div>
-  
-  <div id="view-forecast" style="display:none">
-    <div class="section-header"><span>Forecast</span> — Proyección de Demanda 6 semanas</div>
-    <div class="grid" id="grid-forecast-tab"></div>
+  <!-- v54.6: Stock reúne Forecast (reposición primero) e Inventario FULL -->
+  <div id="view-stock" style="display:none">
+    <div class="band" id="stock-band"><span class="band-vals" id="stock-band-vals"></span></div>
+    <div id="view-forecast">
+      <div class="section-header"><span>Forecast</span> — Reposición y proyección de demanda a 6 semanas</div>
+      <div class="grid" id="grid-forecast-tab"></div>
+    </div>
+    <div id="view-full" style="display:none">
+      <div class="section-header"><span>Stock FULL</span> — Cobertura y reposición por variante</div>
+      <div class="grid" id="grid-full-tab"></div>
+    </div>
   </div>
   <div id="view-sov" style="display:none">
     <div class="section-header"><span>SOV Modeler</span> — Proyección de Share of Voice por campaña</div>
@@ -1241,6 +1260,7 @@ const _GLOSARIO = [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
   ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
+  ['Pestaña Stock (v54.6)','Forecast + Inventario FULL','Stock reúne las viejas pestañas Forecast e Inventario FULL. Arriba, la franja con la card Stock de Salud; después la reposición sugerida, y en acordeones los indicadores del forecast, la proyección semana a semana, los eventos comerciales y la configuración manual. Debajo, la cobertura por variante de FULL. El reporte de Publicaciones se carga en la pantalla inicial junto con el resto: se importa al generar el dashboard y el forecast se calcula solo, con los lead times por defecto (propio 14 días, FULL 21) hasta que se ajusten en Configurar forecast.'],
   ['Pareto en una tabla (v54.5)','Selector Facturación | Unidades','Pareto Facturación y Pareto Volumen compartían estructura: son una sola tabla con dos vistas. La de Unidades marca los falsos héroes en rojo. El selector recuerda la vista elegida al cambiar filtros.'],
   ['Pestaña Publicidad (v54.4)','Franja · Sin Retorno · por producto · campañas','La franja repite la card Ads de Salud: TACoS y ACoS con su color, break-even, inversión, revenue y ventas por Ads, peso de la venta por publicidad e inversión sin retorno. Debajo, en orden: Inversión Sin Retorno (la acción), la tabla por producto y las campañas. Publicidad por SKU y TACOS por SKU se fusionaron en una sola tabla con inversión, ingresos atribuidos (con la advertencia de ventas indirectas), revenue, TACOS, % del margen, ROAS, revenue de sesión y peso. Sin reporte de Anuncios se muestra la tabla por flag de venta por publicidad, que es la única posible. Las tarjetas de la pauta quedan en el acordeón Detalle de la pauta.'],
   ['Semáforo de TACoS (v54.0)','Según el margen que deja la pauta','El TACoS no tiene un porcentaje fijo: se colorea por el margen P&L que le queda al producto (o a la cuenta) después de pagar la pauta, con el piso del semáforo de margen: 35 % antes de COGS, 15 % con COGS. El badge TACOS↑ aparece cuando la pauta perfora el piso: naranja dentro de los primeros 10 puntos, rojo por debajo.'],
@@ -1607,7 +1627,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.5';
+const EVO_VERSION = 'v54.6';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -3309,7 +3329,8 @@ function generarInforme(){
 }
 
 function switchTab(view) {
-  ['salud','general','pub','rent','full','forecast','sov','heat'].forEach(v => {
+  if (view === 'full' || view === 'forecast') view = 'stock';   // v54.6: viven en Stock
+  ['salud','general','pub','rent','stock','sov','heat'].forEach(v => {
     const el = document.getElementById('view-'+v);
     if (el) el.style.display = v === view ? 'block' : 'none';
     const btn = document.getElementById('tab-'+v);
@@ -4626,7 +4647,9 @@ function showForecastAlert(tipo, mensaje) {
      - Datos desde fila 5 (skip header + 2 filas de instrucciones)
      - Por MLA: una fila padre + filas variantes
    ───────────────────────────────────────────────────────────────────────── */
-function importPublicacionesXLSX(file) {
+function importPublicacionesXLSX(file, opts) {
+  /* opts.silenciosoOk (v54.6): en la carga automática desde la pantalla inicial
+     no se muestra el aviso de éxito; los de advertencia y error, sí. */
   if (!file) return;
   if (!G) {
     showForecastAlert('error', 'Cargá primero un reporte de ventas antes de importar stock.');
@@ -4987,7 +5010,7 @@ function importPublicacionesXLSX(file) {
                      `Revisá la consola del navegador (F12) para ver IDs sin match.`;
         }
 
-        showForecastAlert(matchRate < 0.5 ? 'warn' : 'ok', 
+        if (matchRate < 0.5 || !(opts && opts.silenciosoOk)) showForecastAlert(matchRate < 0.5 ? 'warn' : 'ok', 
           `Stock importado:\n` +
           `  • ${filasProcesadas} filas procesadas (${mlasSinVariantes} MLAs sin variantes + ${variantesIndividuales} variantes)\n` +
           (filasPadreSalteadas > 0 ? `  • ${filasPadreSalteadas} filas padre ignoradas (tenían variantes hijas)\n` : '') +
@@ -5161,7 +5184,12 @@ function buildForecastInputsView() {
     </div>
   `;
 
-  grid.innerHTML = accionesHtml + filtrosHtml + tablaHtml + outputsHtml;
+  /* v54.6: resultados primero; los inputs manuales quedan plegados en
+     "Configurar forecast" (el stock entra por el reporte de Publicaciones). */
+  grid.innerHTML = outputsHtml
+    + '<details class="acc stock-acc grid-full" data-key="config" id="fc-config"' + (STOCK_ACC_ABIERTOS.has('config') ? ' open' : '') + '>'
+    + '<summary><span class="acc-title">Configurar forecast</span><span class="acc-kpi">stock, COGS y lead time por SKU · importar y exportar inputs</span></summary>'
+    + '<div class="acc-body">' + accionesHtml + filtrosHtml + tablaHtml + '</div></details>';
 
   // Wire del file input (importar JSON)
   const snapInput = document.getElementById('snap-import-input');
@@ -5187,6 +5215,7 @@ function buildForecastInputsView() {
   }
 
   renderForecastInputsTable();
+  _armarStock();
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -6959,6 +6988,7 @@ function renderForecastOutputs() {
 function renderForecastKPIs() {
   /* El forecast termina en diferido: la card Stock de Salud se re-dibuja acá (v54.2). */
   if (typeof renderSalud === 'function') setTimeout(renderSalud, 0);
+  setTimeout(_armarStock, 0);   // agrupa los paneles recién insertados (v54.6)
   const items = FORECAST_DATA.items;
   const ARS = fmtCurrency;
 
@@ -9616,6 +9646,8 @@ function renderDashboard(renderData){
   // Activar y construir tab Forecast
   const tabFc = document.getElementById('tab-forecast');
   if (tabFc) tabFc.style.display = 'inline-block';
+  const tabSt = document.getElementById('tab-stock');
+  if (tabSt) tabSt.style.display = 'inline-block';
   if (typeof buildForecastInputsView === 'function') buildForecastInputsView();
   /* buildForecastInputsView vacía la pestaña, así que cada redibujado (filtro de
      fechas, COGS, vista SKU/ML, snapshot) borraba los resultados aunque el stock
@@ -9630,6 +9662,8 @@ function renderDashboard(renderData){
   if (tabSov) tabSov.style.display = (CAMPAIGNS_DATA && CAMPAIGNS_DATA.loaded) ? 'inline-block' : 'none';
 
   G._stockResumen = null;   // lo completa renderFULLTab si hay FULL (v54.2)
+  const _vFull = document.getElementById('view-full');
+  if (_vFull) _vFull.style.display = FULL_DATA.loaded ? '' : 'none';
   if (FULL_DATA.loaded) {
     document.getElementById('tab-full').style.display = 'inline-block';
     try {
@@ -9676,6 +9710,10 @@ function renderDashboard(renderData){
      buscador se pierde. Se repone si hay una ficha abierta. */
   if (typeof reponerResaltadoML === 'function') reponerResaltadoML();
   renderSalud();
+  if (PENDIENTE_PUBS && typeof importPublicacionesXLSX === 'function') {
+    const _f = PENDIENTE_PUBS; PENDIENTE_PUBS = null;
+    setTimeout(() => importPublicacionesXLSX(_f, { silenciosoOk: true }), 0);   // stock para el forecast (v54.6)
+  }
 }
 
 /* ═══════════ UI HELPERS ═══════════ */
@@ -9782,12 +9820,13 @@ function resetDashboard(){
   ['file-input','file-rend','file-opor','file-ads','file-full','file-desempeno','file-evolucion'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
-  ['drop-zone','dz-rendimiento','dz-oportunidades','dz-ads','dz-full','dz-desempeno','dz-evolucion','dz-campaigns'].forEach(id=>{
+  PENDIENTE_PUBS = null;
+  ['drop-zone','dz-rendimiento','dz-oportunidades','dz-ads','dz-full','dz-pubs','dz-desempeno','dz-evolucion','dz-campaigns'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el) return;
     el.classList.remove('loaded');
     const icon=el.querySelector('.drop-icon');
-    const iconMap={'drop-zone':'📊','dz-rendimiento':'📈','dz-oportunidades':'🔍','dz-ads':'📣','dz-full':'🏭','dz-desempeno':'🛒','dz-evolucion':'👥',
+    const iconMap={'drop-zone':'📊','dz-rendimiento':'📈','dz-oportunidades':'🔍','dz-ads':'📣','dz-full':'🏭','dz-pubs':'📦','dz-desempeno':'🛒','dz-evolucion':'👥',
       'dz-campaigns':'Reporte por Campañas','dz-campaigns':'📡'};
     if(icon) icon.textContent=iconMap[id]||icon.textContent;
     const h2=el.querySelector('h2');
@@ -14558,6 +14597,68 @@ function fmtCompacto(v) {
   const t = a >= 1e9 ? n(a / 1e9, 1) + ' mil M' : a >= 1e6 ? n(a / 1e6, 1) + ' M' : a >= 1e4 ? n(a / 1e3, 0) + ' k' : NUM(Math.round(a));
   return sg + sym + ' ' + t;
 }
+/* ═══ STOCK (v54.6) ═══
+   El forecast borra y vuelve a insertar sus paneles por id cada vez que
+   recalcula. _armarStock los agrupa después: reposición arriba y el resto en
+   acordeones que recuerdan si estaban abiertos. */
+const STOCK_ACC_ABIERTOS = new Set();
+function _armarStock() {
+  const grid = document.getElementById('grid-forecast-tab');
+  if (!grid) return;
+  grid.querySelectorAll(':scope > details.stock-acc').forEach(d => {
+    const b = d.querySelector('.acc-body');
+    if (b && !b.children.length) d.remove();
+  });
+  const envolver = (id, key, titulo, resumen) => {
+    const el = document.getElementById(id);
+    if (!el || (el.parentElement && el.parentElement.classList.contains('acc-body'))) return;
+    const d = document.createElement('details');
+    d.className = 'acc stock-acc grid-full'; d.dataset.key = key;
+    if (STOCK_ACC_ABIERTOS.has(key)) d.open = true;
+    d.innerHTML = '<summary><span class="acc-title">' + titulo + '</span><span class="acc-kpi">' + resumen + '</span></summary><div class="acc-body"></div>';
+    el.parentElement.insertBefore(d, el);
+    d.querySelector('.acc-body').appendChild(el);
+  };
+  envolver('fc-kpis', 'kpis', 'Más indicadores del forecast', 'unidades y revenue proyectados, cobertura, reposición');
+  envolver('fc-forecast-table', 'tabla', 'Proyección semana a semana', 'por SKU, 6 semanas');
+  envolver('fc-eventos', 'eventos', 'Eventos comerciales', 'próximas 6 semanas');
+  // Reposición sugerida primero (debajo del aviso de Ads, si lo hay)
+  const rep = document.getElementById('fc-reposicion');
+  if (rep && rep.parentElement === grid) {
+    const al = document.getElementById('fc-ads-alert');
+    grid.insertBefore(rep, (al && al.parentElement === grid) ? al.nextSibling : grid.firstChild);
+  }
+  // La configuración va al final
+  const cfg = document.getElementById('fc-config');
+  if (cfg && cfg.parentElement === grid && grid.lastElementChild !== cfg) grid.appendChild(cfg);
+  grid.querySelectorAll(':scope > details.stock-acc').forEach(d => {
+    if (d._evo) return;
+    d._evo = true;
+    d.addEventListener('toggle', () => { if (d.open) STOCK_ACC_ABIERTOS.add(d.dataset.key); else STOCK_ACC_ABIERTOS.delete(d.dataset.key); });
+  });
+}
+/* Casillero de Publicaciones en la pantalla de carga (v54.6). La importación
+   necesita el dashboard generado, así que el archivo espera y se importa al
+   terminar el primer render; después, se importa en el momento. */
+let PENDIENTE_PUBS = null;
+function _cargarPubsInicio(file) {
+  const dz = document.getElementById('dz-pubs');
+  if (!file || !dz) return;
+  dz.classList.add('loaded');
+  const icon = dz.querySelector('.drop-icon'); if (icon) icon.textContent = '✓';
+  const cta = dz.querySelector('.up-cta'); if (cta) cta.textContent = 'Cargado';
+  if (typeof DASHBOARD_GENERADO !== 'undefined' && DASHBOARD_GENERADO && typeof importPublicacionesXLSX === 'function') importPublicacionesXLSX(file);
+  else PENDIENTE_PUBS = file;
+}
+function _wirePubsDZ() {
+  const dz = document.getElementById('dz-pubs'), inp = document.getElementById('file-pubs');
+  if (!dz || !inp) return;
+  dz.addEventListener('click', e => { e.stopPropagation(); inp.value = ''; inp.click(); });
+  dz.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', e => { e.stopPropagation(); dz.classList.remove('drag-over'); });
+  dz.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('drag-over'); if (e.dataTransfer.files[0]) _cargarPubsInicio(e.dataTransfer.files[0]); });
+  inp.addEventListener('change', e => { if (e.target.files[0]) _cargarPubsInicio(e.target.files[0]); inp.value = ''; });
+}
 /* Selector del Pareto (v54.5): alterna entre las dos tablas sin re-dibujar. */
 let PARETO_MODO = 'fact';
 function _paretoModo(btn, modo) {
@@ -14641,19 +14742,19 @@ function renderSalud() {
     + (RQ.proxFecha ? '<li><span class="m">Próximo quiebre:</span> <strong>' + _fmtDMA(new Date(RQ.proxFecha)) + '</strong></li>' : '')) : '';
   if (K) {
     stS = K.criticos > 0 ? 'bad' : 'ok'; tabS = 'full';
-    cards.push(card('full', stS,
+    cards.push(card('stock', stS,
       '<div class="hc-q">Stock</div><div class="hc-hero st-val"' + st(stS) + '>' + dot(stS) + NUM(K.criticos) + '</div>'
       + '<div class="hc-cap">Publicaciones críticas · cubren 14 días o menos</div>'
       + '<ul class="hc-sec"><li><strong>' + NUM(K.sinStock) + '</strong> <span class="m">sin stock</span></li>' + fcLi + '</ul>'
       + link('stock')));
   } else if (RQ) {
     stS = (RQ.hoyN || 0) > 0 ? 'bad' : 'ok'; tabS = 'forecast';
-    cards.push(card('forecast', stS,
+    cards.push(card('stock', stS,
       '<div class="hc-q">Stock</div><div class="hc-hero st-val"' + st(stS) + '>' + dot(stS) + NUM(RQ.hoyN || 0) + '</div>'
       + '<div class="hc-cap">Publicaciones con riesgo de quiebre</div>'
-      + '<ul class="hc-sec">' + fcLi + '</ul>' + link('forecast')));
+      + '<ul class="hc-sec">' + fcLi + '</ul>' + link('stock')));
   } else {
-    cards.push(card('full', null,
+    cards.push(card('stock', null,
       '<div class="hc-q">Stock</div><div class="hc-hero hc-vacio">Sin datos de stock</div>'
       + '<ul class="hc-sec"><li class="m">No se cargó Stock FULL ni el reporte de publicaciones, así que no hay forecast.</li></ul>', true));
   }
@@ -14674,7 +14775,20 @@ function renderSalud() {
     if (b && _ST_ORDEN[b] >= 2) el.setAttribute('data-st', b); else el.removeAttribute('data-st');
   };
   luz('tab-rent', stR); luz('tab-pub', stA);
-  luz('tab-full', tabS === 'full' ? stS : null); luz('tab-forecast', tabS === 'forecast' ? stS : null);
+  luz('tab-stock', stS);
+  /* Franja de Stock (v54.6): la card Stock en una línea. */
+  const _sb = document.getElementById('stock-band'), _sv = document.getElementById('stock-band-vals');
+  if (_sb && _sv) {
+    const v = (t, b) => '<span class="band-val st-val"' + st(b) + '>' + dot(b) + t + '</span>';
+    let h = '<span class="band-q">Stock</span>';
+    if (K) h += v(NUM(K.criticos), stS) + '<span class="m">críticos (14 días o menos) · <strong style="color:var(--text)">' + NUM(K.sinStock) + '</strong> sin stock</span>';
+    else if (RQ) h += v(NUM(RQ.hoyN || 0), stS) + '<span class="m">publicaciones con riesgo de quiebre</span>';
+    else h += '<span class="band-val" style="color:var(--muted)">Sin datos de stock</span><span class="m">cargá Stock FULL o el reporte de Publicaciones</span>';
+    if (RQ) h += '<span class="m"><strong style="color:var(--text)">' + ARS(RQ.hoyRev || 0) + '</strong> en riesgo hoy'
+      + (RQ.proxFecha ? ' · próximo quiebre <strong style="color:var(--text)">' + _fmtDMA(new Date(RQ.proxFecha)) + '</strong>' : '') + '</span>';
+    _sv.innerHTML = h;
+    if (stS) _sb.setAttribute('data-st', stS); else _sb.removeAttribute('data-st');
+  }
   _gruposTabs();
 
   if (!grid._evo) {
@@ -17779,6 +17893,7 @@ wireSecondaryDZ('dz-full',         'file-full', parseFULL,         'Stock FULL')
 wireSecondaryDZ('dz-desempeno', 'file-desempeno', parseDesempeno, 'Desempeño Producto');
 wireSecondaryDZ('dz-evolucion', 'file-evolucion', parseEvolucion, 'Evolución Negocio');
 wireSecondaryDZ('dz-campaigns', 'file-campaigns', (wb)=>parseCampaigns(wb,false), 'Campañas SOV');
+_wirePubsDZ();
 
 function sovEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 /* ═══════════════════════════════════════════════════════════════
