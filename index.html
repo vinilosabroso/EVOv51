@@ -183,6 +183,39 @@
   .health-card.is-empty{cursor:default;border-style:dashed;border-color:var(--border);}
   .salud-foot{padding:0 var(--gutter) var(--sp-6);font-family:var(--mono);font-size:var(--fs-label);color:var(--muted);}
 
+  /* ══ v54.3 · Pestañas de Chequeo: franja, cascada y acordeón ══
+     La franja repite la card de Salud en una línea (mismo título, mismos números)
+     y el borde izquierdo toma el color de su estado. */
+  .band{display:flex;align-items:center;gap:var(--sp-3) var(--sp-5);flex-wrap:wrap;padding:var(--sp-4) var(--gutter);background:var(--surface);
+    border-bottom:1px solid var(--border);border-left:4px solid var(--st,var(--border));}
+  .band-vals{display:contents;}
+  .band-q{font-family:var(--mono);font-size:var(--fs-label);letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  .band-val{font-family:var(--display);font-size:var(--fs-l2);font-weight:700;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:var(--sp-2);}
+  .band-val.st-val{color:var(--st);}
+  .band .m{font-family:var(--mono);font-size:var(--fs-label);color:var(--muted);}
+  .band-meta{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .cascade{display:flex;align-items:stretch;overflow-x:auto;padding:var(--sp-4) var(--gutter);gap:var(--sp-5);background:var(--bg);}
+  .cascade:empty{display:none;}
+  .cascade-step{position:relative;min-width:160px;padding:var(--sp-3) var(--sp-4);background:var(--surface);border:1px solid var(--border);border-radius:8px;flex-shrink:0;}
+  .cascade-step+.cascade-step::before{content:'→';position:absolute;left:calc(var(--sp-5) * -1);width:var(--sp-5);top:50%;transform:translateY(-50%);
+    text-align:center;color:var(--muted);}
+  .cascade-step .l{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+  .cascade-step .v{font-family:var(--display);font-size:var(--fs-l2);font-weight:700;margin-top:var(--sp-1);font-variant-numeric:tabular-nums;}
+  .cascade-step .s{font-family:var(--mono);font-size:var(--fs-micro);color:var(--muted);margin-top:2px;}
+  .cascade-step.is-result{border-color:rgba(var(--accent-rgb),.7);}
+  details.acc{background:var(--surface);border-top:1px solid var(--border);}
+  details.acc>summary{list-style:none;display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap;padding:var(--sp-4) var(--gutter);cursor:pointer;}
+  details.acc>summary::-webkit-details-marker{display:none;}
+  details.acc>summary::before{content:'▸';color:var(--muted);display:inline-block;transition:transform .15s;}
+  details.acc[open]>summary::before{transform:rotate(90deg);}
+  details.acc>summary:focus-visible{outline:2px solid var(--accent2);outline-offset:-2px;}
+  .acc-title{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text);}
+  .acc-kpi{font-family:var(--mono);font-size:var(--fs-body);color:var(--muted);}
+  .acc-kpi strong{color:var(--text);font-weight:500;}
+  .acc-ids{margin-left:auto;font-family:var(--mono);font-size:var(--fs-micro);color:var(--muted);}
+  .acc-body{padding:0 0 var(--sp-2);}
+  .row-alerts{display:flex;flex-wrap:wrap;gap:var(--sp-1);margin-top:var(--sp-1);}
+
   .pub-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
   .pub-half{background:var(--surface);padding:20px 24px;}
   .pub-half-title{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
@@ -961,13 +994,10 @@
   </div>
 
   <div id="view-rent" style="display:none">
-    <div class="kpi-row-wrap" style="position:relative;">
-      <div id="rent-kpi-period" style="position:absolute;top:-6px;right:0;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;background:var(--surface);padding:2px 8px;border-radius:3px;border:1px solid var(--border);"></div>
-      <div class="kpi-row" id="rent-kpi-row"></div>
-    </div>
-    <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;">
-      <span><span>Rentabilidad</span> — Costos, Márgenes y NEXUS</span>
-      <span style="display:flex;align-items:center;gap:10px;">
+    <!-- v54.3: franja (la card de Salud en una línea) · cascada · desglose · NEXUS -->
+    <div class="band" id="rent-band">
+      <span class="band-vals" id="rent-band-vals"></span>
+      <span class="band-meta">
         <input type="file" id="cogs-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="if(this.files[0]){loadCOGSTemplate(this.files[0]);this.value='';}">
         <button class="btn" onclick="document.getElementById('cogs-input').click()" style="background:rgba(var(--accent-rgb),.10);border-color:var(--accent);color:var(--accent2);font-size:12px;padding:6px 12px;">💰 Cargar COGS (costos)</button>
         <span id="cogs-status" style="font-family:var(--mono);font-size:10px;color:var(--muted);"></span>
@@ -978,6 +1008,11 @@
         <span id="flex-status" style="font-family:var(--mono);font-size:10px;color:var(--muted);"></span>
       </span>
     </div>
+    <div class="cascade" id="rent-cascade"></div>
+    <details class="acc" id="rent-acc-costos">
+      <summary><span class="acc-title">Desglose de costos</span><span class="acc-kpi" id="rent-acc-kpi"></span><span class="acc-ids">márgenes · costos · envío por canal</span></summary>
+      <div class="acc-body"><div class="kpi-row" id="rent-kpi-row"></div></div>
+    </details>
     <div class="grid" id="grid-rent-tab"></div>
   </div>
   
@@ -1186,6 +1221,7 @@ const _GLOSARIO = [
   ['Margen NEXUS (P&L)','(Recibido − Ads) ÷ Venta neta','Resultado del período CON la pauta prorrateada. Si Unit es positivo y P&L negativo, el problema es sobreinversión publicitaria, no el precio.'],
   ['Margen post-COGS','Break Even/u − COGS/u','Margen unitario real, ya con el costo de producto. Requiere el template de COGS cargado.'],
   ['Semáforo de margen (v54.0)','Piso 35 % antes de COGS · 15 % con COGS · escalones de 10 puntos','Umbral inteligente: todos los márgenes del tablero, sobre venta neta, se colorean contra el mismo piso. Antes de COGS: verde intenso desde 45 %, verde de 35 a 45 %, naranja de 25 a 35 %, rojo de 15 a 25 % y rojo intenso por debajo de 15 %. Con COGS el piso es 15 % y los escalones son 25, 15, 5 y −5 %. A nivel cuenta, el margen final manda sólo si el COGS cubre el 93 % o más del revenue. La alerta de texto BAJA RENT. y los umbrales de acción del informe no cambiaron.'],
+  ['Pestaña Rentabilidad (v54.3)','Franja · cascada · desglose · NEXUS','La franja repite la card de Salud (márgenes sobre venta neta y cobertura del COGS) junto a los botones de COGS y Flex. La cascada muestra la cadena del dinero: ingresos, venta neta, recibido, NEXUS y rentabilidad real. El resto de las tarjetas vive en el acordeón Desglose de costos. La tabla Rentabilidad por SKU se eliminó porque su margen es exactamente el de NEXUS UNIT; sus alertas (BAJA RENT., ENVÍO y COSTO CANAL vs familia) aparecen en la fila de NEXUS, con el desglose en el tooltip. El cálculo de anomalías se conserva porque lo usan el Excel y el Informe.'],
   ['COGS','Columna "Costo del producto (S/ IVA)" del template','Costo de reposición NETO de IVA, coherente con el break-even que también es neto. Se matchea por # de publicación y, si no hay match, por SKU.'],
   ['Precio break-even','(COGS + fijos netos) ÷ (1 − factorIVA − IIBB × (1 − factorIVA) − fees × netFee)','Precio cobrado mínimo para no perder plata en la unidad. Fijos netos = costos propios + (envío + cargo fijo − bonificación Flex) × netFee; fees = comisión + cuotas + Ads, más los buffers de devolución y costo financiero. Es la misma fórmula que la calculadora NEXUS de Google Sheets (PVP_NEXUS_V3 con margen 0). Hasta v52.1 el glosario mostraba (COGS + envío) × (1 + IVA) ÷ (1 − comisión), que ignoraba el IIBB y el crédito fiscal de los cargos.'],
   ['Precio a margen objetivo','(COGS + fijos netos) ÷ (1 − factorIVA − (margen + IIBB) × (1 − factorIVA) − fees × netFee)','Precio cobrado necesario para que quede el margen pedido sobre venta neta. Para el precio publicado se divide además por (1 − promo) × (1 − cupón). En México se suman a los fees el ISR retenido si es costo y, sin RFC, el IVA retenido (con factorIVA = 0). Misma fórmula que PVP_NEXUS_V3.'],
@@ -1559,7 +1595,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.2';
+const EVO_VERSION = 'v54.3';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -9336,7 +9372,10 @@ function renderDashboard(renderData){
       ${th('Margen','Revenue neto ÷ Venta neta. Qué proporción de la venta (sin IVA) sobrevive a los cargos del canal y del fisco. El color sale de un piso de 35 % en escalones de 10 puntos: verde por encima de 35 % (con halo desde 45 %), naranja de 25 a 35 %, rojo por debajo de 25 % (con halo por debajo de 15 %).')}
       ${th('Alertas','Señales automáticas: baja rentabilidad y envío desalineado respecto de productos de la misma familia.')}
     </tr></thead><tbody>`;
-    rentArr.slice(0,80).forEach(s=>{
+    /* v54.3: la tabla se eliminó (su margen es el de NEXUS UNIT). Sus alertas se
+       calculan para TODAS las publicaciones y se muestran en la fila de NEXUS. */
+    const _alR7 = new Map();
+    rentArr.forEach(s=>{
       const mDot=bandaMargen(s.margen,false)||'ok';
       const alerts=[];
       /* v54.1: BAJA RENT. salta por debajo del piso del semáforo, no del 10 %. */
@@ -9388,16 +9427,13 @@ function renderDashboard(renderData){
         canalTtl += ' || Sin familia comparable (se necesitan al menos 3 productos similares), por eso no se colorea.';
       }
 
-      html+=`<tr>
-        <td>${idWithTitle(s.id)}${relationshipChip(s.id)}</td>
-        ${titCell}
-        <td class="num">${ARS(s.bruto)}</td>
-        <td class="num" style="color:var(--muted);cursor:help;border-bottom:1px dotted rgba(255,255,255,.15)" title="Revenue bruto ${ARS(s.bruto)} − IVA débito ${ARS(s.bruto - s.ventaNeta)} = ${ARS(s.ventaNeta)}">${ARS(s.ventaNeta)}</td>
-        <td class="num" style="color:${canalClrP};cursor:help;border-bottom:1px dotted rgba(255,255,255,.15)" title="${canalTtl.replace(/"/g,'&quot;')}">${PCT(cp.pct)}</td>
-        <td class="num">${ARS(s.neto)}</td>
-        <td><div class="margin-cell"><span class="margin-dot ${mDot}"></span><span style="font-family:var(--mono);font-size:12px${s.margenNoCompR?';color:var(--warn);cursor:help':''}"${s.margenNoCompR?' title="El margen da por encima del 100% de la venta neta, que es imposible: el envío que paga el comprador se está contando como ingreso y su costo no está en el reporte porque el despacho es propio. Cargá el costo de envío propio y el margen pasa a ser real."':''}>${s.margenNoCompR?'n/d':PCT(s.margen)}</span></div></td>
-        <td>${alerts.join(' ')}</td>
-      </tr>`;
+      /* Desvío del costo de canal contra su familia: alerta visible con el
+         desglose en el tooltip. */
+      if (an2 && (an2.nivel === 'crit' || an2.nivel === 'warn')) {
+        const _dif = an2.exceso * 100;
+        alerts.push(`<span class="tag ${an2.nivel === 'crit' ? 'tag-danger' : 'tag-warn'}" style="cursor:help" title="${canalTtl.replace(/"/g,'&quot;')}">COSTO CANAL ${_dif >= 0 ? '+' : ''}${_dif.toFixed(0)}pp VS FAMILIA</span>`);
+      }
+      _alR7.set(s.id, { tags: alerts.join(' '), canalTtl, canalPct: cp.pct });
     });
     const nAnom = anomEnvio.size;
     const cob = anomEnvio.cobertura || { evaluadas: 0, familias: 0 };
@@ -9407,7 +9443,7 @@ function renderDashboard(renderData){
           ? `${nAnom} con envío anómalo vs su familia · ${cob.evaluadas} publicaciones comparadas en ${cob.familias} familias`
           : `sin anomalías de envío · ${cob.evaluadas} publicaciones comparadas en ${cob.familias} familias`);
     const baseMargen = _esRI ? 'Venta neta (sin IVA)' : 'Venta bruta';
-    panel('grid-rent-tab',`Rentabilidad por ${idLabel}`,`Margen = Revenue neto / ${baseMargen} · pre-Ads y pre-COGS · semáforo con piso 35 % · ${subAnom}`,html+'</tbody></table>',true);
+    if (G && G._lastRender) { G._lastRender.alertasR7 = _alR7; G._lastRender.subAnomEnvio = subAnom; }
   }
 
   /* La tabla "Desglose de Costos" se eliminó por redundante: mostraba los mismos
@@ -14605,6 +14641,10 @@ function renderRentKPIs(skuMap) {
       cogsStatus.textContent = '✓ ' + COGS_DATA.count + ' productos con costo cargados';
       cogsStatus.style.color = 'var(--ok)';
     }
+  } else if (cogsStatus && /^[✓⚠]/.test(cogsStatus.textContent)) {
+    /* Sin COGS (por ejemplo, un snapshot de otra cuenta): no dejar el estado de
+       la carga anterior. Los mensajes de error de la carga no se tocan (v54.3). */
+    cogsStatus.textContent = '';
   }
   
   // Período
@@ -14946,6 +14986,7 @@ function renderRentKPIs(skuMap) {
       <div class="kpi-sub">${(baseM > 0 ? devolAbs / baseM * 100 : 0).toFixed(1)}% de venta neta</div></div>`;
   }
   
+  let _rentRealCasc = null;   // cascada de la pestaña (v54.3)
   // ═══ Cards COGS (solo con template cargado) ═══
   if (COGS_DATA.loaded) {
     // Calcular sobre productos CON COGS matcheado (como la hoja Resumen de referencia)
@@ -14971,6 +15012,7 @@ function renderRentKPIs(skuMap) {
     const adsSinVentaMatch = adsSinVentaNeta(adsAtrib) * (revBruto > 0 ? revMatcheado / revBruto : 0);
     nexusMatcheado -= adsSinVentaMatch;
     const rentReal = nexusMatcheado - cogsTotal;
+    _rentRealCasc = rentReal;
     /* Base: lo RECIBIDO DE ML, sin IVA.
        El criterio es el del vendedor: la rentabilidad se mide contra la plata
        que efectivamente entró y de la que dispone, no contra lo facturado. Se
@@ -15024,7 +15066,49 @@ function renderRentKPIs(skuMap) {
   
   kpis += _kpisEnvioPorCanal(skuMap);
 
-  kpiRow.innerHTML = kpis;
+  /* v54.3: las tarjetas de la cadena del dinero pasan a la cascada; el resto
+     queda en el acordeón "Desglose de costos". */
+  const _casc = new Set(['Ingresos por productos', 'Venta neta', 'Recibido de ML', 'Rentabilidad NEXUS', 'Rentabilidad real $']);
+  const _tmp = document.createElement('div');
+  _tmp.innerHTML = kpis;
+  _tmp.querySelectorAll('.kpi').forEach(k => {
+    const l = k.querySelector('.kpi-label');
+    if (l && _casc.has(l.textContent.trim())) k.remove();
+  });
+  kpiRow.innerHTML = _tmp.innerHTML;
+
+  const _accK = document.getElementById('rent-acc-kpi');
+  if (_accK) _accK.innerHTML = 'costos de canal <strong>' + PCT(pctCanal) + '</strong> de la venta neta · costos totales <strong>'
+    + fmtCurrency(costosTotal) + '</strong>';
+
+  const _cas = document.getElementById('rent-cascade');
+  if (_cas) {
+    const paso = (l, v, sub, tip, res) => '<div class="cascade-step' + (res ? ' is-result' : '') + '"'
+      + (tip ? ' title="' + String(tip).replace(/"/g, '&quot;') + '" style="cursor:help"' : '') + '>'
+      + '<div class="l">' + l + '</div><div class="v">' + fmtCurrency(v) + '</div>' + (sub ? '<div class="s">' + sub + '</div>' : '') + '</div>';
+    let h = paso('Ingresos por productos', brutoTotalKPI, 'con IVA', 'Precio × unidades, con IVA: la cifra comparable con Ventas concretadas del panel de Mercado Libre.');
+    if (esRI) h += paso('Venta neta', ventaNetaKPI, 'sin IVA · base de los márgenes', 'Ingresos por productos menos el IVA débito.');
+    h += paso('Recibido de ML', recibidoML, 'cargos netos de IVA', 'Ingresos menos los cargos de ML netos de su IVA, más bonificaciones, menos retenciones y devoluciones. No es el depósito.');
+    h += paso('Rentabilidad NEXUS', rentabilidadNexus, 'después de impuestos' + (inversionAds > 0 ? ' y Ads' : ''), 'Recibido menos carga fiscal' + (inversionAds > 0 ? ' y publicidad' : '') + '. Antes de mercadería.', _rentRealCasc === null);
+    if (_rentRealCasc !== null) h += paso('Rentabilidad real', _rentRealCasc, 'NEXUS − COGS · sólo con costo cargado', 'Rentabilidad NEXUS de las publicaciones con COGS menos su costo de mercadería.', true);
+    _cas.innerHTML = h;
+  }
+
+  const _band = document.getElementById('rent-band'), _bv = document.getElementById('rent-band-vals');
+  const _sc = semaforoCuenta(), _S = G && G._semaforo;
+  if (_band && _bv && _S && _sc) {
+    const hero = _sc.usaPost ? _S.mPost : _S.mPre, bH = bandaMargen(hero, _sc.usaPost);
+    const val = (v, b) => '<span class="band-val st-val"' + (b ? ' data-st="' + b + '"' : '') + '>' + (b ? '<span class="st-dot"></span>' : '') + PCT(v) + '</span>';
+    let h = '<span class="band-q">Rentabilidad</span>' + val(hero, bH)
+      + '<span class="m">' + (_sc.usaPost ? 'margen final · piso 15 %' : 'antes de mercadería · piso 35 %') + '</span>';
+    if (_S.mPost !== null) {
+      const otro = _sc.usaPost ? _S.mPre : _S.mPost;
+      h += val(otro, bandaMargen(otro, !_sc.usaPost))
+        + '<span class="m">' + (_sc.usaPost ? 'antes de mercadería' : 'final') + ' · COGS cubre el ' + Math.round(_S.cobCogs * 100) + ' %</span>';
+    }
+    _bv.innerHTML = h;
+    if (bH) _band.setAttribute('data-st', bH); else _band.removeAttribute('data-st');
+  }
   _pintarSemaforoPauta();
   renderSalud();
 }
@@ -15378,6 +15462,12 @@ function _nexusCanalBtns() {
   }).join('');
 }
 
+/* Alertas que antes vivían en la tabla Rentabilidad por SKU (v54.3). */
+function alertasR7Fila(id) {
+  const m = G && G._lastRender && G._lastRender.alertasR7;
+  const a = m && m.get ? m.get(id) : null;
+  return (a && a.tags) ? '<div class="row-alerts">' + a.tags + '</div>' : '';
+}
 function buildNexusTable(cache, mode) {
   const { nexusArr: _arrRaw, idLabel, hasAnyAds } = cache;
   /* La lente de canal se aplica acá, una sola vez, para que las dos vistas
@@ -15665,7 +15755,7 @@ function buildNexusTable(cache, mode) {
       // Base para los % de los tooltips: venta neta unitaria (misma base del margen)
       const ventaNetaU = (n.precioProm || 0) * (1 - (n.factorIva || 0));
       html += '<tr>'
-        + '<td>' + idWithTitle(s.id) + adStateChip(s.id) + badgesFor(s) + desgloseBadgeFor(n) + envioBadgeFor(n) + relationshipChip(s.id) + '</td>'
+        + '<td>' + idWithTitle(s.id) + adStateChip(s.id) + badgesFor(s) + desgloseBadgeFor(n) + envioBadgeFor(n) + relationshipChip(s.id) + alertasR7Fila(s.id) + '</td>'
         + '<td class="num">' + ARS(n.precioProm) + '</td>'
         + celdaCosto(n.comisionUnit || 0, ventaNetaU, '%', 'Comisión')
         + celdaEnvio(n, s, 1)
@@ -15725,7 +15815,7 @@ function buildNexusTable(cache, mode) {
       // Base para los % de los tooltips: venta neta del período de ese item
       const ventaNetaP = n.ventaNeta !== undefined ? n.ventaNeta : (s.ingresos_brutos || 0);
       html += '<tr>'
-        + '<td>' + idWithTitle(s.id) + adStateChip(s.id) + badgesFor(s) + desgloseBadgeFor(n) + envioBadgeFor(n) + relationshipChip(s.id) + '</td>'
+        + '<td>' + idWithTitle(s.id) + adStateChip(s.id) + badgesFor(s) + desgloseBadgeFor(n) + envioBadgeFor(n) + relationshipChip(s.id) + alertasR7Fila(s.id) + '</td>'
         + '<td class="num" style="color:var(--muted)">' + NUM(s.unidades) + '</td>'
         + '<td class="num">' + ARS(s.ingresos_brutos || 0) + '</td>'
         + celdaCosto((n.comisionUnit || 0) * (s.unidades || 0), ventaNetaP, '%', 'Comisión')
