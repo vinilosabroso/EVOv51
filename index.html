@@ -243,6 +243,37 @@
   @media(prefers-reduced-motion:reduce){#ficha-drawer,#ficha-backdrop{transition:none;}}
   .id-link{cursor:pointer;border-bottom:1px dotted rgba(var(--accent-rgb),.6);}
   .id-link:hover{color:var(--accent2);border-bottom-style:solid;}
+  /* v54.9 · Gráfico de facturación (SVG propio, sin librería). Colores
+     validados sobre --surface: actual #a070f5, anterior #6b6b8f punteado
+     (separación ΔE 17,9 normal / 15,6 daltonismo, contraste ≥ 3:1). */
+  /* Deltas: la flecha acompaña al color (no depende sólo del color) */
+  .hc-delta{font-family:var(--mono);font-size:var(--fs-body);font-variant-numeric:tabular-nums;cursor:help;}
+  .hc-delta.up{color:var(--ok);}.hc-delta.up::before{content:'▲ ';}
+  .hc-delta.down{color:var(--danger);}.hc-delta.down::before{content:'▼ ';}
+  .hc-delta.flat{color:var(--muted);}.hc-delta.flat::before{content:'= ';}
+  .chart-panel{position:relative;background:var(--surface);padding:var(--sp-4) var(--gutter) var(--sp-3);border-bottom:1px solid var(--border);}
+  .chart-panel:empty{display:none;}
+  .chart-head{display:flex;align-items:baseline;gap:var(--sp-3) var(--sp-4);flex-wrap:wrap;margin-bottom:var(--sp-2);}
+  .chart-title{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text);}
+  .chart-sub{font-family:var(--mono);font-size:var(--fs-label);color:var(--muted);}
+  .chart-legend{display:flex;gap:var(--sp-4);margin-left:auto;font-family:var(--mono);font-size:var(--fs-label);color:var(--muted);}
+  .chart-legend .cur::before{content:'';display:inline-block;width:16px;height:2px;background:#a070f5;vertical-align:middle;margin-right:6px;}
+  .chart-legend .prev::before{content:'';display:inline-block;width:16px;border-top:2px dashed #6b6b8f;vertical-align:middle;margin-right:6px;}
+  .chart-svg{display:block;width:100%;height:auto;overflow:visible;}
+  .chart-svg .grid-line{stroke:var(--border);stroke-width:1;}
+  .chart-svg text{fill:var(--muted);font-family:var(--mono);font-size:11px;}
+  .chart-svg .area-cur{fill:rgba(160,112,245,.12);}
+  .chart-svg .line-cur{fill:none;stroke:#a070f5;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+  .chart-svg .line-prev{fill:none;stroke:#6b6b8f;stroke-width:2;stroke-dasharray:5 4;}
+  .chart-svg .dot-cur{fill:#a070f5;stroke:var(--surface);stroke-width:2;}
+  .chart-svg .dot-prev{fill:#6b6b8f;stroke:var(--surface);stroke-width:2;}
+  .chart-svg .event line{stroke:rgba(var(--warn-rgb),.55);stroke-dasharray:2 3;}
+  .chart-svg .event text{fill:var(--warn);font-size:10px;}
+  .chart-svg .hover-line{stroke:var(--muted);stroke-width:1;}
+  .chart-tip{position:absolute;pointer-events:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;
+    font-family:var(--mono);font-size:var(--fs-label);color:var(--text);white-space:nowrap;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .chart-tip .m{color:var(--muted);}
+  .chart-empty{font-family:var(--mono);font-size:var(--fs-label);color:var(--muted);padding:var(--sp-2) 0;}
   /* v54.5 · Selector de dos vistas de una misma tabla (Pareto) */
   .seg-sw{display:inline-flex;margin-left:auto;}
   .seg-sw button{padding:3px 10px;font-size:var(--fs-micro);font-weight:500;letter-spacing:.5px;font-family:var(--mono);cursor:pointer;
@@ -1024,6 +1055,8 @@
   <div id="view-general" style="display:none">
     <!-- v54.5: la card Ventas de Salud en una línea -->
     <div class="band" id="ventas-band"><span class="band-vals" id="ventas-band-vals"></span></div>
+    <!-- v54.9: el único gráfico de EVO -->
+    <div class="chart-panel" id="ventas-chart"></div>
     <!-- v54.7: los indicadores y paneles de diagnóstico y estrategia se arman acá
          y _armarAnalisis los lleva a su pestaña; estos contenedores no se ven. -->
     <div class="kpi-row" id="kpi-row" style="display:none"></div>
@@ -1307,6 +1340,7 @@ const _GLOSARIO = [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
   ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
+  ['Gráfico y deltas de Ventas (v54.9)','Período anterior e interanual','La card Ventas de Salud y la franja de Ventas muestran la variación contra el período anterior de igual duración y contra el mismo período del año anterior, cuando el reporte los cubre. Se calcula sobre ingresos por productos de las ventas no canceladas, igual que la serie del Informe; como el IVA es el mismo en los dos períodos, el % es el mismo sobre venta neta. Ads y stock no tienen delta porque sus reportes traen un solo período. El gráfico de Ventas muestra la facturación promedio por día (por día hasta 45 días, por semana hasta 190 y por tramos de 30 días más allá), el período anterior punteado y las fechas comerciales de impacto alto; al pasar el mouse muestra el detalle de cada tramo.'],
   ['Ficha en panel lateral (v54.8)','Buscador o clic en cualquier ID','La ficha de una publicación se abre en un panel a la derecha, sin empujar el contenido: desde el buscador de la barra de filtros o con un clic en el ID de cualquier tabla (el título sigue en el tooltip). Se cierra con ✕, con Esc o tocando el fondo. "Ver en…" esconde el panel para dejar ver la fila resaltada y lo vuelve a mostrar si la fila no está en la tabla visible.'],
   ['Ventas, Diagnóstico y Estrategia (v54.7)','El Dashboard General se repartió','Ventas queda con la franja y el Pareto. Diagnóstico reúne lo que se revisa cada tanto: falsos héroes, dormidos (con el revenue perdido estimado de todos, no sólo de los 25 de la tabla), concentración del catálogo, geografía y logística, tiendas oficiales (sólo con más de una) y clientes (sólo con Evolución de Negocio o Desempeño de Producto). Estrategia reúne las herramientas de una decisión puntual: contribución por visita, rangos de precio, combos de carrito, el mapa de calor y el simulador SOV. Cada bloque muestra su resumen en el encabezado y abre su tabla a demanda.'],
   ['Pestaña Stock (v54.6)','Forecast + Inventario FULL','Stock reúne las viejas pestañas Forecast e Inventario FULL. Arriba, la franja con la card Stock de Salud; después la reposición sugerida, y en acordeones los indicadores del forecast, la proyección semana a semana, los eventos comerciales y la configuración manual. Debajo, la cobertura por variante de FULL. El reporte de Publicaciones se carga en la pantalla inicial junto con el resto: se importa al generar el dashboard y el forecast se calcula solo, con los lead times por defecto (propio 14 días, FULL 21) hasta que se ajusten en Configurar forecast.'],
@@ -1676,7 +1710,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.8';
+const EVO_VERSION = 'v54.9';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -9086,7 +9120,7 @@ function renderDashboard(renderData){
     + '<span class="m">' + (_esRIdash ? 'facturación neta (sin IVA) · ' : 'facturación · ') + ARS(totVN) + '</span>'
     + '<span class="m"><strong style="color:var(--text)">' + NUM(nVentas) + '</strong> ventas · <strong style="color:var(--text)">'
     + NUM(totUni) + '</strong> unidades despachadas</span>'
-    + '<span class="m">' + _rangoTxt + '</span>';
+    + '<span class="m">' + _rangoTxt + '</span>' + lineasDeltas('span');
   const _tm = document.getElementById('topbar-meta');
   _tm.title = 'Archivo: ' + G.filename;
   _tm.innerHTML = `<div class="acct-name">${String(G.cuentaNombre).replace(/</g,'&lt;')}</div>`
@@ -9769,6 +9803,7 @@ function renderDashboard(renderData){
      buscador se pierde. Se repone si hay una ficha abierta. */
   if (typeof reponerResaltadoML === 'function') reponerResaltadoML();
   _armarAnalisis();
+  renderGraficoVentas();
   renderSalud();
   if (PENDIENTE_PUBS && typeof importPublicacionesXLSX === 'function') {
     const _f = PENDIENTE_PUBS; PENDIENTE_PUBS = null;
@@ -14657,6 +14692,169 @@ function fmtCompacto(v) {
   const t = a >= 1e9 ? n(a / 1e9, 1) + ' mil M' : a >= 1e6 ? n(a / 1e6, 1) + ' M' : a >= 1e4 ? n(a / 1e3, 0) + ' k' : NUM(Math.round(a));
   return sg + sym + ' ' + t;
 }
+/* ═══ FACTURACIÓN EN EL TIEMPO (v54.9) ═══
+   Deltas y gráfico usan el mismo criterio que la serie del Informe: ventas no
+   canceladas, por fecha, sobre ingresos por productos (con IVA). Como el IVA
+   es el mismo en los dos períodos, el % de variación es el mismo que sobre la
+   venta neta. Sólo se compara lo que sale del reporte de Ventas: Ads y stock
+   traen un solo período. */
+function _kDia(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function _sumarDias(d, n) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; }
+function _porDiaBruto() {
+  const recs = (G && G.records) || [];
+  if (G._porDia && G._porDia.n === recs.length && G._porDia.recs === recs) return G._porDia.map;
+  const map = {};
+  recs.forEach(r => {
+    if (!r || r.esCanceled || !(r.fecha instanceof Date) || isNaN(r.fecha)) return;
+    const k = _kDia(r.fecha);
+    map[k] = (map[k] || 0) + (r.ingresos_brutos || 0);
+  });
+  G._porDia = { n: recs.length, recs, map, min: Object.keys(map).sort()[0] || null };
+  return map;
+}
+function _sumaRango(map, desde, dias) {
+  let t = 0;
+  for (let i = 0; i < dias; i++) t += map[_kDia(_sumarDias(desde, i))] || 0;
+  return t;
+}
+/* Período anterior de igual duración e interanual. null si el reporte no
+   llega a cubrirlos. */
+function deltasVentas() {
+  const r = rangoCuenta();
+  if (!r.desde || !r.hasta || !r.dias) return null;
+  const map = _porDiaBruto(), min = G._porDia && G._porDia.min;
+  if (!min) return null;
+  const desde = _sumarDias(r.desde, 0), L = r.dias;
+  const cur = _sumaRango(map, desde, L);
+  const prevDesde = _sumarDias(desde, -L), prevHasta = _sumarDias(desde, -1);
+  const yoyDesde = new Date(desde.getFullYear() - 1, desde.getMonth(), desde.getDate());
+  const yoyHasta = _sumarDias(yoyDesde, L - 1);
+  const cubre = d => _kDia(d) >= min;
+  const prev = cubre(prevDesde) ? _sumaRango(map, prevDesde, L) : null;
+  const yoy = cubre(yoyDesde) ? _sumaRango(map, yoyDesde, L) : null;
+  return { cur, prev, yoy, L, desde, prevDesde, prevHasta, yoyDesde, yoyHasta };
+}
+function _deltaHTML(cur, base, etiqueta) {
+  if (base === null || !(base > 0)) return '';
+  const d = cur / base - 1, cls = Math.abs(d) < 0.005 ? 'flat' : d > 0 ? 'up' : 'down';
+  const txt = String((Math.abs(d) * 100).toFixed(1)).replace('.', ',') + ' %';
+  return '<span class="hc-delta ' + cls + '" title="Ingresos por productos: ' + fmtCurrency(cur) + ' contra ' + fmtCurrency(base)
+    + '. El IVA es el mismo en los dos períodos, así que el % es el mismo sobre venta neta.">' + txt + '</span> <span class="m">' + etiqueta + '</span>';
+}
+function lineasDeltas(tag) {
+  const D = deltasVentas();
+  const out = [];
+  if (D) {
+    const a = _deltaHTML(D.cur, D.prev, 'vs ' + _fmtDMA(D.prevDesde) + ' → ' + _fmtDMA(D.prevHasta));
+    const b = _deltaHTML(D.cur, D.yoy, 'vs el mismo período del año anterior');
+    if (a) out.push(a);
+    if (b) out.push(b);
+  }
+  if (!out.length) out.push('<span class="m">sin período anterior en el reporte para comparar</span>');
+  return out.map(x => '<' + tag + '>' + x + '</' + tag + '>').join('');
+}
+function renderGraficoVentas() {
+  const box = document.getElementById('ventas-chart');
+  if (!box) return;
+  const r = rangoCuenta();
+  if (!r.desde || !r.hasta || !(r.dias > 1)) { box.innerHTML = ''; return; }
+  const map = _porDiaBruto(), D = deltasVentas();
+  const L = r.dias, paso = L <= 45 ? 1 : L <= 190 ? 7 : 30;
+  const nomPaso = paso === 1 ? 'por día' : paso === 7 ? 'por semana' : 'por tramos de 30 días';
+  const serie = desde => {
+    const out = [];
+    for (let i = 0; i < L; i += paso) {
+      const dias = Math.min(paso, L - i), ini = _sumarDias(desde, i);
+      const tot = _sumaRango(map, ini, dias);
+      out.push({ ini, fin: _sumarDias(ini, dias - 1), dias, tot, prom: tot / dias });
+    }
+    return out;
+  };
+  const cur = serie(_sumarDias(r.desde, 0));
+  const prev = (D && D.prev !== null) ? serie(D.prevDesde) : null;
+  const n = cur.length;
+  if (n < 2) { box.innerHTML = ''; return; }
+  const _dash = document.getElementById('dashboard');
+  const W = Math.max(520, Math.round((box.clientWidth || (_dash && _dash.clientWidth) || 1100) - 56));
+  const H = 240, ml = 64, mr = 12, mt = 24, mb = 26, w = W - ml - mr, h = H - mt - mb;
+  let max = Math.max(...cur.map(p => p.prom), ...(prev ? prev.map(p => p.prom) : [0]));
+  if (!(max > 0)) { box.innerHTML = ''; return; }
+  const mag = Math.pow(10, Math.floor(Math.log10(max)));
+  max = Math.ceil(max / mag * 2) / 2 * mag;   // techo redondo: 1 · 1,5 · 2 · 2,5 … × 10^n
+  const x = i => ml + i * w / (n - 1);
+  const y = v => mt + h * (1 - v / max);
+  const linea = arr => arr.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.prom).toFixed(1)).join(' ');
+  let g = '';
+  [0, 0.5, 1].forEach(f => {
+    const v = max * f, yy = y(v).toFixed(1);
+    g += '<line class="grid-line" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + yy + '" y2="' + yy + '"/>'
+      + '<text x="' + (ml - 8) + '" y="' + (+yy + 4) + '" text-anchor="end">' + fmtCompacto(v).replace(/^\S+\s/, '') + '</text>';
+  });
+  // Eventos comerciales de impacto alto del país, dentro del período
+  let ev = '', ultX = -1e9;
+  if (typeof CALENDARIO_2026 !== 'undefined') {
+    const pais = (G && G.country) || '';
+    CALENDARIO_2026.filter(e => e.impacto === 'alto' && (e.paises.indexOf('ALL') >= 0 || e.paises.indexOf(pais) >= 0)).forEach(e => {
+      const f = new Date((e.fecha || e.inicio) + 'T00:00:00');
+      const idx = Math.round((f - _sumarDias(r.desde, 0)) / 864e5);
+      if (idx < 0 || idx >= L) return;
+      const xx = ml + (idx / paso) * w / (n - 1);
+      const anchoTxt = String(e.nombre).length * 6.2;
+      if (xx - ultX < anchoTxt + 16) return;   // no pisar la etiqueta anterior
+      ultX = xx;
+      const alFinal = xx + 4 + anchoTxt > W - mr;   // cerca del borde: la etiqueta va a la izquierda
+      ev += '<g class="event"><line x1="' + xx.toFixed(1) + '" x2="' + xx.toFixed(1) + '" y1="' + mt + '" y2="' + (mt + h) + '"/>'
+        + '<text x="' + (alFinal ? xx - 4 : xx + 4).toFixed(1) + '" y="' + (mt - 8) + '"' + (alFinal ? ' text-anchor="end"' : '') + '>' + String(e.nombre).replace(/</g, '&lt;') + '</text></g>';
+    });
+  }
+  const area = linea(cur) + ' L' + x(n - 1).toFixed(1) + ' ' + (mt + h) + ' L' + x(0).toFixed(1) + ' ' + (mt + h) + ' Z';
+  const lblX = [0, Math.floor((n - 1) / 2), n - 1].filter((v, i, a) => a.indexOf(v) === i)
+    .map(i => '<text x="' + x(i).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle') + '">' + _fmtDMA(cur[i].ini) + '</text>').join('');
+  const svg = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Facturación promedio por día ' + nomPaso + ', período actual'
+    + (prev ? ' y anterior' : '') + '">' + g + ev
+    + (prev ? '<path class="line-prev" vector-effect="non-scaling-stroke" d="' + linea(prev) + '"/>' : '')
+    + '<path class="area-cur" d="' + area + '"/><path class="line-cur" vector-effect="non-scaling-stroke" d="' + linea(cur) + '"/>'
+    + '<circle class="dot-cur" cx="' + x(n - 1).toFixed(1) + '" cy="' + y(cur[n - 1].prom).toFixed(1) + '" r="4"/>'
+    + lblX
+    + '<line class="hover-line" id="vc-hl" y1="' + mt + '" y2="' + (mt + h) + '" style="display:none"/>'
+    + '<circle class="dot-cur" id="vc-hc" r="4" style="display:none"/><circle class="dot-prev" id="vc-hp" r="4" style="display:none"/>'
+    + '<rect id="vc-hit" x="' + ml + '" y="' + mt + '" width="' + w + '" height="' + h + '" fill="transparent"/></svg>';
+  box.innerHTML = '<div class="chart-head"><span class="chart-title">Facturación del período</span>'
+    + '<span class="chart-sub">promedio diario ' + nomPaso + ' · ingresos por productos, con IVA</span>'
+    + '<span class="chart-legend"><span class="cur">' + _fmtDMA(r.desde) + ' → ' + _fmtDMA(r.hasta) + '</span>'
+    + (prev ? '<span class="prev">' + _fmtDMA(D.prevDesde) + ' → ' + _fmtDMA(D.prevHasta) + '</span>' : '<span class="m">sin período anterior en el reporte</span>')
+    + '</span></div>' + svg + '<div class="chart-tip" id="vc-tip" style="display:none"></div>';
+  // Hover: línea vertical y tooltip del tramo más cercano
+  const svgEl = box.querySelector('svg'), hit = box.querySelector('#vc-hit'), tip = box.querySelector('#vc-tip');
+  const hl = box.querySelector('#vc-hl'), hc = box.querySelector('#vc-hc'), hp = box.querySelector('#vc-hp');
+  const mostrar = ev2 => {
+    const rc = svgEl.getBoundingClientRect(), sx = W / rc.width;
+    const vx = (ev2.clientX - rc.left) * sx;
+    const i = Math.max(0, Math.min(n - 1, Math.round((vx - ml) / (w / (n - 1)))));
+    const px = x(i);
+    hl.setAttribute('x1', px); hl.setAttribute('x2', px); hl.style.display = '';
+    hc.setAttribute('cx', px); hc.setAttribute('cy', y(cur[i].prom)); hc.style.display = '';
+    if (prev && prev[i]) { hp.setAttribute('cx', px); hp.setAttribute('cy', y(prev[i].prom)); hp.style.display = ''; } else hp.style.display = 'none';
+    const rango = p => p.dias > 1 ? _fmtDMA(p.ini) + ' → ' + _fmtDMA(p.fin) : _fmtDMA(p.ini);
+    tip.innerHTML = '<div>' + rango(cur[i]) + ' · <strong>' + fmtCurrency(cur[i].prom) + '</strong> <span class="m">por día</span></div>'
+      + (cur[i].dias > 1 ? '<div class="m">' + fmtCurrency(cur[i].tot) + ' en ' + cur[i].dias + ' días</div>' : '')
+      + (prev && prev[i] ? '<div class="m">anterior ' + rango(prev[i]) + ' · ' + fmtCurrency(prev[i].prom) + ' por día</div>' : '');
+    tip.style.display = '';
+    const bx = box.getBoundingClientRect();
+    let left = ev2.clientX - bx.left + 14;
+    if (left + tip.offsetWidth > bx.width - 8) left = ev2.clientX - bx.left - tip.offsetWidth - 14;
+    tip.style.left = left + 'px';
+    tip.style.top = (ev2.clientY - bx.top - 10) + 'px';
+  };
+  hit.addEventListener('mousemove', mostrar);
+  hit.addEventListener('mouseleave', () => { hl.style.display = hc.style.display = hp.style.display = tip.style.display = 'none'; });
+  if (!window._evoResizeGraf) {
+    window._evoResizeGraf = true;
+    let _t = null;
+    window.addEventListener('resize', () => { clearTimeout(_t); _t = setTimeout(() => { if (G && G._lastRender) renderGraficoVentas(); }, 200); });
+  }
+}
+
 /* ═══ DIAGNÓSTICO Y ESTRATEGIA (v54.7) ═══
    Los paneles se siguen armando en el render general, como siempre; acá se
    ubican por título en su bloque. Cada render los vuelve a crear, así que los
@@ -14818,7 +15016,7 @@ function renderSalud() {
   cards.push(card('general', null,
     '<div class="hc-q">Ventas</div><div class="hc-hero" title="' + ARS(V.totVN) + '">' + fmtCompacto(V.totVN) + '</div>'
     + '<div class="hc-cap">' + (V.esRI ? 'Facturación neta (sin IVA)' : 'Facturación') + ' · ' + ARS(V.totVN) + '</div>'
-    + '<ul class="hc-sec"><li>' + NUM(V.nVentas) + ' <span class="m">ventas</span></li>'
+    + '<ul class="hc-sec">' + lineasDeltas('li') + '<li>' + NUM(V.nVentas) + ' <span class="m">ventas</span></li>'
     + '<li class="m">' + esc(V.rangoTxt) + '</li></ul>' + link('ventas')));
 
   // Rentabilidad
