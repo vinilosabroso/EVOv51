@@ -108,6 +108,81 @@
   .st-dot{width:10px;height:10px;border-radius:50%;background:var(--st);display:inline-block;flex-shrink:0;}
   [data-st="ok2"] .st-dot,[data-st="bad2"] .st-dot{box-shadow:0 0 0 4px rgba(var(--st-rgb),.28);}
 
+  /* ══ v54.2 · Barra superior: nombre de la cuenta y menú Exportar ══ */
+  .acct{display:flex;flex-direction:column;gap:2px;min-width:0;margin-left:8px;}
+  .acct-name{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .acct-meta{font-family:var(--mono);font-size:var(--fs-label);color:var(--muted);}
+  details.menu{position:relative;}
+  details.menu>summary{list-style:none;}
+  details.menu>summary::-webkit-details-marker{display:none;}
+  details.menu>summary::after{content:' ▾';}
+  .menu-list{position:absolute;right:0;top:calc(100% + 6px);min-width:220px;z-index:60;background:var(--surface2);
+    border:1px solid var(--border);border-radius:8px;padding:var(--sp-1);box-shadow:0 16px 40px rgba(0,0,0,.45);}
+  .menu-list button{display:block;width:100%;text-align:left;background:transparent;border:0;border-radius:6px;color:var(--text);
+    font-family:var(--sans);font-size:var(--fs-body);padding:var(--sp-2) var(--sp-3);cursor:pointer;}
+  .menu-list button:hover,.menu-list button:focus-visible{background:rgba(var(--accent-rgb),.14);outline:none;}
+  .menu-list button:disabled{opacity:.5;cursor:wait;}
+
+  /* ══ v54.2 · Pestañas en dos grupos, con luz de alerta ══
+     Las pestañas de Chequeo llevan una luz apagada por defecto que se prende en
+     violeta cuando su pregunta tiene alerta. La pestaña activa se marca sólo con
+     el color del texto, para no confundirla con la luz. */
+  .tabs{align-items:center;gap:0;overflow-x:auto;}
+  .tab-btn{padding:14px 14px;white-space:nowrap;}
+  .tab-btn.active{border-bottom-color:transparent;}
+  .tab-group{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+  .tab-group+.tab-group{margin-left:var(--sp-5);padding-left:var(--sp-5);border-left:1px solid var(--border);}
+  .tab-group-label{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-right:var(--sp-2);}
+  .tab-group.analysis .tab-btn{font-size:13px;font-weight:600;}
+  .tab-group.check .tab-btn:not(.no-light)::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:8px;
+    vertical-align:middle;background:var(--border);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);transition:background .2s,box-shadow .2s;}
+  .tab-group.check .tab-btn:is([data-st="warn"],[data-st="bad"],[data-st="bad2"])::after{
+    background:var(--accent2);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.25),0 0 10px rgba(192,132,252,.7);}
+
+  /* ══ v54.2 · Parámetros fiscales plegados ══ */
+  details.fiscal>summary{display:inline-block;list-style:none;cursor:pointer;font-family:var(--mono);font-size:var(--fs-label);color:var(--text);
+    border:1px solid var(--border);border-radius:99px;padding:5px 12px;white-space:nowrap;}
+  details.fiscal>summary::-webkit-details-marker{display:none;}
+  details.fiscal>summary::after{content:' ▸';color:var(--muted);}
+  details.fiscal[open]>summary::after{content:' ▾';}
+  .fiscal-panel{display:flex;align-items:center;gap:var(--sp-2) var(--sp-3);flex-wrap:wrap;margin-top:var(--sp-2);}
+
+  /* ══ v54.2 · Salud ══ */
+  .alerts-strip{display:flex;flex-wrap:wrap;gap:var(--sp-2);padding:var(--sp-4) var(--gutter) 0;}
+  .alerts-strip:empty{display:none;}
+  .alert-chip{display:inline-flex;align-items:center;gap:var(--sp-2);font-family:var(--mono);font-size:var(--fs-label);color:var(--warn);
+    background:rgba(var(--warn-rgb),.08);border:1px solid rgba(var(--warn-rgb),.35);border-radius:99px;padding:5px 12px;}
+  .alert-chip::before{content:'!';font-weight:700;width:14px;height:14px;border-radius:50%;display:inline-grid;place-items:center;
+    background:var(--warn);color:var(--bg);font-size:10px;}
+  .health-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-4);padding:var(--sp-5) var(--gutter);}
+  @media(max-width:1200px){.health-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:640px){.health-grid{grid-template-columns:1fr;padding:var(--sp-4);}}
+  .health-card{display:flex;flex-direction:column;gap:var(--sp-3);min-height:280px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:var(--sp-5);cursor:pointer;transition:border-color .15s;}
+  .health-card:hover{border-color:rgba(var(--accent-rgb),.6);}
+  .health-card:focus-visible{outline:2px solid var(--accent2);outline-offset:2px;}
+  .health-card[data-st="warn"]{border-color:rgba(var(--warn-rgb),.45);}
+  .health-card[data-st="bad"]{border-color:rgba(var(--danger-rgb),.5);}
+  .health-card[data-st="bad2"]{border-color:rgba(var(--danger-rgb),.7);background:linear-gradient(rgba(var(--danger-rgb),.06),rgba(var(--danger-rgb),.06)),var(--surface);}
+  .hc-q{font-family:var(--mono);font-size:var(--fs-label);letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  .hc-hero{display:flex;align-items:center;gap:var(--sp-3);font-family:var(--display);font-size:var(--fs-hero);font-weight:800;line-height:1;
+    letter-spacing:-1px;color:var(--text);font-variant-numeric:tabular-nums;}
+  .hc-hero.st-val{color:var(--st);}
+  .hc-hero.hc-vacio{font-size:var(--fs-l2);color:var(--muted);font-weight:600;letter-spacing:0;}
+  .hc-cap{font-family:var(--mono);font-size:var(--fs-label);color:var(--muted);margin-top:calc(var(--sp-1) * -1);}
+  .hc-pair{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);}
+  .hc-pair .hc-hero{font-size:var(--fs-hero-pair);gap:var(--sp-2);}
+  .hc-pair .hc-cap{margin-top:var(--sp-2);}
+  .hc-sec{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:var(--fs-body);color:var(--text);}
+  .hc-sec li{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;}
+  .hc-sec .m,.hc-sec li.m{color:var(--muted);}
+  .hc-alert{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-body);color:var(--danger);background:rgba(var(--danger-rgb),.08);
+    border:1px solid rgba(var(--danger-rgb),.3);border-radius:6px;padding:6px 10px;}
+  .hc-link{margin-top:auto;font-family:var(--mono);font-size:var(--fs-label);letter-spacing:1px;text-transform:uppercase;color:var(--accent2);}
+  .hc-link::after{content:'  →';}
+  .health-card.is-empty{cursor:default;border-style:dashed;border-color:var(--border);}
+  .salud-foot{padding:0 var(--gutter) var(--sp-6);font-family:var(--mono);font-size:var(--fs-label);color:var(--muted);}
+
   .pub-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
   .pub-half{background:var(--surface);padding:20px 24px;}
   .pub-half-title{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
@@ -753,25 +828,39 @@
 <div id="dashboard">
   <div class="topbar">
     <div class="topbar-logo">EVO<span style="font-size:13px;font-weight:800;background:linear-gradient(135deg,#e8e8e8 0%,#a0a0b0 40%,#d0d0e0 70%,#8888a0 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:0.85;margin-left:5px">Anniversary</span></div>
+    <div class="acct" id="topbar-meta"></div>
     <div class="topbar-controls">
-      <div class="topbar-meta" id="topbar-meta"></div>
-      <button class="btn btn-export" onclick="exportarExcel()" id="btn-export" style="display:none">↓ Exportar Excel</button>
-      <button id="btn-snapshot" class="btn" onclick="exportSnapshotJSON()" style="margin-left:6px;background:rgba(var(--accent-rgb),.15);border-color:var(--accent);color:var(--accent2);display:none;">💾 Snapshot</button>
-      <button id="btn-informe" class="btn" onclick="abrirFormInforme()" style="margin-left:6px;background:linear-gradient(135deg,#4A00E0,#8E2DE2);border-color:#8E2DE2;color:#fff;display:none;">📄 Informe PDF</button>
-      <button id="btn-repo" class="btn" onclick="abrirFormRepo()" style="margin-left:6px;background:rgba(52,211,153,.14);border-color:#34d399;color:#34d399;display:none;">📦 Alerta de stock</button>
+      <!-- v54.2: las cuatro salidas viven en un solo menú -->
+      <details class="menu" id="menu-export" style="display:none">
+        <summary class="btn">Exportar</summary>
+        <div class="menu-list">
+          <button type="button" id="btn-export" onclick="this.closest('details').open=false;exportarExcel()">Excel</button>
+          <button type="button" id="btn-informe" onclick="this.closest('details').open=false;abrirFormInforme()">Informe PDF</button>
+          <button type="button" id="btn-snapshot" onclick="this.closest('details').open=false;exportSnapshotJSON()">Snapshot</button>
+          <button type="button" id="btn-repo" onclick="this.closest('details').open=false;abrirFormRepo()">Alerta de stock</button>
+        </div>
+      </details>
       <button class="btn btn-danger" onclick="resetDashboard()">← Cargar otro</button>
       <button id="btn-info" class="btn btn-info-hidden" onclick="abrirInfo()" title="Documentación interna">i</button>
     </div>
   </div>
   
   <div class="tabs">
-    <button class="tab-btn active" id="tab-general" onclick="switchTab('general')">Dashboard General</button>
-    <button class="tab-btn" id="tab-pub" onclick="switchTab('pub')" style="display:none">Publicidad</button>
-    <button class="tab-btn" id="tab-rent" onclick="switchTab('rent')" style="display:none">Rentabilidad</button>
-    <button class="tab-btn" id="tab-full" onclick="switchTab('full')" style="display:none">Inventario FULL</button>
-    <button class="tab-btn" id="tab-forecast" onclick="switchTab('forecast')" style="display:none">Forecast</button>
-    <button class="tab-btn" id="tab-sov" onclick="switchTab('sov')" style="display:none">SOV Modeler</button>
-    <button class="tab-btn" id="tab-heat" onclick="switchTab('heat')" style="display:none">Mapa de Calor</button>
+    <!-- v54.2: Chequeo (lo que se mira en cada revisión) y Análisis (a demanda) -->
+    <div class="tab-group check">
+      <span class="tab-group-label">Chequeo</span>
+      <button class="tab-btn no-light active" id="tab-salud" onclick="switchTab('salud')">Salud</button>
+      <button class="tab-btn" id="tab-general" onclick="switchTab('general')">Dashboard General</button>
+      <button class="tab-btn" id="tab-rent" onclick="switchTab('rent')" style="display:none">Rentabilidad</button>
+      <button class="tab-btn" id="tab-pub" onclick="switchTab('pub')" style="display:none">Publicidad</button>
+      <button class="tab-btn" id="tab-full" onclick="switchTab('full')" style="display:none">Inventario FULL</button>
+      <button class="tab-btn" id="tab-forecast" onclick="switchTab('forecast')" style="display:none">Forecast</button>
+    </div>
+    <div class="tab-group analysis">
+      <span class="tab-group-label">Análisis</span>
+      <button class="tab-btn" id="tab-sov" onclick="switchTab('sov')" style="display:none">SOV Modeler</button>
+      <button class="tab-btn" id="tab-heat" onclick="switchTab('heat')" style="display:none">Mapa de Calor</button>
+    </div>
   </div>
 
   <div class="filter-bar">
@@ -784,6 +873,8 @@
       <button class="btn" onclick="limpiarFechas()">Todo</button>
     </div>
     <div class="filter-group" style="margin-left:auto;">
+      <!-- v54.2: se configuran una vez por cuenta; el resumen queda siempre visible -->
+      <details class="fiscal" id="fiscal-box"><summary id="fiscal-resumen">Fiscal</summary><div class="fiscal-panel">
       <span class="filter-label">IVA</span>
       <div class="switch-wrap">
         <span class="switch-label active" id="lbl-iva-si">Responsable</span>
@@ -815,6 +906,7 @@
           <option value="1">Costo (definitivo)</option>
         </select>
       </span>
+      </div></details>
     </div>
     <div class="filter-group">
       <span class="filter-label">Identificador</span>
@@ -839,7 +931,13 @@
 
   <div id="ficha-ml"></div>
 
-  <div id="view-general">
+  <div id="view-salud">
+    <div class="alerts-strip" id="salud-alertas"></div>
+    <div class="health-grid" id="salud-grid"></div>
+    <p class="salud-foot">Cada card lleva a su pestaña. El detalle vive ahí.</p>
+  </div>
+
+  <div id="view-general" style="display:none">
     <div class="kpi-row" id="kpi-row"></div>
     <div class="pub-split" id="pub-split"></div>
 
@@ -1047,6 +1145,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarInfo()
 /* Glosario: refleja lo que EVO calcula realmente. Si se cambia una fórmula
    en el código, actualizar también la entrada correspondiente. */
 const _GLOSARIO = [
+ ['Salud (v54.2)', [
+  ['Qué es','Pantalla de inicio con cuatro cards','Ventas, Rentabilidad, Ads y Stock: lo que alcanza para saber en cinco segundos si la cuenta está bien o mal. No tiene tablas; cada card lleva a su pestaña. No calcula nada propio: muestra lo que ya calcularon Rentabilidad, Publicidad, FULL y el forecast, con los mismos umbrales.'],
+  ['Card Rentabilidad','Margen sobre venta neta, antes o después de mercadería','Muestra en grande el margen antes de mercadería (piso 35 %), salvo que el COGS cubra el 93 % o más del revenue: ahí manda el margen final (piso 15 %). El otro margen queda debajo, con su propio color y la cobertura del COGS.'],
+  ['Card Ads','TACoS y ACoS lado a lado','El TACoS se colorea por el margen que le deja la pauta a la cuenta y el ACoS contra el break-even. Debajo, la inversión, el peso de la venta por publicidad y, si existe, la inversión sin retorno (con y sin ventas orgánicas).'],
+  ['Card Stock','Críticos de FULL o riesgo del forecast','Con Stock FULL: publicaciones que cubren 14 días o menos y las que están sin stock. Con forecast: revenue en riesgo hoy y fecha del próximo quiebre. Sin ninguno de los dos, la card queda en su lugar mostrando que falta el dato.'],
+  ['Luces de las pestañas','Apagadas por defecto, violeta con alerta','Cada pestaña de Chequeo tiene una luz que se prende cuando su card está en naranja o rojo. La pestaña activa se marca sólo con el color del texto.'],
+  ['Franja de advertencias','Sólo aparece si hay algo que advertir','Reporte de Anuncios con otro período que el filtro, COGS que no cubre el 93 % del revenue y publicaciones con envío propio sin costo cargado.'],
+  ['Nombre de la cuenta','Tienda oficial o VENTAS AR / MX / CL','La barra superior, el Informe, la Alerta de stock, el Excel y el Snapshot usan la tienda oficial de mayor facturación o, si no hay, "VENTAS" y el país, con el rango de fechas de los datos. El nombre del archivo queda en el tooltip y el número de cuenta se sigue usando para asociar los inputs del Forecast.'],
+ ]],
  ['Bases de cálculo y fiscalidad', [
   ['Revenue bruto','Columna "Ingresos por productos" del reporte de ventas','Precio × unidades, CON IVA, antes de cualquier descuento de ML. No incluye el envío que paga el comprador ni los intereses de cuotas. Es la base que usa el panel de Mercado Ads.'],
   ['Venta neta','Revenue bruto × (1 − factorIVA)','Revenue bruto menos el IVA débito. Para un Responsable el IVA no es ingreso propio sino del fisco. Es la base sobre la que se mide TODO margen en EVO. Para Monotributo/Exento, factorIVA = 0 y venta neta = revenue bruto.'],
@@ -1452,7 +1559,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.1';
+const EVO_VERSION = 'v54.2';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -3154,7 +3261,7 @@ function generarInforme(){
 }
 
 function switchTab(view) {
-  ['general','pub','rent','full','forecast','sov','heat'].forEach(v => {
+  ['salud','general','pub','rent','full','forecast','sov','heat'].forEach(v => {
     const el = document.getElementById('view-'+v);
     if (el) el.style.display = v === view ? 'block' : 'none';
     const btn = document.getElementById('tab-'+v);
@@ -3825,7 +3932,7 @@ function exportSnapshotJSON() {
   const accountIdDetected = (typeof extractAccountId === 'function') 
     ? extractAccountId(G.filename) : '';
   const tiendaDetectada = (G.tiendaMap && Object.keys(G.tiendaMap)[0]) || '';
-  const sugerencia = tiendaDetectada || accountIdDetected || '';
+  const sugerencia = (typeof nombreCuenta === 'function' ? nombreCuenta() : '') || tiendaDetectada || accountIdDetected || '';
 
   // Modal: pedir nombre de cuenta
   const overlay = document.createElement('div');
@@ -3955,7 +4062,11 @@ function doExportSnapshot(accountName, sanitized) {
     const url = URL.createObjectURL(blob);
     
     const fecha = new Date().toISOString().slice(0,10);
-    const fname = `evo_snapshot_${sanitized}_${fecha}.json`;
+    const _rg = (typeof rangoCuenta === 'function') ? rangoCuenta() : null;
+    const _iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const fname = (_rg && _rg.desde && _rg.hasta)
+      ? `evo_snapshot_${sanitized}_${_iso(_rg.desde)}_a_${_iso(_rg.hasta)}.json`   // v54.2: rango de los datos
+      : `evo_snapshot_${sanitized}_${fecha}.json`;
     
     const a = document.createElement('a');
     a.href = url;
@@ -4205,6 +4316,8 @@ function importSnapshotJSON(file) {
       document.getElementById('dashboard').style.display = 'block';
       const btnExp = document.getElementById('btn-export');
       if (btnExp) btnExp.style.display = '';
+      const _menuExp = document.getElementById('menu-export');
+      if (_menuExp) _menuExp.style.display = '';
       const btnSnap = document.getElementById('btn-snapshot');
       if (btnSnap) btnSnap.style.display = '';
       const btnInf = document.getElementById('btn-informe');
@@ -6796,6 +6909,8 @@ function renderForecastOutputs() {
    2. renderForecastKPIs() — Cards de KPIs principales
    ───────────────────────────────────────────────────────────────────────── */
 function renderForecastKPIs() {
+  /* El forecast termina en diferido: la card Stock de Salud se re-dibuja acá (v54.2). */
+  if (typeof renderSalud === 'function') setTimeout(renderSalud, 0);
   const items = FORECAST_DATA.items;
   const ARS = fmtCurrency;
 
@@ -8730,6 +8845,7 @@ function renderDashboard(renderData){
   }
   // Sincronizar toggle fiscal y parámetros fiscales con el estado actual
   syncParamsFiscalesUI();
+  _resumenFiscal();
   const _cbFiscal = document.getElementById('toggle-fiscal');
   if (_cbFiscal) {
     _cbFiscal.checked = (NEXUS_FISCAL === 'MONO');
@@ -8820,8 +8936,18 @@ function renderDashboard(renderData){
   const fFrom=document.getElementById('date-from').value;
   const fTo=document.getElementById('date-to').value;
   const periodo=fFrom&&fTo?`${fFrom} → ${fTo}`:'Período completo';
-  document.getElementById('topbar-meta').innerHTML=
-    `<strong>${G.filename}</strong><br>${flag} ${G.country} · ${CURRENCY_CODE} · ${periodo} · ${NUM(nVentas)} ventas`;
+  /* v54.2: la barra superior muestra el nombre de la cuenta, no el del archivo
+     (que queda en el tooltip). Ese nombre alimenta también el Informe, la
+     Alerta de stock, el Excel y el Snapshot. */
+  const _rgC = rangoCuenta();
+  const _rangoTxt = (_rgC.desde && _rgC.hasta)
+    ? _fmtDMA(_rgC.desde) + ' → ' + _fmtDMA(_rgC.hasta) + ' · ' + _rgC.dias + ' días' : periodo;
+  G.cuentaNombre = nombreCuenta();
+  G._ventasCuenta = { totVN, nVentas, esRI: _esRIdash, pubPct: totVN > 0 ? pubVN / totVN : 0, rangoTxt: _rangoTxt };
+  const _tm = document.getElementById('topbar-meta');
+  _tm.title = 'Archivo: ' + G.filename;
+  _tm.innerHTML = `<div class="acct-name">${String(G.cuentaNombre).replace(/</g,'&lt;')}</div>`
+    + `<div class="acct-meta">${flag} ${G.country} · ${CURRENCY_CODE} · ${_rangoTxt} · ${NUM(nVentas)} ventas</div>`;
 
   /* ── Panel builder ── */
   function panel(gridId,title,sub,html,full=false){
@@ -9434,6 +9560,7 @@ function renderDashboard(renderData){
   const tabSov = document.getElementById('tab-sov');
   if (tabSov) tabSov.style.display = (CAMPAIGNS_DATA && CAMPAIGNS_DATA.loaded) ? 'inline-block' : 'none';
 
+  G._stockResumen = null;   // lo completa renderFULLTab si hay FULL (v54.2)
   if (FULL_DATA.loaded) {
     document.getElementById('tab-full').style.display = 'inline-block';
     try {
@@ -9451,6 +9578,8 @@ function renderDashboard(renderData){
   document.getElementById('dashboard').style.display='block';
   DASHBOARD_GENERADO = true;   // desde acá, recargar un archivo sí re-renderiza
   document.getElementById('btn-export').style.display='';
+  const _menuExp = document.getElementById('menu-export');
+  if (_menuExp) _menuExp.style.display = '';
   const btnSnap = document.getElementById('btn-snapshot');
   if (btnSnap) btnSnap.style.display = '';
   const btnInf = document.getElementById('btn-informe');
@@ -9477,6 +9606,7 @@ function renderDashboard(renderData){
   /* El re-render vacía los grids (innerHTML=''), así que el resaltado del
      buscador se pierde. Se repone si hay una ficha abierta. */
   if (typeof reponerResaltadoML === 'function') reponerResaltadoML();
+  renderSalud();
 }
 
 /* ═══════════ UI HELPERS ═══════════ */
@@ -9617,7 +9747,7 @@ function resetDashboard(){
   const _dzp=document.querySelector('#drop-zone .up-txt p');
   if(_dzp){ _dzp.textContent='Exportación de MercadoLibre · AR 🇦🇷 MX 🇲🇽 CL 🇨🇱 y otros · .xlsx .xls .csv'; _dzp.style.color=''; }
   if(typeof actualizarHintCarga==='function') actualizarHintCarga();
-  switchTab('general');
+  switchTab('salud');
 }
 
 /* ═══════════ EXPORT TO EXCEL ═══════════ */
@@ -10936,8 +11066,8 @@ function exportarExcel(){
     wb.Workbook.Sheets = wb.SheetNames.map(n => ({ name: n, Hidden: n === HOJA_METODOLOGIA ? 2 : 0 }));
   } catch (e) { console.warn('[Export] metodología no incluida:', e.message); }
 
-  XLSX.writeFile(wb,`EVO_${G.filename.replace(/\.[^.]+$/,'')}_${new Date().toISOString().slice(0,10)}.xlsx`);
-  btn.disabled=false;btn.textContent='↓ Exportar Excel';
+  XLSX.writeFile(wb,`EVO_${nombreArchivoCuenta()}.xlsx`);   // v54.2: nombre de la cuenta + rango
+  btn.disabled=false;btn.textContent='Excel';
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -13946,6 +14076,7 @@ function renderFULLTab(useML, idLabel) {
   const totalClasificado = totalBuena + totalAtencion;
   const criticos      = items.filter(i => i.v30 > 0 && i.diasInv <= 14).length;
   const sinStock      = items.filter(i => i.v30 > 0 && i.aptas === 0).length;
+  if (G) G._stockResumen = { criticos, sinStock };   // card Stock de Salud (v54.2)
 
   const kpiDiv = document.createElement('div');
   kpiDiv.className = 'kpi-row';
@@ -14246,6 +14377,214 @@ function _pintarSemaforoPauta() {
     if (b) a.classList.add(ST_KPI[b]);
     const sub = row.querySelector('[data-kpi-sub="acos"]');
     if (sub && sc && sc.be !== null && isFinite(sc.be)) sub.textContent = 'Inversión / Revenue Ads · break-even ' + PCT(sc.be);
+  }
+}
+
+/* ═══════════ SALUD (v54.2) ═══════════
+   Pantalla de inicio: cuatro cards que responden si la cuenta está bien o mal
+   (Ventas · Rentabilidad · Ads · Stock), sin tablas. Cada card lleva a su
+   pestaña. No calcula nada propio: lee lo que ya dejaron el render general
+   (G._ventasCuenta), Rentabilidad (G._semaforo), Publicidad (G._pautaCuenta),
+   FULL (G._stockResumen) y el forecast (calcRiesgoQuiebre). Por eso se vuelve
+   a dibujar al final de cada uno. */
+const _ST_ORDEN = { ok2: 0, ok: 1, warn: 2, bad: 3, bad2: 4 };
+function _peorBanda() {
+  let p = null;
+  for (const b of arguments) if (b && (p === null || _ST_ORDEN[b] > _ST_ORDEN[p])) p = b;
+  return p;
+}
+function _fmtDMA(d) {
+  return (d instanceof Date && !isNaN(d))
+    ? String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear()).slice(-2) : '';
+}
+/* Rango de los datos que se están mirando: el filtro, o todo el reporte. */
+function rangoCuenta() {
+  let d = G && G._lastFilter && G._lastFilter.from, h = G && G._lastFilter && G._lastFilter.to;
+  if (!(d instanceof Date) || !(h instanceof Date)) {
+    d = null; h = null;
+    ((G && G.records) || []).forEach(r => {
+      const f = r && r.fecha;
+      if (f instanceof Date && !isNaN(f)) { if (!d || f < d) d = f; if (!h || f > h) h = f; }
+    });
+  }
+  const dia = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  const dias = (d && h) ? Math.round((dia(h) - dia(d)) / 86400000) + 1 : null;
+  return { desde: d, hasta: h, dias };
+}
+/* Nombre de la cuenta (v54.2): la tienda oficial de mayor facturación o, si no
+   vende por tienda oficial, "VENTAS AR/MX/CL". Reemplaza al nombre del archivo
+   en pantalla y en las salidas. El nombre del archivo se sigue guardando porque
+   el número de cuenta que trae asocia los inputs del Forecast. */
+function nombreCuenta() {
+  const R = G && G._lastRender;
+  const tm = (R && R.tiendaMap) || (G && G.tiendaMap) || {};
+  const val = t => (t.venta_neta || t.ingresos_brutos || t.liquidez || 0);
+  const tiendas = Object.values(tm)
+    .filter(t => t && t.id && !/^mercado ?libre$/i.test(String(t.id).trim()) && val(t) > 0)
+    .sort((a, b) => val(b) - val(a));
+  return tiendas.length ? String(tiendas[0].id).trim() : 'VENTAS ' + ((G && G.country) || '');
+}
+function nombreArchivoCuenta() {
+  const r = rangoCuenta();
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const base = nombreCuenta().replace(/[^\w\sáéíóúÁÉÍÓÚñÑ-]/g, '').trim().replace(/\s+/g, '_') || 'cuenta';
+  return base + (r.desde && r.hasta ? '_' + iso(r.desde) + '_a_' + iso(r.hasta) : '');
+}
+/* Un grupo de pestañas sin ninguna visible no muestra su etiqueta. */
+function _gruposTabs() {
+  document.querySelectorAll('.tabs .tab-group').forEach(g => {
+    const vis = Array.prototype.some.call(g.querySelectorAll('.tab-btn'), b => b.style.display !== 'none');
+    g.style.display = vis ? '' : 'none';
+  });
+}
+function _resumenFiscal() {
+  const el = document.getElementById('fiscal-resumen');
+  if (!el) return;
+  const ri = (typeof NEXUS_FISCAL !== 'undefined' && NEXUS_FISCAL === 'RI');
+  const c = (G && G.country) || '';
+  let t = 'Fiscal: ' + (c === 'MX' ? (ri ? 'con RFC' : 'sin RFC') : (ri ? 'Responsable' : 'Exento'));
+  if (c === 'AR') {
+    const ii = document.getElementById('fp-iibb'), iv = document.getElementById('fp-iva-ar');
+    if (ii && ii.value !== '') t += ' · IIBB ' + String(ii.value).replace('.', ',') + ' %';
+    if (iv) t += ' · IVA ' + String(Math.round(parseFloat(iv.value) * 1000) / 10).replace('.', ',') + ' %';
+  }
+  if (c === 'MX' && ri) {
+    const is = document.getElementById('fp-isr-mx');
+    if (is) t += ' · ISR ' + (is.value === '1' ? 'como costo' : 'a cuenta');
+  }
+  el.textContent = t;
+}
+/* Monto abreviado para los héroes de Salud: a 44 px un "$ 302.404.658" no entra
+   en la card. El monto completo queda en la línea de abajo. */
+function fmtCompacto(v) {
+  const sym = fmtCurrency(0).replace(/0/g, '').trim();
+  const a = Math.abs(v || 0), sg = v < 0 ? '−' : '';
+  const n = (x, d) => x.toFixed(d).replace('.', ',');
+  const t = a >= 1e9 ? n(a / 1e9, 1) + ' mil M' : a >= 1e6 ? n(a / 1e6, 1) + ' M' : a >= 1e4 ? n(a / 1e3, 0) + ' k' : NUM(Math.round(a));
+  return sg + sym + ' ' + t;
+}
+function renderSalud() {
+  const grid = document.getElementById('salud-grid'), strip = document.getElementById('salud-alertas');
+  if (!grid || !G || !G._ventasCuenta) return;
+  const V = G._ventasCuenta, S = G._semaforo, sc = semaforoCuenta(), P = G._pautaCuenta, K = G._stockResumen;
+  const ARS = fmtCurrency;
+  const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const st = b => b ? ' data-st="' + b + '"' : '';
+  const dot = b => b ? '<span class="st-dot"></span>' : '';
+  const card = (tab, estado, html, vacia) => '<article class="health-card' + (vacia ? ' is-empty' : '') + '"'
+    + (vacia ? '' : ' tabindex="0"') + ' data-go="' + tab + '"' + st(estado) + '>' + html + '</article>';
+  const link = t => '<div class="hc-link">Ver ' + t + '</div>';
+  const cards = [];
+
+  // Ventas
+  cards.push(card('general', null,
+    '<div class="hc-q">Ventas</div><div class="hc-hero" title="' + ARS(V.totVN) + '">' + fmtCompacto(V.totVN) + '</div>'
+    + '<div class="hc-cap">' + (V.esRI ? 'Facturación neta (sin IVA)' : 'Facturación') + ' · ' + ARS(V.totVN) + '</div>'
+    + '<ul class="hc-sec"><li>' + NUM(V.nVentas) + ' <span class="m">ventas</span></li>'
+    + '<li class="m">' + esc(V.rangoTxt) + '</li></ul>' + link('ventas')));
+
+  // Rentabilidad
+  let stR = null;
+  if (S && sc) {
+    const hero = sc.usaPost ? S.mPost : S.mPre;
+    stR = bandaMargen(hero, sc.usaPost);
+    let sec = '';
+    if (S.mPost !== null) {
+      const otro = sc.usaPost ? S.mPre : S.mPost, bO = bandaMargen(otro, !sc.usaPost);
+      sec += '<li' + st(bO) + '>' + dot(bO) + '<strong class="st-val">' + PCT(otro) + '</strong> '
+        + (sc.usaPost ? 'antes de mercadería <span class="m">· piso 35 %</span>' : 'margen final <span class="m">· piso 15 %</span>') + '</li>';
+      sec += '<li class="m">El COGS cubre el ' + Math.round(S.cobCogs * 100) + ' % del revenue'
+        + (sc.usaPost ? '' : ': el margen final pasa a ser el principal desde el 93 %') + '</li>';
+    } else {
+      sec += '<li class="m">Sin COGS cargado: falta el margen final</li>';
+    }
+    cards.push(card('rent', stR,
+      '<div class="hc-q">Rentabilidad</div><div class="hc-hero st-val"' + st(stR) + '>' + dot(stR) + PCT(hero) + '</div>'
+      + '<div class="hc-cap">' + (sc.usaPost ? 'Margen final · piso 15 %' : 'Margen antes de mercadería · piso 35 %') + '</div>'
+      + '<ul class="hc-sec">' + sec + '</ul>' + link('rentabilidad')));
+  } else {
+    cards.push(card('rent', null, '<div class="hc-q">Rentabilidad</div><div class="hc-hero hc-vacio">Sin datos</div>' + link('rentabilidad')));
+  }
+
+  // Ads
+  let stA = null;
+  const pubLi = '<li><strong>' + PCT(V.pubPct) + '</strong> <span class="m">de la venta viene de publicidad</span></li>';
+  if (P && P.inv > 0) {
+    const bT = P.desalineado ? null : (sc ? sc.banda : null);
+    const bA = sc ? bandaAcos(P.acos, sc.be) : null;
+    stA = _peorBanda(bT, bA);
+    const beOk = sc && sc.be !== null && isFinite(sc.be);
+    cards.push(card('pub', stA,
+      '<div class="hc-q">Ads</div><div class="hc-pair">'
+      + '<div><div class="hc-hero st-val"' + st(bT) + '>' + dot(bT) + (P.desalineado ? '—' : PCT(P.tacos)) + '</div>'
+      + '<div class="hc-cap">TACoS' + (P.desalineado ? ' · rangos desalineados' : '') + '</div></div>'
+      + '<div><div class="hc-hero st-val"' + st(bA) + '>' + dot(bA) + PCT(P.acos) + '</div>'
+      + '<div class="hc-cap">ACoS' + (beOk ? ' · break-even ' + PCT(sc.be) : '') + '</div></div></div>'
+      + '<ul class="hc-sec"><li>Inversión <strong>' + ARS(P.inv) + '</strong></li>' + pubLi + '</ul>'
+      + (P.sinRetorno > 0 ? '<div class="hc-alert">' + ARS(P.sinRetorno) + ' invertidos sin retorno</div>' : '')
+      + link('publicidad')));
+  } else {
+    cards.push(card('pub', null,
+      '<div class="hc-q">Ads</div><div class="hc-hero hc-vacio">Sin reporte de Anuncios</div>'
+      + '<ul class="hc-sec">' + pubLi + '<li class="m">Cargá el reporte de Anuncios para ver TACoS y ACoS</li></ul>' + link('publicidad')));
+  }
+
+  // Stock
+  let stS = null, tabS = null;
+  const fcOk = (typeof FORECAST_DATA !== 'undefined') && FORECAST_DATA.calculated;
+  const RQ = (fcOk && typeof calcRiesgoQuiebre === 'function') ? calcRiesgoQuiebre() : null;
+  const fcLi = RQ ? ('<li><strong>' + ARS(RQ.hoyRev || 0) + '</strong> <span class="m">en riesgo hoy por quiebre</span></li>'
+    + (RQ.proxFecha ? '<li><span class="m">Próximo quiebre:</span> <strong>' + _fmtDMA(new Date(RQ.proxFecha)) + '</strong></li>' : '')) : '';
+  if (K) {
+    stS = K.criticos > 0 ? 'bad' : 'ok'; tabS = 'full';
+    cards.push(card('full', stS,
+      '<div class="hc-q">Stock</div><div class="hc-hero st-val"' + st(stS) + '>' + dot(stS) + NUM(K.criticos) + '</div>'
+      + '<div class="hc-cap">Publicaciones críticas · cubren 14 días o menos</div>'
+      + '<ul class="hc-sec"><li><strong>' + NUM(K.sinStock) + '</strong> <span class="m">sin stock</span></li>' + fcLi + '</ul>'
+      + link('stock')));
+  } else if (RQ) {
+    stS = (RQ.hoyN || 0) > 0 ? 'bad' : 'ok'; tabS = 'forecast';
+    cards.push(card('forecast', stS,
+      '<div class="hc-q">Stock</div><div class="hc-hero st-val"' + st(stS) + '>' + dot(stS) + NUM(RQ.hoyN || 0) + '</div>'
+      + '<div class="hc-cap">Publicaciones con riesgo de quiebre</div>'
+      + '<ul class="hc-sec">' + fcLi + '</ul>' + link('forecast')));
+  } else {
+    cards.push(card('full', null,
+      '<div class="hc-q">Stock</div><div class="hc-hero hc-vacio">Sin datos de stock</div>'
+      + '<ul class="hc-sec"><li class="m">No se cargó Stock FULL ni el reporte de publicaciones, así que no hay forecast.</li></ul>', true));
+  }
+  grid.innerHTML = cards.join('');
+
+  // Franja de advertencias: sólo si hay algo que advertir
+  if (strip) {
+    const al = [];
+    if (P && P.desalineado) al.push('El reporte de Anuncios no coincide con el período filtrado: el TACoS no se puede calcular');
+    if (S && S.mPost !== null && S.cobCogs < UMBRAL_COB_COGS) al.push('El COGS cubre el ' + Math.round(S.cobCogs * 100) + ' % del revenue');
+    if ((G._flexSinMedir || 0) > 0) al.push('Envío propio sin costo cargado en ' + G._flexSinMedir + ' publicaciones');
+    strip.innerHTML = al.map(t => '<span class="alert-chip">' + esc(t) + '</span>').join('');
+  }
+
+  // Luces de las pestañas: se prenden con alerta (warn o peor)
+  const luz = (id, b) => {
+    const el = document.getElementById(id); if (!el) return;
+    if (b && _ST_ORDEN[b] >= 2) el.setAttribute('data-st', b); else el.removeAttribute('data-st');
+  };
+  luz('tab-rent', stR); luz('tab-pub', stA);
+  luz('tab-full', tabS === 'full' ? stS : null); luz('tab-forecast', tabS === 'forecast' ? stS : null);
+  _gruposTabs();
+
+  if (!grid._evo) {
+    grid._evo = true;
+    const ir = e => {
+      const c = e.target.closest('.health-card');
+      if (!c || c.classList.contains('is-empty')) return;
+      const b = document.getElementById('tab-' + c.dataset.go);
+      if (b && b.style.display === 'none') return;
+      switchTab(c.dataset.go);
+      window.scrollTo(0, 0);
+    };
+    grid.addEventListener('click', ir);
+    grid.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ir(e); } });
   }
 }
 
@@ -14687,6 +15026,7 @@ function renderRentKPIs(skuMap) {
 
   kpiRow.innerHTML = kpis;
   _pintarSemaforoPauta();
+  renderSalud();
 }
 
 /* ═══════════ COSTO DE ENVÍO POR CANAL ═══════════
@@ -14702,6 +15042,7 @@ function renderRentKPIs(skuMap) {
    Mostrar un "$0" en Flex sería la lectura más peligrosa del tablero: diría que
    despachar por cuenta propia es gratis. */
 function _kpisEnvioPorCanal(skuMap) {
+  if (G) G._flexSinMedir = 0;
   if (!skuMap) return '';
   const net = (typeof fiscalNetFactor === 'function') ? fiscalNetFactor() : 1;
   const acc = {};
@@ -14746,6 +15087,7 @@ function _kpisEnvioPorCanal(skuMap) {
     /* Sin template cargado, la tarjeta de Flex no muestra $0: muestra cuántas
        publicaciones y unidades quedaron sin medir. */
     const sinDato = esFlex && a.itemsFlexSin > 0;
+    if (esFlex && G) G._flexSinMedir = a.itemsFlexSin;   // franja de Salud (v54.2)
     const valor = esFlex && a.flex <= 0 && sinDato ? 'sin medir' : fmtCurrency(monto);
     const sub = esFlex
       ? (sinDato
@@ -14850,7 +15192,7 @@ function renderPubKPIs(skuMap) {
   
   /* El color de ACoS y TACoS lo pone _pintarSemaforoPauta con los umbrales
      inteligentes (v54.0); acá sólo se guarda el ACoS de la cuenta. */
-  if (G) G._pautaCuenta = { acos };
+  if (G) G._pautaCuenta = { acos, tacos, inv: invTotal, desalineado: _adsDesalineado, sinRetorno: 0 };
   
   if (invTotal === 0) {
     kpiRow.innerHTML = `<div class="kpi" style="grid-column:span 5;text-align:center;"><div class="kpi-label">Sin reporte de publicidad cargado</div><div class="kpi-sub">Cargá un reporte de Ads para ver estas métricas</div></div>`;
@@ -14917,6 +15259,7 @@ function renderPubKPIs(skuMap) {
         <div class="kpi-sub">${pubsSinVentas} pub${pubsSinVentas>1?'s':''} sin ninguna venta · ${invTotal>0?((invSinVentas/invTotal)*100).toFixed(0):0}% del gasto</div></div>`
     : '';
   
+  if (G && G._pautaCuenta) G._pautaCuenta.sinRetorno = invSinRetorno + invSinVentas;   // card Ads de Salud (v54.2)
   kpiRow.innerHTML = `
     <div class="kpi"><div class="kpi-label">Inversión Ads</div>
       <div class="kpi-value">${fmtCurrency(invTotal)}</div>
