@@ -215,6 +215,13 @@
   .acc-ids{margin-left:auto;font-family:var(--mono);font-size:var(--fs-micro);color:var(--muted);}
   .acc-body{padding:0 0 var(--sp-2);}
   .row-alerts{display:flex;flex-wrap:wrap;gap:var(--sp-1);margin-top:var(--sp-1);}
+  /* v54.5 · Selector de dos vistas de una misma tabla (Pareto) */
+  .seg-sw{display:inline-flex;margin-left:auto;}
+  .seg-sw button{padding:3px 10px;font-size:var(--fs-micro);font-weight:500;letter-spacing:.5px;font-family:var(--mono);cursor:pointer;
+    background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .seg-sw button:first-child{border-radius:4px 0 0 4px;}
+  .seg-sw button:last-child{border-radius:0 4px 4px 0;border-left:0;}
+  .seg-sw button.on{background:rgba(var(--accent-rgb),.22);color:var(--accent2);border-color:var(--accent);}
 
   .pub-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
   .pub-half{background:var(--surface);padding:20px 24px;}
@@ -971,6 +978,8 @@
   </div>
 
   <div id="view-general" style="display:none">
+    <!-- v54.5: la card Ventas de Salud en una línea -->
+    <div class="band" id="ventas-band"><span class="band-vals" id="ventas-band-vals"></span></div>
     <div class="kpi-row" id="kpi-row"></div>
     <div class="pub-split" id="pub-split"></div>
 
@@ -1232,6 +1241,7 @@ const _GLOSARIO = [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
   ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
+  ['Pareto en una tabla (v54.5)','Selector Facturación | Unidades','Pareto Facturación y Pareto Volumen compartían estructura: son una sola tabla con dos vistas. La de Unidades marca los falsos héroes en rojo. El selector recuerda la vista elegida al cambiar filtros.'],
   ['Pestaña Publicidad (v54.4)','Franja · Sin Retorno · por producto · campañas','La franja repite la card Ads de Salud: TACoS y ACoS con su color, break-even, inversión, revenue y ventas por Ads, peso de la venta por publicidad e inversión sin retorno. Debajo, en orden: Inversión Sin Retorno (la acción), la tabla por producto y las campañas. Publicidad por SKU y TACOS por SKU se fusionaron en una sola tabla con inversión, ingresos atribuidos (con la advertencia de ventas indirectas), revenue, TACOS, % del margen, ROAS, revenue de sesión y peso. Sin reporte de Anuncios se muestra la tabla por flag de venta por publicidad, que es la única posible. Las tarjetas de la pauta quedan en el acordeón Detalle de la pauta.'],
   ['Semáforo de TACoS (v54.0)','Según el margen que deja la pauta','El TACoS no tiene un porcentaje fijo: se colorea por el margen P&L que le queda al producto (o a la cuenta) después de pagar la pauta, con el piso del semáforo de margen: 35 % antes de COGS, 15 % con COGS. El badge TACOS↑ aparece cuando la pauta perfora el piso: naranja dentro de los primeros 10 puntos, rojo por debajo.'],
   ['Semáforo de ACoS y ROAS (v54.0)','Contra el break-even','El break-even de ACoS es el margen antes de Ads (después de COGS si hay costo cargado), medido sobre el bruto y dividido por el factor neto de los cargos, porque el ACoS compara inversión e ingresos con IVA. Verde intenso con 20 puntos o más de colchón, verde entre 10 y 20, naranja a menos de 10, rojo por encima del break-even y rojo intenso a más de 10 puntos. El ROAS usa la misma banda (ROAS = 1 ÷ ACoS). Por publicación se usa el break-even de la publicación; en campañas y anuncios, el de la cuenta.'],
@@ -1597,7 +1607,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v54.4';
+const EVO_VERSION = 'v54.5';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -8982,6 +8992,13 @@ function renderDashboard(renderData){
     ? _fmtDMA(_rgC.desde) + ' → ' + _fmtDMA(_rgC.hasta) + ' · ' + _rgC.dias + ' días' : periodo;
   G.cuentaNombre = nombreCuenta();
   G._ventasCuenta = { totVN, nVentas, esRI: _esRIdash, pubPct: totVN > 0 ? pubVN / totVN : 0, rangoTxt: _rangoTxt };
+  const _vbv = document.getElementById('ventas-band-vals');
+  if (_vbv) _vbv.innerHTML = '<span class="band-q">Ventas</span>'
+    + '<span class="band-val" title="' + ARS(totVN) + '">' + fmtCompacto(totVN) + '</span>'
+    + '<span class="m">' + (_esRIdash ? 'facturación neta (sin IVA) · ' : 'facturación · ') + ARS(totVN) + '</span>'
+    + '<span class="m"><strong style="color:var(--text)">' + NUM(nVentas) + '</strong> ventas · <strong style="color:var(--text)">'
+    + NUM(totUni) + '</strong> unidades despachadas</span>'
+    + '<span class="m">' + _rangoTxt + '</span>';
   const _tm = document.getElementById('topbar-meta');
   _tm.title = 'Archivo: ' + G.filename;
   _tm.innerHTML = `<div class="acct-name">${String(G.cuentaNombre).replace(/</g,'&lt;')}</div>`
@@ -9038,6 +9055,7 @@ function renderDashboard(renderData){
     return `<td class="num" style="color:${clr};cursor:help${sinCogs ? ';font-style:italic' : ''}" title="${ttl}">${PCT(m.v)}</td>`;
   };
 
+  let _pFact = '';   // v54.5: los dos Pareto se muestran en una sola tabla con selector
   {
     let html=`<table><thead><tr><th>${idLabel}</th><th>Producto</th><th class="r">Revenue propio</th><th class="r">${_mgHdr}</th><th>Acumulado →80%</th><th>Cruce</th></tr></thead><tbody>`;
     let div=false;
@@ -9047,7 +9065,7 @@ function renderDashboard(renderData){
       const tag=i.esCore80?(inVol?`<span class="tag tag-ok">REV+VOL</span>`:`<span class="tag tag-accent">TOP REV</span>`):(inVol?`<span class="tag tag-warn">FALSO HÉROE</span>`:'');
       html+=`<tr class="${i.esCore80?'core-row':''}"><td>${idWithTitle(i.id)}${badgesFor(i)}${relationshipChip(i.id)}</td>${tituloCell(i.id)}<td class="num">${ARS(i.venta_neta)}</td>${margenParetoCell(i)}<td>${pctBar(i.acumulado,i.esCore80)}</td><td>${tag}</td></tr>`;
     });
-    panel('grid-pareto','Pareto Facturación',`Top 80% Revenue${NEXUS_FISCAL==='RI'?' (venta neta, sin IVA)':''} · acumulado por ${idLabel}`,html+'</tbody></table>',true);
+    _pFact = html+'</tbody></table>';
   }
 
   {
@@ -9059,7 +9077,17 @@ function renderDashboard(renderData){
       const tag=isFH?`<span class="tag tag-danger">FALSO HÉROE</span>`:(i.esCore80&&inFact)?`<span class="tag tag-ok">REV+VOL</span>`:'';
       html+=`<tr class="${isFH?'fh-row':i.esCore80?'core-row':''}"><td>${idWithTitle(i.id)}${relationshipChip(i.id)}</td>${tituloCell(i.id)}<td class="num">${NUM(i.unidades)}</td>${margenParetoCell(i)}<td>${pctBar(i.acumulado,i.esCore80)}</td><td>${tag}</td></tr>`;
     });
-    panel('grid-pareto','Pareto Volumen',`Top 80% Despachos · acumulado por ${idLabel}`,html+'</tbody></table>',true);
+    const _pVol = html+'</tbody></table>';
+    const _modo = (typeof PARETO_MODO !== 'undefined' && PARETO_MODO === 'vol') ? 'vol' : 'fact';
+    const _sw = '<div class="seg-sw">'
+      + '<button type="button" class="' + (_modo === 'fact' ? 'on' : '') + '" onclick="_paretoModo(this,\'fact\')">FACTURACIÓN</button>'
+      + '<button type="button" class="' + (_modo === 'vol' ? 'on' : '') + '" onclick="_paretoModo(this,\'vol\')">UNIDADES</button></div>';
+    panel('grid-pareto', 'Pareto',
+      `Top 80 % · acumulado por ${idLabel} · Facturación: revenue${NEXUS_FISCAL==='RI'?' neto (sin IVA)':''} · Unidades: despachos, con los falsos héroes en rojo`,
+      _sw + '<div data-pareto="fact"' + (_modo === 'fact' ? '' : ' style="display:none"') + '>' + _pFact + '</div>'
+          + '<div data-pareto="vol"' + (_modo === 'vol' ? '' : ' style="display:none"') + '>' + _pVol + '</div>', true);
+    const _pp = document.getElementById('grid-pareto').lastElementChild;
+    if (_pp) { const _sw2 = _pp.querySelector('.seg-sw'), _hd = _pp.querySelector('.panel-header'); if (_sw2 && _hd) _hd.appendChild(_sw2); }
   }
 
   /* ── Contribución por visita ──
@@ -14529,6 +14557,15 @@ function fmtCompacto(v) {
   const n = (x, d) => x.toFixed(d).replace('.', ',');
   const t = a >= 1e9 ? n(a / 1e9, 1) + ' mil M' : a >= 1e6 ? n(a / 1e6, 1) + ' M' : a >= 1e4 ? n(a / 1e3, 0) + ' k' : NUM(Math.round(a));
   return sg + sym + ' ' + t;
+}
+/* Selector del Pareto (v54.5): alterna entre las dos tablas sin re-dibujar. */
+let PARETO_MODO = 'fact';
+function _paretoModo(btn, modo) {
+  PARETO_MODO = modo;
+  const panelEl = btn.closest('.panel');
+  if (!panelEl) return;
+  panelEl.querySelectorAll('.seg-sw button').forEach(b => b.classList.toggle('on', b === btn));
+  panelEl.querySelectorAll('[data-pareto]').forEach(d => { d.style.display = d.getAttribute('data-pareto') === modo ? '' : 'none'; });
 }
 function renderSalud() {
   const grid = document.getElementById('salud-grid'), strip = document.getElementById('salud-alertas');
