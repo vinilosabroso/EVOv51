@@ -148,6 +148,11 @@
   /* ══ v54.2 · Salud ══ */
   .alerts-strip{display:flex;flex-wrap:wrap;gap:var(--sp-2);padding:var(--sp-4) var(--gutter) 0;}
   .alerts-strip:empty{display:none;}
+  /* v55.2 · Cobertura parcial del COGS: cartel visible en Rentabilidad */
+  .cogs-aviso{margin:var(--sp-3) var(--gutter) 0;padding:var(--sp-3) var(--sp-4);border:1px solid var(--warn);border-left-width:4px;border-radius:8px;
+    background:rgba(251,146,60,.10);}
+  .cogs-aviso-t{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--warn);}
+  .cogs-aviso-d{font-family:var(--mono);font-size:var(--fs-label);color:var(--text);margin-top:var(--sp-1);line-height:1.6;}
   .alert-chip{display:inline-flex;align-items:center;gap:var(--sp-2);font-family:var(--mono);font-size:var(--fs-label);color:var(--warn);
     background:rgba(var(--warn-rgb),.08);border:1px solid rgba(var(--warn-rgb),.35);border-radius:99px;padding:5px 12px;}
   .alert-chip::before{content:'!';font-weight:700;width:14px;height:14px;border-radius:50%;display:inline-grid;place-items:center;
@@ -1170,6 +1175,7 @@
         <span id="flex-status" style="font-family:var(--mono);font-size:10px;color:var(--muted);"></span>
       </span>
     </div>
+    <div class="cogs-aviso" id="cogs-cobertura-aviso" style="display:none"></div>
     <div class="cascade" id="rent-cascade"></div>
     <details class="acc" id="rent-acc-costos">
       <summary><span class="acc-title">Desglose de costos</span><span class="acc-kpi" id="rent-acc-kpi"></span><span class="acc-ids">márgenes · costos · envío por canal</span></summary>
@@ -1351,7 +1357,7 @@ const _GLOSARIO = [
   ['Card Ads','TACoS y ACoS lado a lado','El TACoS se colorea por el margen que le deja la pauta a la cuenta y el ACoS contra el break-even. Debajo, la inversión, el peso de la venta por publicidad y, si existe, la inversión sin retorno (con y sin ventas orgánicas).'],
   ['Card Stock','Críticos de FULL o riesgo del forecast','Con Stock FULL: publicaciones que cubren 14 días o menos y las que están sin stock. Con forecast: revenue en riesgo hoy y fecha del próximo quiebre. Sin ninguno de los dos, la card queda en su lugar mostrando que falta el dato.'],
   ['Luces de las pestañas','Apagadas por defecto, violeta con alerta','Cada pestaña de Chequeo tiene una luz que se prende cuando su card está en naranja o rojo. La pestaña activa se marca sólo con el color del texto.'],
-  ['Franja de advertencias','Sólo aparece si hay algo que advertir','Reporte de Anuncios con otro período que el filtro, COGS que no cubre el 93 % del revenue, publicaciones con envío propio sin costo cargado y, desde v55.1, reporte de ventas incompleto o en formato de costos promedio en Argentina.'],
+  ['Franja de advertencias','Sólo aparece si hay algo que advertir','Reporte de Anuncios con otro período que el filtro, COGS que no cubre el 93 % del revenue, publicaciones con envío propio sin costo cargado y, desde v55.1, reporte de ventas incompleto o en formato de costos promedio en Argentina. Desde v55.2 el aviso del COGS aparece con cualquier cobertura menor al 100 % (antes, sólo debajo del 93 %).'],
   ['Nombre de la cuenta','Tienda oficial o VENTAS AR / MX / CL','La barra superior, el Informe, la Alerta de stock, el Excel y el Snapshot usan la tienda oficial de mayor facturación o, si no hay, "VENTAS" y el país, con el rango de fechas de los datos. El nombre del archivo queda en el tooltip y el número de cuenta se sigue usando para asociar los inputs del Forecast.'],
  ]],
  ['Monotributo y validación con facturas (v55.1)', [
@@ -1362,6 +1368,7 @@ const _GLOSARIO = [
   ['Monotributo: el IVA no se recupera','Factura A con leyenda de la Ley 27.618','ML le emite factura A al monotributista, con IVA discriminado y la leyenda de que ese crédito sólo se computa dentro del Régimen de Sostenimiento e Inclusión Fiscal. Fuera de ese régimen es costo. En EVO: cargos de ML tal cual (netFee = 1), publicidad × 1,21 y COGS con IVA. Las percepciones de IIBB de la factura también son costo si no está inscripto en esa jurisdicción (ver Percepciones de la factura mensual).'],
   ['COGS de un monotributista','Costo del template × (1 + IVA de los productos)','El template pide el costo sin IVA, pero al monotributista el proveedor le cobra el IVA. EVO se lo suma por defecto. Si el costo cargado ya es el final (proveedor monotributista, o se llenó con IVA), se elige "COGS tal cual" en el panel Fiscal. Es el supuesto que más mueve el margen de un monotributista: en una cuenta medida pasó el resultado de +0,3% a −9% de las ventas.'],
   ['Reembolsos parciales y cargos sin columna','Total − suma de columnas, en cada venta válida','Hasta v55.0 EVO armaba lo recibido sólo con las columnas, así que lo que la columna Total descontaba sin columna propia quedaba afuera del resultado. Dos casos medidos: reembolsos parciales en ventas que siguen válidas (por ejemplo "Te dimos parte del dinero del producto que te devolvieron", −32.262 en un mes) y un descuento de $780 por venta que ML aplica desde el 29/09/2026 en 20 ventas sin informarlo en ninguna columna. Ahora entra como línea propia del estado de resultados. No incluye el envío a cargo del comprador en despacho propio, que sigue siendo partida informativa.'],
+  ['Cobertura parcial del COGS (v55.2)','Cartel en Rentabilidad y aviso en Salud cuando el template cubre menos del 100 % de las ventas','El resultado final y el margen final se calculan sólo sobre las publicaciones con costo cargado: las que no tienen costo quedan afuera con su venta y su ganancia, así que el número no es el de la cuenta completa. El cartel aparece apenas se carga el template y lista las publicaciones sin costo ordenadas por venta. Ejemplo: con 98,7 % de cobertura, el margen final sobre ventas netas de una cuenta dio −10,6 % en lugar de −10,3 %.'],
   ['Mercadería perdida en reclamos','COGS × unidades de reclamos o mediaciones cerrados con reembolso','Cuando el reclamo se cierra con reembolso y el producto no vuelve, el comprador recupera la plata y el vendedor pierde la mercadería. El Total de esas ventas suele dar 0, así que antes no costaban nada. Las devoluciones finalizadas no entran porque el producto regresó.'],
   ['Reporte de ventas incompleto','Aviso en la franja de Salud','Cuando el Excel sale con faltantes, ML lo avisa arriba de los encabezados ("No pudimos mostrar algunos datos") y algunas ventas llegan sin importes ni Total. EVO no puede calcularlas, así que quedan afuera. Medido: 5 ventas entregadas por $113.940 en un mes. Ahora EVO las cuenta y avisa que hay que volver a descargar el reporte.'],
   ['Formato de costos promedio en Argentina','Aviso en la franja de Salud','La columna "Cargo por venta e impuestos" junta la comisión con las retenciones de IIBB, y EVO además resta el IIBB completo: las retenciones se cuentan dos veces (medido: 69.435 en un mes). No se pueden separar porque la alícuota depende de la provincia del comprador (entre 1,5% y 5% en la misma cuenta). Hay que usar el reporte detallado.'],
@@ -1781,7 +1788,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v55.1';
+const EVO_VERSION = 'v55.2';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -15258,7 +15265,7 @@ function renderSalud() {
   if (strip) {
     const al = [];
     if (P && P.desalineado) al.push('El reporte de Anuncios no coincide con el período filtrado: el TACoS no se puede calcular');
-    if (S && S.mPost !== null && S.cobCogs < UMBRAL_COB_COGS) al.push('El COGS cubre el ' + Math.round(S.cobCogs * 100) + ' % del revenue');
+    if (S && S.mPost !== null && S.cobCogs < 0.9995) al.push('El template de COGS cubre el ' + String(Math.floor(S.cobCogs * 1000) / 10).replace('.', ',') + ' % de las ventas: el resultado de rentabilidad está incompleto');
     if ((G._flexSinMedir || 0) > 0) al.push('Envío propio sin costo cargado en ' + G._flexSinMedir + ' publicaciones');
     // v55.1: datos que el reporte de ventas no trajo
     const _inc = G.reporteIncompleto;
@@ -15305,7 +15312,28 @@ function renderSalud() {
   }
 }
 
+/* Cartel de cobertura del COGS (v55.2). Con costo cargado para una parte de las
+   ventas, el resultado final se calcula sólo sobre esa parte: las publicaciones
+   sin costo quedan afuera con su venta y su ganancia. Se avisa en grande apenas
+   se carga el template, con las publicaciones que faltan ordenadas por venta. */
+function _avisoCoberturaCogs(cob, faltan) {
+  const el = document.getElementById('cogs-cobertura-aviso');
+  if (!el) return;
+  if (!(COGS_DATA.loaded && cob < 0.9995)) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const pct = String(Math.floor(cob * 1000) / 10).replace('.', ',');
+  const lista = (faltan || []).sort((a, b) => b.rev - a.rev);
+  const revFalta = lista.reduce((a, x) => a + x.rev, 0);
+  const tit = id => (typeof titleFor === 'function' ? titleFor(id) : '') || '';
+  const e = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const top = lista.slice(0, 5).map(x => e(x.id) + (tit(x.id) ? ' · ' + e(String(tit(x.id)).slice(0, 40)) : '') + ' (' + fmtCurrency(x.rev) + ')').join(' — ');
+  el.innerHTML = '<div class="cogs-aviso-t">⚠ El template de COGS cubre el ' + pct + ' % de las ventas · el resultado de rentabilidad está incompleto</div>'
+    + '<div class="cogs-aviso-d">Faltan costos en ' + lista.length + ' publicaciones con ventas por ' + fmtCurrency(revFalta)
+    + '. El resultado final y el margen se calculan sólo sobre las publicaciones con costo: las que faltan quedan afuera con su venta y su ganancia.'
+    + (top ? '<br>Sin costo: ' + top + (lista.length > 5 ? ' — y ' + (lista.length - 5) + ' más' : '') : '') + '</div>';
+  el.style.display = '';
+}
 function renderRentKPIs(skuMap) {
+  _avisoCoberturaCogs(1, []);   // se apaga; el bloque del COGS lo prende si hace falta (v55.2)
   const kpiRow = document.getElementById('rent-kpi-row');
   const kpiPeriod = document.getElementById('rent-kpi-period');
   if (!kpiRow) return;
@@ -15673,12 +15701,14 @@ function renderRentKPIs(skuMap) {
   if (COGS_DATA.loaded) {
     // Calcular sobre productos CON COGS matcheado (como la hoja Resumen de referencia)
     let cogsTotal = 0, nexusMatcheado = 0, revMatcheado = 0, vnetaMatch = 0, recibMatch = 0, nMatch = 0, nTotal = 0, adsAtrib = 0, retACMatch = 0;
+    const _sinCosto = [];   // publicaciones con ventas y sin costo en el template (v55.2)
     Object.values(skuMap).forEach(s => {
       const n = calcNEXUS(s);
       if (!n) return;
       nTotal++;
       adsAtrib += n.inversionAds || 0;
       const cg = getCOGS(s);
+      if (!cg && (s.ingresos_brutos || 0) > 0) _sinCosto.push({ id: s.id, rev: s.ingresos_brutos });
       if (cg) {
         nMatch++;
         cogsTotal += cg.costo*_uCogs(s);
@@ -15714,6 +15744,7 @@ function renderRentKPIs(skuMap) {
     const margenClr = ST_KPI[bandaMargen(_mVNpost, true)] || '';
     if (G && G._semaforo) Object.assign(G._semaforo, { mPost: _mVNpost,
       cobCogs: revBruto > 0 ? revMatcheado / revBruto : 0, cogs: cogsTotal });
+    _avisoCoberturaCogs(revBruto > 0 ? revMatcheado / revBruto : 0, _sinCosto);
     
     kpis += `<div class="kpi" style="border-color:var(--accent);">
       <div class="kpi-label">COGS total período</div>
