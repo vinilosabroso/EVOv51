@@ -1059,6 +1059,14 @@
           <option value="0.105">IVA productos 10,5%</option>
         </select>
       </span>
+      <span id="fp-ar-mono" style="display:none;align-items:center;gap:6px;">
+        <span class="filter-label">COGS</span>
+        <select id="fp-cogs-mono" class="filter-input" onchange="setParamFiscal()"
+                title="Sólo Monotributo. El template de COGS pide el costo SIN IVA, pero al monotributista el proveedor le cobra el IVA y no lo recupera, así que su costo real es el costo con IVA.&#10;&#10;Sumar IVA: el costo cargado es sin IVA y EVO le suma el IVA de los productos (21% o 10,5%).&#10;&#10;Costo final: el costo cargado ya es lo que se paga (por ejemplo, proveedor monotributista o el template se llenó con IVA).">
+          <option value="1">COGS + IVA</option>
+          <option value="0">COGS tal cual</option>
+        </select>
+      </span>
       <span id="fp-mx" style="display:none;align-items:center;gap:6px;">
         <span class="filter-label">ISR retenido</span>
         <select id="fp-isr-mx" class="filter-input" onchange="setParamFiscal()"
@@ -1343,8 +1351,21 @@ const _GLOSARIO = [
   ['Card Ads','TACoS y ACoS lado a lado','El TACoS se colorea por el margen que le deja la pauta a la cuenta y el ACoS contra el break-even. Debajo, la inversión, el peso de la venta por publicidad y, si existe, la inversión sin retorno (con y sin ventas orgánicas).'],
   ['Card Stock','Críticos de FULL o riesgo del forecast','Con Stock FULL: publicaciones que cubren 14 días o menos y las que están sin stock. Con forecast: revenue en riesgo hoy y fecha del próximo quiebre. Sin ninguno de los dos, la card queda en su lugar mostrando que falta el dato.'],
   ['Luces de las pestañas','Apagadas por defecto, violeta con alerta','Cada pestaña de Chequeo tiene una luz que se prende cuando su card está en naranja o rojo. La pestaña activa se marca sólo con el color del texto.'],
-  ['Franja de advertencias','Sólo aparece si hay algo que advertir','Reporte de Anuncios con otro período que el filtro, COGS que no cubre el 93 % del revenue y publicaciones con envío propio sin costo cargado.'],
+  ['Franja de advertencias','Sólo aparece si hay algo que advertir','Reporte de Anuncios con otro período que el filtro, COGS que no cubre el 93 % del revenue, publicaciones con envío propio sin costo cargado y, desde v55.1, reporte de ventas incompleto o en formato de costos promedio en Argentina.'],
   ['Nombre de la cuenta','Tienda oficial o VENTAS AR / MX / CL','La barra superior, el Informe, la Alerta de stock, el Excel y el Snapshot usan la tienda oficial de mayor facturación o, si no hay, "VENTAS" y el país, con el rango de fechas de los datos. El nombre del archivo queda en el tooltip y el número de cuenta se sigue usando para asociar los inputs del Forecast.'],
+ ]],
+ ['Monotributo y validación con facturas (v55.1)', [
+  ['Qué se validó','Facturas de ML de un monotributista (factura A, agosto 2026) y de un Responsable (factura B, septiembre 2026), con su reporte de facturación','Se compararon los cargos del reporte de ventas, del reporte de facturación y del reporte de Ads contra lo que factura Mercado Libre, línea por línea. De ahí salen las correcciones de esta versión. Afectan sobre todo al Monotributo, pero el criterio de la publicidad también cambia para el Responsable.'],
+  ['Cargos del reporte de ventas: con IVA','Validado al centavo','En la factura del Responsable: (cargos por uso de la plataforma 993.377,53 − bonificaciones 51.926,92) × 1,21 = 1.139.155,24, que es la suma exacta de cargo por vender, costo por ofrecer cuotas, costo por unidad vendida y Mi página del reporte de facturación. Esos importes son los mismos que trae el reporte de ventas. La factura los discrimina sin IVA y suma el 21% al pie. Por eso un Responsable los netea (× netFee) y un monotributista los toma tal cual.'],
+  ['Publicidad: el reporte de Ads es SIN IVA','Facturado = inversión del reporte × 1,21','Nota oficial de ML: "El presupuesto e inversión de tus campañas en Product Ads no incluye el IVA, mientras que en el cargo en la sección Facturación ya está sumado al total". Validado: lo facturado en Product Ads del 02/09 al 13/09 (263.656,08) es la inversión del reporte de Ads del 01/09 al 12/09 (217.897,58) × 1,2100 exacto. El consumo de un día se cobra al día siguiente. En la factura, (Ads 357.170,55 − bonificación 8.787) × 1,21 = 421.544,10, la suma de los cargos de publicidad del reporte de facturación.'],
+  ['adsFactor','AR · Responsable 1 · Monotributo 1 + IVA de los cargos (1,21)','Factor que lleva la inversión del reporte de Ads a su costo real. Lo usan NEXUS, Rentabilidad, el informe, el Excel, la pauta sin ventas y el break-even del ACoS. El TACOS y el ACoS se siguen mostrando con la inversión del reporte, igual que el panel de Mercado Ads. México y Chile conservan netFee hasta tener una factura para validar.'],
+  ['Monotributo: el IVA no se recupera','Factura A con leyenda de la Ley 27.618','ML le emite factura A al monotributista, con IVA discriminado y la leyenda de que ese crédito sólo se computa dentro del Régimen de Sostenimiento e Inclusión Fiscal. Fuera de ese régimen es costo. En EVO: cargos de ML tal cual (netFee = 1), publicidad × 1,21 y COGS con IVA. Las percepciones de IIBB de la factura también son costo si no está inscripto en esa jurisdicción (ver Percepciones de la factura mensual).'],
+  ['COGS de un monotributista','Costo del template × (1 + IVA de los productos)','El template pide el costo sin IVA, pero al monotributista el proveedor le cobra el IVA. EVO se lo suma por defecto. Si el costo cargado ya es el final (proveedor monotributista, o se llenó con IVA), se elige "COGS tal cual" en el panel Fiscal. Es el supuesto que más mueve el margen de un monotributista: en una cuenta medida pasó el resultado de +0,3% a −9% de las ventas.'],
+  ['Reembolsos parciales y cargos sin columna','Total − suma de columnas, en cada venta válida','Hasta v55.0 EVO armaba lo recibido sólo con las columnas, así que lo que la columna Total descontaba sin columna propia quedaba afuera del resultado. Dos casos medidos: reembolsos parciales en ventas que siguen válidas (por ejemplo "Te dimos parte del dinero del producto que te devolvieron", −32.262 en un mes) y un descuento de $780 por venta que ML aplica desde el 29/09/2026 en 20 ventas sin informarlo en ninguna columna. Ahora entra como línea propia del estado de resultados. No incluye el envío a cargo del comprador en despacho propio, que sigue siendo partida informativa.'],
+  ['Mercadería perdida en reclamos','COGS × unidades de reclamos o mediaciones cerrados con reembolso','Cuando el reclamo se cierra con reembolso y el producto no vuelve, el comprador recupera la plata y el vendedor pierde la mercadería. El Total de esas ventas suele dar 0, así que antes no costaban nada. Las devoluciones finalizadas no entran porque el producto regresó.'],
+  ['Reporte de ventas incompleto','Aviso en la franja de Salud','Cuando el Excel sale con faltantes, ML lo avisa arriba de los encabezados ("No pudimos mostrar algunos datos") y algunas ventas llegan sin importes ni Total. EVO no puede calcularlas, así que quedan afuera. Medido: 5 ventas entregadas por $113.940 en un mes. Ahora EVO las cuenta y avisa que hay que volver a descargar el reporte.'],
+  ['Formato de costos promedio en Argentina','Aviso en la franja de Salud','La columna "Cargo por venta e impuestos" junta la comisión con las retenciones de IIBB, y EVO además resta el IIBB completo: las retenciones se cuentan dos veces (medido: 69.435 en un mes). No se pueden separar porque la alícuota depende de la provincia del comprador (entre 1,5% y 5% en la misma cuenta). Hay que usar el reporte detallado.'],
+  ['Pendiente: percepciones de la factura','No incluidas en el resultado','Las percepciones de IIBB y de IVA que ML suma en la factura mensual no están en ningún reporte por venta. Para un monotributista son costo: restarlas aparte hasta que EVO tenga ese dato.'],
  ]],
  ['Bases de cálculo y fiscalidad', [
   ['Revenue bruto','Columna "Ingresos por productos" del reporte de ventas','Precio × unidades, CON IVA, antes de cualquier descuento de ML. No incluye el envío que paga el comprador ni los intereses de cuotas. Es la base que usa el panel de Mercado Ads.'],
@@ -1357,7 +1378,7 @@ const _GLOSARIO = [
   ['Base de márgenes en México','Recibido sin IVA + retenciones a cuenta','Los márgenes de cuenta, P&L y final se miden sobre lo recibido de ML sin IVA. En México con RFC, las retenciones de IVA e ISR a cuenta ya salieron de lo recibido pero vuelven al resultado, así que también vuelven a la base: el IVA retenido es parte del IVA débito que la base ya resta, y el ISR es pago provisional. Sin ese ajuste, en una cuenta real el margen antes de mercadería daba 117% (resultado MXN 751.719 sobre una base de MXN 641.112). En Argentina no cambia: el IIBB se descuenta completo y la base sigue siendo recibido − IVA débito.'],
   ['Parámetros fiscales ajustables','Barra superior, junto a IVA','AR: alícuota de IIBB (4% por defecto) y alícuota de IVA de los productos (21% o 10,5%; los cargos de ML siguen al 21%). MX: si el ISR retenido es pago provisional (acreditable) o definitivo (costo). Se guardan en el snapshot. Hasta v52 eran constantes del código.'],
   ['Saldo a favor de IIBB (AR)','Retenciones mayores que el IIBB estimado','EVO toma todas las retenciones de la columna Impuestos como pago a cuenta del IIBB. Si superan el IIBB del período de forma sostenida, el excedente queda como saldo a favor que en la práctica muchas veces no se recupera. La tarjeta Retenciones lo avisa con el importe; EVO no lo resta porque depende de si se compensa.'],
-  ['Percepciones de la factura mensual (AR)','No están en el reporte de ventas','La factura mensual de ML suma percepciones de IVA (RG 5319, régimen general) e IIBB de cada provincia sobre los cargos. No figuran en el reporte de ventas, así que EVO no las ve. Para un Responsable Inscripto son pago a cuenta y no cambian el resultado. Para un Monotributista la percepción de IVA no se recupera: es un costo real que hay que sumar aparte.'],
+  ['Percepciones de la factura mensual (AR)','No están en el reporte de ventas','La factura mensual de ML suma percepciones de IVA (RG 5319, régimen general) e IIBB de cada provincia sobre los cargos. No figuran en el reporte de ventas, así que EVO no las ve. Para un Responsable Inscripto son pago a cuenta y no cambian el resultado. Para un Monotributista no inscripto en esa jurisdicción son costo y hay que sumarlas aparte: en la factura de agosto 2026 de un monotributista, la percepción de IIBB CABA Comercio Electrónico fue 130.357,09, el 2,9% del subtotal de cargos sin IVA (cerca del 1,2% de sus ventas). A ese monotributista no le cobraron percepción de IVA.'],
   ['Chile · Ley 21.713','Plataformas como agentes del IVA','Desde 2026 las plataformas de intermediación son agentes del IVA en ciertas operaciones y el SII autorizó a Mercado Libre a retener IVA en algunos casos. Para un contribuyente afecto al día no cambia el cálculo: la retención se imputa contra el débito. Para uno no afecto sería un costo, pero no aparece en los reportes analizados.'],
   ['Revenue neto','Revenue bruto − IVA débito − cargos de ML + bonificaciones − IIBB','Lo que le queda al seller después de los cargos de la plataforma y de la carga fiscal. NO descuenta Ads ni COGS: es margen de contribución pre-Ads y pre-COGS.'],
   ['Liquidez','Columna "Total" del reporte','Lo que ML deposita, ya neto de comisiones y envío. En carritos el Total viene en la fila del paquete y EVO lo reparte entre los ítems con la misma participación que usa para los cargos. Se muestra como Depósito de ML; desde v51.3 no se usa para facturación, Pareto, márgenes ni TACOS.'],
@@ -1379,14 +1400,14 @@ const _GLOSARIO = [
   ['Margen post-COGS','Break Even/u − COGS/u','Margen unitario real, ya con el costo de producto. Requiere el template de COGS cargado.'],
   ['Semáforo de margen (v54.0)','Piso 35 % antes de COGS · 15 % con COGS · escalones de 10 puntos','Umbral inteligente: todos los márgenes del tablero, sobre venta neta, se colorean contra el mismo piso. Antes de COGS: verde intenso desde 45 %, verde de 35 a 45 %, naranja de 25 a 35 %, rojo de 15 a 25 % y rojo intenso por debajo de 15 %. Con COGS el piso es 15 % y los escalones son 25, 15, 5 y −5 %. A nivel cuenta, el margen final manda sólo si el COGS cubre el 93 % o más del revenue. La alerta de texto BAJA RENT. y los umbrales de acción del informe no cambiaron.'],
   ['Pestaña Rentabilidad (v54.3)','Franja · cascada · desglose · NEXUS','La franja repite la card de Salud (márgenes sobre venta neta y cobertura del COGS) junto a los botones de COGS y Flex. La cascada muestra la cadena del dinero: ingresos, venta neta, recibido, NEXUS y rentabilidad real. El resto de las tarjetas vive en el acordeón Desglose de costos. La tabla Rentabilidad por SKU se eliminó porque su margen es exactamente el de NEXUS UNIT; sus alertas (BAJA RENT., ENVÍO y COSTO CANAL vs familia) aparecen en la fila de NEXUS, con el desglose en el tooltip. El cálculo de anomalías se conserva porque lo usan el Excel y el Informe.'],
-  ['COGS','Columna "Costo del producto (S/ IVA)" del template','Costo de reposición NETO de IVA, coherente con el break-even que también es neto. Se matchea por # de publicación y, si no hay match, por SKU.'],
+  ['COGS','Columna "Costo del producto (S/ IVA)" del template','Costo de reposición NETO de IVA, coherente con el break-even que también es neto. Se matchea por # de publicación y, si no hay match, por SKU. Monotributo (v55.1): EVO le suma el IVA de los productos, porque el proveedor se lo cobra y no lo recupera; se apaga con el selector COGS de Fiscal si el costo cargado ya es el final. Las unidades de reclamos cerrados con reembolso sin devolución también consumen COGS.'],
   ['Precio break-even','(COGS + fijos netos) ÷ (1 − factorIVA − IIBB × (1 − factorIVA) − fees × netFee)','Precio cobrado mínimo para no perder plata en la unidad. Fijos netos = costos propios + (envío + cargo fijo − bonificación Flex) × netFee; fees = comisión + cuotas + Ads, más los buffers de devolución y costo financiero. Es la misma fórmula que la calculadora NEXUS de Google Sheets (PVP_NEXUS_V3 con margen 0). Hasta v52.1 el glosario mostraba (COGS + envío) × (1 + IVA) ÷ (1 − comisión), que ignoraba el IIBB y el crédito fiscal de los cargos.'],
   ['Precio a margen objetivo','(COGS + fijos netos) ÷ (1 − factorIVA − (margen + IIBB) × (1 − factorIVA) − fees × netFee)','Precio cobrado necesario para que quede el margen pedido sobre venta neta. Para el precio publicado se divide además por (1 − promo) × (1 − cupón). En México se suman a los fees el ISR retenido si es costo y, sin RFC, el IVA retenido (con factorIVA = 0). Misma fórmula que PVP_NEXUS_V3.'],
   ['Calculadora NEXUS (Google Sheets)','Misma matemática que EVO','Las funciones PVP_NEXUS_V3, RENTABILIDAD_REAL_NEXUS_V3, MARGEN_REAL_NEXUS_V3 y sus versiones _CL y _MX usan los mismos conceptos que este motor: margen sobre venta neta, cargos con IVA neteados para un Responsable, IIBB sobre venta neta (AR) y retenciones de plataforma (MX). v3.1 (septiembre 2026): los cargos de ML se netean siempre al 21% en AR aunque el producto sea 10,5%; en MX la comisión se toma con IVA incluido, sin RFC el IVA retenido se cuenta una sola vez y se distingue tasa 0% de exento; un decimal ambiguo (0,5 en un campo donde lo realista es 0,5%) devuelve error en lugar de leerse 50%; y hay funciones para validar el umbral del cargo fijo.'],
  ]],
  ['Publicidad', [
   ['TACOS','Inversión Ads ÷ Revenue bruto','Ambos lados en bruto, que es la definición de la industria y la base del panel de Mercado Ads, por lo que es comparable contra la plataforma. ML no define TACOS en su glosario: el término viene del ecosistema Amazon.'],
-  ['% del margen','Inversión neta de IVA ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
+  ['% del margen','Costo de la pauta (inversión × adsFactor) ÷ Margen de contribución pre-Ads','Métrica de decisión: qué porción de la ganancia se lleva la pauta. Un TACOS de 8% es irrelevante con margen 80% y letal con margen 12%. Descuenta COGS si el template está cargado.'],
   ['Semáforo de % del margen','Margen que sobrevive vs promedio de la cuenta','Dinámico, no fijo: se juzga el margen que QUEDA tras pagar la pauta contra el margen promedio de la cuenta. Verde si conserva ≥75% del promedio, amarillo por debajo, rojo si baja del 40% o si la pauta se come todo el margen.'],
   ['Pantallas Anniversary (v55.0)','Contraseña y carga','Diseño EVO Anniversary: fondo casi negro con dos arcos de luz violeta en las esquinas, el logo cromado con órbita y destello (recortado del diseño original y embebido en el archivo), textos de esquina, campo de clave con candado y botón Ingresar con borde luminoso. La pantalla de carga usa el mismo lenguaje: logo más chico, casilleros oscuros con el borde del campo de clave y el botón de generar con el mismo brillo.'],
   ['Limpieza (v55)','Detalles del rediseño','El resumen y el estado del stock de FULL quedan en el acordeón Estado del stock FULL. El aviso de reporte de Anuncios desalineado se muestra debajo de la franja de Publicidad. Las opiniones malas entre 40 y 60 % usan el naranja de la paleta en vez de un tono propio. Se quitaron las menciones a Mercado Shops, que ya no existe.'],
@@ -1443,10 +1464,10 @@ const _GLOSARIO = [
   ['Costo fijo','Cargo fijo por venta de ML','Monto fijo que ML cobra por operación, típico en tickets bajos. Es distinto de la comisión porcentual y por eso se muestra aparte.'],
   ['Impuestos (KPI)','Retenciones informadas en el reporte (MX: separadas de la comisión)','Para un Responsable son pagos a cuenta más que costo puro, por eso no se incluyen dentro de Costos de canal. En México son el IVA y el ISR que retiene la plataforma; la tarjeta Retenciones de Rentabilidad muestra cuánto es cada uno y qué parte es costo.'],
   ['Cuotas','Costo financiero de las ventas en cuotas','Lo que absorbe el vendedor por ofrecer financiación.'],
-  ['Ads (costo real)','Inversión publicitaria × netFee','La inversión neta de IVA, que es el costo efectivo para un Responsable.'],
+  ['Ads (costo real)','Inversión publicitaria × adsFactor','Desde v55.1. El reporte de Ads informa la inversión SIN IVA y ML factura el 21% encima. En Argentina: Responsable × 1 (el IVA es crédito), Monotributo × 1,21 (el IVA no se recupera). Hasta v55.0 era inversión × netFee, como si el reporte trajera el IVA: el Responsable restaba la pauta 17,4% más barata y el monotributista 21%. México y Chile conservan × netFee porque no están validados.'],
   ['COGS total período','Σ (COGS unitario × unidades vendidas)','Costo de la mercadería vendida en el período. Requiere el template cargado.'],
   ['Retenciones e IIBB','IIBB (4% por defecto) de la venta neta, retenciones a cuenta','La columna Impuestos del reporte son retenciones que ML practica sobre cada venta. En Argentina se computan como pago a cuenta del IIBB: bajan lo recibido, porque es plata que no entró, pero no se vuelven a restar del resultado. El IIBB se toma en 4%, la alícuota que paga la mayoría, y desde v52.1 se ajusta en la barra superior. En México las retenciones son IVA e ISR de plataforma y se tratan aparte (ver Retenciones de plataforma). Hasta v51.2 se restaban las retenciones y además un IIBB de 5%, con lo que el mismo impuesto contaba dos veces. Se muestran en nominal y en % de la venta neta en el dashboard, el informe y el export.'],
-  ['Costo de devoluciones','Total negativo de ventas devueltas o no entregadas','Las canceladas no suman ni restan. Las devueltas o no entregadas sólo entran cuando el Total del reporte es negativo, que es lo que le costó al seller (típicamente el envío de vuelta), neto de IVA. Un Total positivo en esas ventas no se toma como ingreso porque ML suele revertirlo después. Hasta v51.2 se ignoraban.'],
+  ['Costo de devoluciones','Total negativo de ventas devueltas o no entregadas','Las canceladas no suman ni restan. Las devueltas o no entregadas sólo entran cuando el Total del reporte es negativo, que es lo que le costó al seller (típicamente el envío de vuelta), neto de IVA. Un Total positivo en esas ventas no se toma como ingreso porque ML suele revertirlo después. Hasta v51.2 se ignoraban. Desde v55.1, en los reclamos y mediaciones cerrados con reembolso sin devolución del producto, el costo de la mercadería también se cuenta (ver Monotributo y validación con facturas).'],
   ['Base de TODOS los márgenes','Venta neta','Desde v52.8 todo margen por publicación —unitario, P&L y post-COGS, en pantalla, en el informe y en el export— se mide sobre VENTA NETA. Es el estándar de un P&L y es la única base que hace comparables al margen unitario y al del período: con la misma base, P&L = UNIT − Ads ÷ venta neta, así que un item nunca puede mostrar mejor margen con publicidad que sin ella. El margen sobre lo recibido de ML sobrevive únicamente como KPI de cuenta, porque responde otra pregunta: de cada peso que giró la plataforma, cuánto es ganancia.'],
   ['Recorte de la tabla NEXUS','100 filas, pero nunca escondiendo un problema','La tabla se corta en 100 publicaciones y el orden pone primero los TACOS críticos. En una cuenta con más de 100 de esos, el corte se comía todo lo demás: en una cuenta real quedaban fuera de la tabla las 32 publicaciones con margen no computable por envío sin costo. Ahora el corte se completa con todo lo que tenga margen negativo o no computable, aunque no entre por ranking, y el subtítulo declara cuántas filas se muestran sobre el total y cuántas se agregaron por esa vía.'],
   ['Qué pasaba con la base vieja','Dos síntomas que se veían en pantalla','Entre v51.3 y v52.7 el margen P&L y los finales con COGS iban sobre lo RECIBIDO sin IVA. A nivel cuenta esa base funciona; por publicación no, porque lo recibido varía enormemente contra la venta: medido en una cuenta real, el cociente recibido ÷ venta neta iba de 0,08 a 1,24. Primer síntoma: una publicación SIN un peso de publicidad mostraba 5,0% de margen unitario y 65,4% de P&L, sólo por el cambio de denominador. Segundo: cuando lo recibido daba negativo —ML se quedó con más que la venta— la división no se podía hacer y el código devolvía −1 fijo, así que tres publicaciones que perdían $1.220.847, $36.016 y $6.535 mostraban todas −100% y la siguiente saltaba a 30%. Sobre venta neta esas tres dan −13,7%, −15,2% y −54,3%, ordenadas por gravedad, y el tope desaparece porque la venta neta nunca es negativa.'],
@@ -1760,7 +1781,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v55.0';
+const EVO_VERSION = 'v55.1';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1865,7 +1886,8 @@ function _metodologiaIA() {
           + (fc.isrEsCosto ? 'es pago definitivo: se resta como costo.' : 'es pago provisional: no es costo.')
           + ' Ventas con tasas de sin RFC: su ISR (20%) es costo.'
       : 'Se tratan como costo.'],
-    ['Recibido de ML', 'Bruto + (cargos con signo + descuentos + devoluciones) × netFee + Impuestos', 'Reconstrucción desde los componentes. Todavía incluye el IVA débito.'],
+    ['Reembolsos parciales y cargos sin columna', 'Σ (Total − suma de columnas) de las ventas válidas', 'Desde v55.1. Reembolsos parciales en ventas que siguen válidas y cargos que ML descuenta sin columna propia. Antes quedaban fuera del resultado.'],
+    ['Recibido de ML', 'Bruto + (cargos con signo + descuentos + devoluciones + residuo del Total) × netFee + Impuestos', 'Reconstrucción desde los componentes. Todavía incluye el IVA débito. Desde v55.1 cierra contra la columna Total en cada venta válida, salvo el envío a cargo del comprador.'],
     fc.retModo === 'IVA_ISR'
       ? ['Recibido de ML sin IVA (base de márgenes)', 'Recibido de ML − IVA débito + retenciones a cuenta', 'Base de los márgenes de cuenta, del informe PDF, de Margen P&L % y de Margen final %. En México con RFC las retenciones a cuenta vuelven a la base igual que al resultado: el IVA retenido es parte del débito ya restado y el ISR es pago provisional. Sin sumarlas, el IVA retenido se restaría dos veces y el margen superaría el 100%.']
       : ['Recibido de ML sin IVA', 'Recibido de ML − IVA débito', 'Base de los márgenes de cuenta, del informe PDF, de Margen P&L % y de Margen final %.'],
@@ -1873,7 +1895,7 @@ function _metodologiaIA() {
     ['Carga fiscal', 'IVA débito + IIBB − retenciones a cuenta', fc.isMX
       ? 'Las retenciones ya salieron del Recibido de ML; las que son a cuenta (IVA con RFC, ISR provisional) se suman de vuelta para que el IVA débito se descuente una sola vez. IVA débito = (bruto − ventas exentas o tasa 0%) × factorIVA.'
       : 'Las retenciones ya salieron del Recibido de ML; se suman de vuelta para que el IIBB total se descuente una sola vez.'],
-    ['Depósito de ML', 'Columna Total del reporte', 'Caja liquidada. Contiene los cargos CON IVA y ajustes que el reporte no desglosa, por eso en algunas filas no concilia con la suma de columnas. No es base de ningún margen ni de la facturación: esa diferencia no afecta los resultados.'],
+    ['Depósito de ML', 'Columna Total del reporte', 'Caja liquidada. Contiene los cargos CON IVA y ajustes que el reporte no desglosa, por eso en algunas filas no concilia con la suma de columnas. No es base de ningún margen ni de la facturación. Desde v55.1 la diferencia de cada venta válida (Total − columnas) sí entra al resultado como Reembolsos parciales y cargos sin columna: es plata que ML no depositó. Medido: en una cuenta monotributista, $780 por venta desde el 29/09/2026 y un reembolso parcial; en una cuenta Responsable, 96 de 650 ventas con diferencias de 3% a 16% del precio (1,9% de la venta neta) que no figuran en el reporte de facturación de ML.'],
    ]],
    ['Resultado y márgenes', [
     ['Resultado antes de mercadería (NEXUS)', 'Recibido sin IVA − IIBB + retenciones a cuenta − Ads', 'Todo el catálogo. Equivale a Recibido de ML − carga fiscal − Ads.'],
@@ -1909,7 +1931,7 @@ function _metodologiaIA() {
     ['Apagadas fuera del período', 'Tasa mensual en BRUTO, con IVA', 'La cifra es Σ Ingresos por productos de los últimos 30 días activos de cada publicación apagada, o sea precio CON IVA. El Resumen la publica rotulada y con su equivalente en venta neta al lado. Es una TASA MENSUAL, no un acumulado histórico: no se suma al período. EVO ya descartó las publicaciones cuyo producto sigue vivo bajo otro identificador.'],
     ['Rentabilidad', 'Por publicación, sin Ads ni COGS en Rev Neto', 'Rev Neto = Recibido de ML − carga fiscal; Margen% = Rev Neto ÷ Venta neta. Comisión% incluye el cargo fijo; Envío Neto% = envío absorbido; Impuestos% = retenciones. Todos los % sobre venta neta; Costos de canal % incluye Ads y el envío propio neto de bonificación. Con el reporte de costos promedio, Comisión% incluye ADEMÁS el costo de cuotas y las retenciones, y Cuotas% e Impuestos% dan 0 porque esas columnas no vienen en el reporte. Rev Neto y Margen% los calcula el mismo motor que NEXUS (v53.5): hasta v53.4 esta hoja repetía la fórmula a mano y se había quedado sin el envío propio, así que Σ Rev Neto daba por encima de Σ NEXUS sin Ads en exactamente la tarifa de despacho propio. Las dos columnas ahora cierran contra NEXUS Unit publicación por publicación.'],
     ['NEXUS Unit', 'Por unidad, sin Ads', 'Break Even y Margen Unit % sobre venta neta. Con COGS, el margen post COGS va sobre recibido sin IVA por unidad. El despacho propio va en tres columnas: tarifa, bonificación de la plataforma y neto; el costo que entra al margen es el neto.'],
-    ['NEXUS P&L', 'Período, con Ads', 'Recibido ML incluye el IVA débito. Margen P&L % = NEXUS ÷ (Recibido ML − Rev. Bruto × factorIVA). Inversión Ads neta de IVA; TACOS en bruto. Mismas tres columnas de despacho propio que NEXUS Unit, en $ del período.'],
+    ['NEXUS P&L', 'Período, con Ads', 'Recibido ML incluye el IVA débito. Margen P&L % = NEXUS ÷ (Recibido ML − Rev. Bruto × factorIVA). Ads a costo: inversión × adsFactor (v55.1); TACOS con la inversión del reporte. Mismas tres columnas de despacho propio que NEXUS Unit, en $ del período.'],
     ['TACOS / Publicidad', 'Inversión bruta del período', 'DOS BASES EN LA MISMA HOJA. Inversión Ads e Ing. atribuidos vienen del reporte de Anuncios en BRUTO (con IVA, atribución a 30 días post-clic). Rev. sesión, Revenue Total y Orgánico salen del reporte de ventas en venta NETA. Para juzgar si un anuncio acredita ventas de otros productos, comparar el atribuido contra Rev. Bruto del ítem —las dos columnas están en la hoja, más la relación ya calculada y la alerta ATRIBUCIÓN INDIRECTA—, nunca contra Revenue Total.'],
     ['Tiendas / Geográfico', 'Venta neta', ''],
     ['Top Carritos / SKUs Dormidos', 'Depósito de ML', 'Estas dos hojas miden caja (Total, prorrateado en carritos), no venta neta.'],
@@ -1933,7 +1955,8 @@ function _metodologiaIA() {
     ['Usar el Depósito (Total) como ingreso o como base', 'Mezcla caja con resultado', 'El Total trae los cargos con IVA y ajustes no desglosados. EVO arma todo desde los componentes.'],
     ['"Los carritos están mal prorrateados"', 'Ver sección Carritos', 'Los ítems no traen Total en el reporte; EVO reparte el paquete por participación en precio × unidades y el reparto cierra contra el paquete.'],
     ['Multiplicar Comisión% por el bruto', 'Base equivocada', 'Comisión% va sobre venta neta; aplicarla al bruto infla la comisión en (1 + IVA).'],
-    ['Confundir TACOS con el costo de Ads', 'Bases distintas', 'TACOS es bruto sobre bruto; los resultados restan Ads neto de IVA.'],
+    ['Confundir TACOS con el costo de Ads', 'Bases distintas', 'TACOS es la inversión del reporte (sin IVA) sobre el bruto; los resultados restan la inversión × adsFactor (AR: × 1 un Responsable, × 1,21 un monotributista).'],
+    ['Tomar la inversión del reporte de Ads como si trajera IVA', 'Falso (v55.1)', 'ML informa la inversión sin IVA y factura el 21% encima. Validado contra la facturación de una cuenta argentina: × 1,2100 exacto.'],
     ['Confundir envío absorbido con envío neto', 'Dos medidas', 'Absorbido: venta por venta con piso en cero (KPI, costos de canal). Neto con signo: agregado, entra en el resultado.'],
     ['Extender el margen final a todo el catálogo', 'Fuera de cobertura', 'Sólo cubre las publicaciones con COGS cargado.'],
     ['Validar una reconstrucción porque da parecido', 'Errores que se compensan', 'Omitir el IVA de los cargos y omitir Ads dan un margen cercano al de EVO por casualidad. Validar importe por importe contra Cifras de control.'],
@@ -1963,7 +1986,7 @@ function _cifrasControlIA() {
   const envioPropio = M.flexPropio || 0;
   const ivaCargos = fc.netFee < 1 ? cargosNetos * (1 / fc.netFee - 1) : 0;
   const recSinIva = M.recibidoML - M.ivaDebito;
-  const recPorComp = M.bruto - M.ivaDebito - cargosNetos - envioPropio + M.bonif - M.devol - M.impuestos;
+  const recPorComp = M.bruto - M.ivaDebito - cargosNetos - envioPropio + M.bonif - M.devol - (M.otros || 0) - M.impuestos;
   const nexusCascada = recSinIva - M.iibb + M.retACuenta - M.ads;
   const deposito = M.items.reduce((a, s) => a + (s.liquidez || 0), 0);
   const unidades = M.items.reduce((a, s) => a + (s.unidades || 0), 0);
@@ -1985,20 +2008,21 @@ function _cifrasControlIA() {
     ['  de los cuales, bonificación de envío propio', $(M.bonifFlex), 'Parte de los descuentos que corresponde a ventas despachadas por canal propio. Compensa el envío propio: el costo real de despachar es ' + $(envioPropio - (M.bonifFlex || 0)) + '. Ya está dentro de los descuentos: no sumarla aparte'],
     ['  de los cuales, otros reintegros', $(M.bonifOtras), 'El resto de la columna Descuentos'],
     ['Costo de devoluciones, neto de IVA', $(M.devol), 'Σ min(0, Total) de devueltas y no entregadas × netFee'],
+    ['Reembolsos parciales y cargos sin columna', $(M.otros), '−Σ (Total − suma de columnas) de las ventas válidas × netFee (v55.1). Positivo = costo'],
     ['Retenciones (columna Impuestos)', $(M.impuestos), fc.isMX ? 'Σ IVA e ISR retenidos, separados de Cargo por venta e impuestos venta por venta' : 'Σ |Impuestos|'],
     ...(fc.isMX ? [
       ['  IVA retenido', $(M.retIva), '8% de precio ÷ 1,16 con RFC, 16% sin RFC; 0 en ventas exentas o tasa 0%'],
       ['  ISR retenido', $(M.retIsr), '2,5% de la base sin IVA con RFC, 20% sin RFC'],
       ['Ventas exentas o tasa 0% (sin IVA débito)', $(M.exentos), 'Ventas en las que ML no retuvo IVA'],
     ] : []),
-    ['Recibido de ML (incluye IVA débito)', $(M.recibidoML), 'Bruto + (cargos con signo + descuentos + devoluciones) × netFee + Impuestos − envío propio. El envío propio se paga fuera de la plataforma y ya viene neto de IVA, así que no lleva netFee'],
+    ['Recibido de ML (incluye IVA débito)', $(M.recibidoML), 'Bruto + (cargos con signo + descuentos + devoluciones + residuo del Total) × netFee + Impuestos − envío propio. El envío propio se paga fuera de la plataforma y ya viene neto de IVA, así que no lleva netFee'],
     ['Recibido de ML sin IVA', $(recSinIva), 'Recibido de ML − IVA débito'],
     ['IIBB', $(M.iibb), 'Venta neta × alícuota de IIBB'],
     [fc.retModo === 'IVA_ISR' ? 'Retenciones computadas a cuenta de IVA e ISR' : 'Retenciones computadas a cuenta de IIBB', $(M.retACuenta),
       fc.retModo === 'IIBB' ? '= Retenciones'
       : fc.retModo === 'IVA_ISR' ? (fc.isrEsCosto ? 'IVA retenido con RFC (el ISR es pago definitivo: costo)' : 'IVA retenido + ISR retenido con RFC')
       : 'No aplica: son costo'],
-    ['Ads, costo neto de IVA', $(M.ads), 'Inversión del período × netFee; incluye pauta sin ventas por ' + $(M.adsSinVenta)],
+    ['Ads, costo en el resultado', $(M.ads), 'Inversión del período (el reporte la informa sin IVA) × adsFactor = ' + fc.adsFactor.toFixed(4).replace('.', ',') + '; incluye pauta sin ventas por ' + $(M.adsSinVenta)],
     ['Resultado antes de mercadería (NEXUS)', $(M.nexus), 'Recibido sin IVA − IIBB + retenciones a cuenta − Ads'],
     ...(retBaseMX(fc, M.retACuenta) > 0 ? [['Base de márgenes: Recibido sin IVA + retenciones a cuenta', $(M.recSinIvaBase), 'México con RFC: las retenciones a cuenta vuelven a la base igual que al resultado']] : []),
     ['Margen antes de mercadería', P(M.recSinIvaBase > 0 ? M.nexus / M.recSinIvaBase : 0), fc.retModo === 'IVA_ISR' ? 'NEXUS ÷ (Recibido de ML sin IVA + retenciones a cuenta)' : 'NEXUS ÷ Recibido de ML sin IVA', true],
@@ -2069,12 +2093,13 @@ function _estadoResultados(M) {
   if (M.bonifFlex)  add('Bonificación de envío de la plataforma', M.bonifFlex);
   if (M.bonifOtras) add('Otras bonificaciones y reintegros de la plataforma', M.bonifOtras);
   if (M.devol)  add('Costo neto de devoluciones y no entregas', -M.devol);
-  const costosPlat = -(M.comision + M.fijo + M.cuotas + M.envioNeto + M.flexPropio) + M.bonif - M.devol;
+  if (Math.abs(M.otros || 0) > 0.5) add('Reembolsos parciales y cargos sin columna en el reporte', -M.otros);
+  const costosPlat = -(M.comision + M.fijo + M.cuotas + M.envioNeto + M.flexPropio) + M.bonif - M.devol - (M.otros || 0);
   add('Subtotal costos de plataforma y logística', costosPlat, 'subtotal');
   if (M.ads)  add('Publicidad en la plataforma', -M.ads);
   if (M.iibb) add('Ingresos Brutos (' + pctAlic(fc.iibbRate) + ' de las ventas netas)', -M.iibb);
   // Retenciones con signo: lo que queda de lo recibido fuera de los componentes
-  const impSigned = M.recibidoML + M.flexPropio - (M.bruto - M.comision - M.envioNeto - M.fijo - M.cuotas + M.bonif - M.devol);
+  const impSigned = M.recibidoML + M.flexPropio - (M.bruto - M.comision - M.envioNeto - M.fijo - M.cuotas + M.bonif - M.devol - (M.otros || 0));
   /* Sólo la parte que NO es pago a cuenta es costo (v52.1): AR todo a cuenta de
      IIBB; MX con RFC, el IVA contra el débito y el ISR provisional; el resto resta. */
   const retCosto = impSigned + (M.retACuenta || 0);
@@ -2148,6 +2173,8 @@ function _leemeIA() {
       ingresos_exentos: 'México (v52.1): ingresos de la fila si ML no retuvo IVA (venta exenta o tasa 0%); no llevan IVA débito',
       mx_reg: 'México (v52.1): régimen de retención detectado (RFC_GRAV, RFC_EXENTO, SINRFC_GRAV, SINRFC_EXENTO); mx_reg_def = true si se asignó por la publicación o la cuenta',
       costo_devolucion: 'min(0, Total) para devueltas y no entregadas; 0 en el resto',
+      otros_cargos: 'v55.1 · Total − suma de columnas en ventas válidas (reembolsos parciales y cargos sin columna), con signo. En carritos, el del paquete × participación',
+      unidades_perdidas: 'v55.1 · unidades de reclamos o mediaciones cerrados con reembolso sin devolución del producto: consumen COGS',
       liquidez: 'Columna Total (depósito). En carritos, Total del paquete × participación del ítem',
       esCarrito: 'Ítem de un paquete: sus importes son el reparto proporcional de la fila del paquete',
       esCanceled: 'Venta excluida por estado; unidades queda en 0 y devoluciones_unidades guarda las originales',
@@ -2439,7 +2466,7 @@ function _infMetricas(){
   const items = Object.values(skuMap);
 
   let bruto=0, ventaNeta=0, recibidoML=0, nexus=0, cogsTot=0, nexusMatch=0, brutoMatch=0, recibMatch=0;
-  let comision=0, envio=0, envioNeto=0, fijo=0, cuotas=0, bonif=0, devol=0, retACuenta=0, impuestos=0, ads=0, nMatch=0;
+  let comision=0, envio=0, envioNeto=0, fijo=0, cuotas=0, bonif=0, devol=0, otros=0, retACuenta=0, impuestos=0, ads=0, nMatch=0;
   /* Envío propio (Flex): se paga fuera de la plataforma, así que no está en
      costo_envio. calcNEXUS ya lo resta del resultado, pero hasta v52.8 no lo
      acumulaba nadie: el estado de resultados lo mostraba bajo Retenciones y
@@ -2481,11 +2508,12 @@ function _infMetricas(){
     bonifFlex  += n.bonifFlex||0;
     bonifOtras += (s.descuentos||0)*fc.netFee - (n.bonifFlex||0);
     devol    += -(n.devolucionesNeto||0);
+    otros    += -(n.otrosCargosNeto||0);   // v55.1 · positivo = costo
     retACuenta += n.retencionesACuenta||0;
     impuestos+= Math.abs(s.impuestos||0);
     ads      += n.inversionAds||0;
     const cg = COGS_DATA.loaded ? getCOGS(s) : null;
-    if (cg && cg.costo>0){ nMatch++; cogsTot += cg.costo*(s.unidades||0); nexusMatch += n.recibidoNEXUS||0;
+    if (cg && cg.costo>0){ nMatch++; cogsTot += cg.costo*_uCogs(s); nexusMatch += n.recibidoNEXUS||0;
                            brutoMatch += b; recibMatch += n.recibidoML||0; ivaDebMatch += b - (n.ventaNeta||0);
                            retACMatch += n.retencionesACuenta||0; }
     filas.push({ s, n, cg, bruto:b, margenPL: n.margenNEXUS || 0 });   // sobre venta neta (v52.8)
@@ -2499,7 +2527,7 @@ function _infMetricas(){
   ads += adsSinVenta; nexus -= adsSinVenta;
   nexusMatch -= adsSinVenta * cobertura;
   return { fc, esRI, items, filas, bruto, ventaNeta, recibidoML, nexus, cogsTot, nexusMatch, brutoMatch, recibMatch,
-           nMatch, cobertura, comision, envio, envioNeto, flexPropio, fijo, cuotas, bonif, bonifFlex, bonifOtras, envioComprador, uEnvioComprador, devol, retACuenta, impuestos, ads, adsSinVenta, fiscalTot,
+           nMatch, cobertura, comision, envio, envioNeto, flexPropio, fijo, cuotas, bonif, bonifFlex, bonifOtras, envioComprador, uEnvioComprador, devol, otros, retACuenta, impuestos, ads, adsSinVenta, fiscalTot,
            ivaDebito, iibb, ivaDebMatch, retACMatch, retIva, retIsr, exentos,
            // Bases de márgenes sobre recibido sin IVA (MX con RFC: + retenciones a cuenta)
            recSinIvaBase: recibidoML - ivaDebito + retBaseMX(fc, retACuenta),
@@ -2561,7 +2589,7 @@ function _infAlertas(M){
     /* Márgenes sobre VENTA NETA (v52.8), igual que todo el resto del tablero. */
     const umbral = conCogs && f.cg ? UMBRAL_ALERTA_COGS : UMBRAL_ALERTA_SIN_COGS;
     let margen = f.margenPL;
-    if (conCogs && f.cg && (n.ventaNeta||0)>0) margen = ((n.recibidoNEXUS||0) - f.cg.costo*(s.unidades||0)) / n.ventaNeta;
+    if (conCogs && f.cg && (n.ventaNeta||0)>0) margen = ((n.recibidoNEXUS||0) - f.cg.costo*_uCogs(s)) / n.ventaNeta;
     if (margen >= umbral) return;
     // Diagnóstico y acción
     let causa, accion, prio;
@@ -2570,7 +2598,7 @@ function _infAlertas(M){
     /* El margen antes de Ads ya cumple el piso: si no, el problema es de
        precio o de costo y no de pauta. Con COGS se mide después de COGS (v54.1). */
     const unitSano = (conCogs && f.cg && (n.ventaNeta||0) > 0)
-      ? (((n.margenUnitario||0) * n.ventaNeta - f.cg.costo*(s.unidades||0)) / n.ventaNeta) >= UMBRAL_ALERTA_COGS
+      ? (((n.margenUnitario||0) * n.ventaNeta - f.cg.costo*_uCogs(s)) / n.ventaNeta) >= UMBRAL_ALERTA_COGS
       : (n.margenUnitario||0) >= UMBRAL_ALERTA_SIN_COGS;
     const an = anomEnv && anomEnv.get ? anomEnv.get(s.id) : null;
     if ((n.margenUnitario||0) < 0) {
@@ -2987,7 +3015,7 @@ function generarInforme(){
   const _ivaDebTot = M.ivaDebito;
   const _cargosTot = M.comision + M.envioNeto + M.fijo + M.cuotas;
   const _propioTot = M.flexPropio || 0;   // envío propio: no es cargo de ML pero sale de la misma plata
-  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot - _propioTot + M.bonif - M.devol - (M.impuestos || 0) + retBaseMX(M.fc, M.retACuenta);
+  const baseRecSinIva = M.bruto - _ivaDebTot - _cargosTot - _propioTot + M.bonif - M.devol - (M.otros || 0) - (M.impuestos || 0) + retBaseMX(M.fc, M.retACuenta);
   /* Base de la porción con costo cargado: su propio recibido sin IVA, igual que
      la tarjeta Margen real final del dashboard. Hasta v51.1 se prorrateaban los
      cargos de todo el catálogo por facturación y los dos márgenes no coincidían. */
@@ -3053,7 +3081,7 @@ function generarInforme(){
   const _retn   = M.impuestos || 0;
   const _cargos = M.comision + M.envioNeto + M.fijo + M.cuotas;
   const _propio = M.flexPropio || 0;      // envío propio, fuera de la plataforma
-  const _recSinIva = M.bruto - _ivaDeb - _cargos - _propio + M.bonif - M.devol - _retn;
+  const _recSinIva = M.bruto - _ivaDeb - _cargos - _propio + M.bonif - M.devol - (M.otros || 0) - _retn;
   const _preCogs = _recSinIva - M.iibb + M.retACuenta - M.ads;
   const _resFinal = conCogs ? M.rentReal : _preCogs;
   const ER = _estadoResultados(M);
@@ -3504,6 +3532,15 @@ const CANCEL_RE = /cancel|anulad|rechazada/i;
 const costoDevolucion = (estado, total) =>
   (excluido(estado) && !CANCEL_RE.test(String(estado || ''))) ? Math.min(0, total || 0) : 0;
 const esCarritoHdr=s=>/^paquete de \d+ productos?/i.test((s||'').trim());
+/* Reclamo o mediación cerrados con reembolso al comprador, sin devolución del
+   producto (v55.1): la plata vuelve al comprador y la mercadería no vuelve al
+   vendedor, así que su costo es pérdida. Las devoluciones finalizadas no entran:
+   el producto regresó. */
+const mercaderiaPerdida = s => /reembols/i.test(String(s || '')) && !/devoluci[oó]n|devuelt|cancel|anulad|rechazada/i.test(String(s || ''));
+/* Lo que la columna Total tiene y la suma de las columnas no (v55.1): reembolsos
+   parciales en ventas que siguen válidas y cargos que ML descuenta sin columna
+   propia. Se redondea a centavos y se ignora el ruido de redondeo. */
+const residuoTotal = x => Math.abs(x) < 0.5 ? 0 : Math.round(x * 100) / 100;
 
 function parseNum(v){
   if(v===null||v===undefined||v==='') return 0;
@@ -6364,10 +6401,10 @@ function adsInversionRango(){
   return inv;
 }
 
-/* Pauta NETA de IVA de publicaciones sin ventas en el rango: el total del
-   reporte menos lo ya atribuido a las publicaciones vendidas. */
+/* Pauta de publicaciones sin ventas en el rango, a costo (inversión × adsFactor,
+   v55.1): el total del reporte menos lo ya atribuido a las publicaciones vendidas. */
 function adsSinVentaNeta(adsAtribuidaNeta){
-  return Math.max(0, adsInversionRango() * fiscalCfg().netFee - (adsAtribuidaNeta || 0));
+  return Math.max(0, adsInversionRango() * fiscalCfg().adsFactor - (adsAtribuidaNeta || 0));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -7980,6 +8017,10 @@ function parsearArchivo(raw,filename){
     }
   }
   if(headerIdx===-1){showError('No se encontró la fila de encabezados.');return;}
+  /* Mercado Libre avisa arriba de los encabezados cuando el Excel salió con
+     datos faltantes (v55.1). Medido en una cuenta real: 5 ventas entregadas
+     llegaron sin importes ni Total, y EVO las salteaba sin decir nada. */
+  const _avisoIncompleto = raw.slice(0, headerIdx).some(r => (r || []).some(c => /no pudimos mostrar algunos datos/i.test(String(c || ''))));
 
   const headersN=raw[headerIdx].map(h=>strip(h).toLowerCase().replace(/["\r\n\ufeff]/g,'').trim());
   const idx={};
@@ -8073,6 +8114,7 @@ function parsearArchivo(raw,filename){
   
   G = {};
   G.titulos = {};
+  G.reporteIncompleto = { aviso: _avisoIncompleto, ventas: 0, bruto: 0 };
   if (idxCargoVentaImpuestos !== -1) {
     G.isCostosPromedio = true;
     idx.cargo_venta = idxCargoVentaImpuestos;
@@ -8202,6 +8244,12 @@ function parsearArchivo(raw,filename){
       const bruto    = esCanceled ? 0 : precio*unidadesRaw;
       const liquidez = esCanceled ? 0 : carritoCtx._totalLiquidez * frac;
       const costo_devolucion = costoDevolucion(estado, carritoCtx._totalLiquidez * frac);
+      /* Residuo del paquete (v55.1): Total del paquete menos sus columnas, con la
+         misma participación que el resto. Con el envío que paga el comprador
+         incluido, para que esa partida informativa no aparezca como ajuste. */
+      const _colsPaq = carritoCtx.cargo_venta + carritoCtx.costo_fijo + carritoCtx.cuotas + carritoCtx.ing_envio
+                     + carritoCtx.costo_envio + carritoCtx.impuestos + carritoCtx.descuentos;
+      const otros_cargos = esCanceled ? 0 : residuoTotal(liquidez - bruto - _colsPaq * frac);
       const cargo_venta = carritoCtx.cargo_venta * frac;
       const costo_fijo  = carritoCtx.costo_fijo  * frac;
       const cuotas      = carritoCtx.cuotas      * frac;
@@ -8276,7 +8324,9 @@ function parsearArchivo(raw,filename){
            los ítems, se reparte entre ellos con la misma participación con la
            que se reparte todo lo demás del paquete. */
         fracPaquete: frac,
-        ing_envio_comprador, envioCompradorPaga: _compPagaC
+        ing_envio_comprador, envioCompradorPaga: _compPagaC,
+        otros_cargos,
+        unidades_perdidas: (esCanceled && mercaderiaPerdida(estado)) ? unidadesRaw : 0
       });
       if (!esCanceled) {
         const comboId = pubVal || skuVal;
@@ -8288,6 +8338,12 @@ function parsearArchivo(raw,filename){
     }
 
     if(hasTotal&&(hasSKU||hasPub)) { flushCombo(); carritoCtx=null; }
+    /* Venta suelta con publicación pero sin Total ni importes: el reporte vino
+       incompleto. No se puede calcular, pero se cuenta para avisarlo (v55.1). */
+    if(!hasTotal&&(hasSKU||hasPub)&&carritoCtx===null&&!excluido(estado)){
+      G.reporteIncompleto.ventas++;
+      G.reporteIncompleto.bruto += parseNum(get(row,'precio_unit')) * (parseFloat(get(row,'unidades'))||1);
+    }
     if(!hasTotal||(!hasSKU&&!hasPub)) continue;
 
     const esCanceled = excluido(estado);
@@ -8321,6 +8377,9 @@ function parsearArchivo(raw,filename){
     const costo_envio=costo_envio_raw+costo_env_med+costo_env_dif+costo_env_cam;
     const descuentos = parseNum(get(row,'descuentos'));
     const anulaciones= parseNum(get(row,'anulaciones'));
+    // Total − columnas: reembolsos parciales y cargos sin columna (v55.1)
+    const otros_cargos = esCanceled ? 0 : residuoTotal(parseNum(totalRaw)
+      - (ingresos_brutos + cargo_venta + costo_fijo + cuotas + ing_envio + costo_envio + impuestos + descuentos));
     /* Envío a cargo del comprador en despacho propio: entra y sale. Se decide
        ANTES de armar el record porque cambia dónde va el importe, y la tarifa que
        declara ML se lee del valor original (el neutralizado ya no está). */
@@ -8365,7 +8424,9 @@ function parsearArchivo(raw,filename){
          Ver envioLoPagaComprador. */
       ing_envio: _compPaga ? 0 : ing_envio,
       ing_envio_comprador: _compPaga ? ing_envio : 0,
-      envioCompradorPaga: _compPaga
+      envioCompradorPaga: _compPaga,
+      otros_cargos,
+      unidades_perdidas: (esCanceled && mercaderiaPerdida(estado)) ? unidadesRaw : 0
     });
   }
   flushCombo();
@@ -8560,6 +8621,7 @@ function aplicarFiltros(){
       S.liquidez+=liquidez; S.unidades+=unidades;
       S.devoluciones_unidades += devoluciones_unidades;
       S.costo_devolucion += r.costo_devolucion || 0;   // sólo devoluciones con costo (v51.3)
+      S.unidades_perdidas = (S.unidades_perdidas || 0) + (r.unidades_perdidas || 0);   // reclamos con reembolso (v55.1)
       
       S[esPubli?'pubLiq':'orgLiq']+=liquidez;
       if(!esCanceled) {
@@ -8570,6 +8632,7 @@ function aplicarFiltros(){
         const _netoEnv = (costo_envio||0) + (ing_envio||0);
         S.envioRealSeller = (S.envioRealSeller||0) + (_netoEnv < 0 ? -_netoEnv : 0);
         S.impuestos+=impuestos; S.descuentos+=descuentos; S.anulaciones+=anulaciones;
+        S.otros_cargos = (S.otros_cargos || 0) + (r.otros_cargos || 0);   // v55.1
         // Envío que pagó el comprador en despacho propio: fuera del resultado
         S.ingEnvioComprador = (S.ingEnvioComprador||0) + (r.ing_envio_comprador||0);
         S.ret_iva+=r.ret_iva||0; S.ret_isr+=r.ret_isr||0; S.ret_isr_sinrfc+=r.ret_isr_sinrfc||0;
@@ -8608,6 +8671,7 @@ function aplicarFiltros(){
         const _netoEnvC = (costo_envio||0) + (ing_envio||0);
         C.envioRealSeller += (_netoEnvC < 0 ? -_netoEnvC : 0);
         C.impuestos+=impuestos; C.descuentos+=descuentos; C.anulaciones+=anulaciones;
+        C.otros_cargos = (C.otros_cargos || 0) + (r.otros_cargos || 0);   // v55.1
         C.ingEnvioComprador = (C.ingEnvioComprador||0) + (r.ing_envio_comprador||0);
         C.uEnvioComprador = (C.uEnvioComprador||0) + (r.envioCompradorPaga ? unidades : 0);
         C.costo_devolucion += r.costo_devolucion || 0;
@@ -9212,7 +9276,7 @@ function renderDashboard(renderData){
       let v = null, final = false;
       if (n && n.ventaNeta > 0) {
         const cg = COGS_DATA.loaded ? getCOGS(o) : null;
-        if (cg && cg.costo > 0) { v = (n.recibidoNEXUS - cg.costo * (o.unidades || 0)) / n.ventaNeta; final = true; }
+        if (cg && cg.costo > 0) { v = (n.recibidoNEXUS - cg.costo*_uCogs(o)) / n.ventaNeta; final = true; }
         else v = n.margenNEXUS;
       }
       _mgPareto.set(o.id, { v, final });
@@ -10337,7 +10401,7 @@ function exportarExcel(){
        el porcentaje no se podía reproducir con los números de la propia hoja. */
     /* TACOS con inversión BRUTA sobre revenue bruto, como el dashboard y el panel
        de Mercado Ads. Hasta v51.2 dividía la inversión neta de IVA por el bruto. */
-    const adsBruto = ads / (_fc.netFee || 1);
+    const adsBruto = ads / (_fc.adsFactor || 1);   // la inversión como la informa Mercado Ads (v55.1)
     resumenRows.push([], ['Eficiencia','Valor']);
     _hdrRes.push(resumenRows.length - 1);
     resumenRows.push(['Costos de canal %', ventaNetaTot>0 ? canal/ventaNetaTot : 0]);
@@ -10346,8 +10410,8 @@ function exportarExcel(){
     if (fijo>0) resumenRows.push(['Costo fijo', fijo]);
     if (cuo>0)  resumenRows.push(['Cuotas', cuo]);
     if (ads>0) {
-      resumenRows.push(['Inversión Ads neta de IVA (costo)', ads]);
-      resumenRows.push(['Inversión Ads bruta (como Mercado Ads)', adsBruto]);
+      resumenRows.push(['Publicidad: costo en el resultado' + (_fc.isAR ? (_fc.esRI ? ' (inversión; el IVA es crédito)' : ' (inversión + IVA, no recuperable)') : ''), ads]);
+      resumenRows.push(['Inversión Ads (como la informa Mercado Ads' + (_fc.isAR ? ', sin IVA)' : ')'), adsBruto]);
       resumenRows.push(['TACOS %', brutoTot>0 ? adsBruto/brutoTot : 0]);
     }
     resumenRows.push([], ['Carga fiscal y devoluciones','Valor']);
@@ -10504,7 +10568,7 @@ function exportarExcel(){
       const n=calcNEXUS(s); if(!n) return; nTotal++;
       adsAtribX+=n.inversionAds||0; revTotX+=s.ingresos_brutos||0;
       const cg=getCOGS(s);
-      if(cg){ nMatch++; cogsTotal+=cg.costo*(s.unidades||0); nexusMatch+=n.recibidoNEXUS||0;
+      if(cg){ nMatch++; cogsTotal+=cg.costo*_uCogs(s); nexusMatch+=n.recibidoNEXUS||0;
               revMatch+=s.ingresos_brutos||0; vnetaMatch+=n.ventaNeta||0; recibMatch+=n.recibidoML||0;
               retACX+=n.retencionesACuenta||0; }
     });
@@ -10825,7 +10889,7 @@ function exportarExcel(){
            tampoco se puede estimar: faltan los cargos reales de esa venta que
            no existió. Se informa el costo y se dice que el margen no se puede
            calcular. */
-        const cogsTotal = cg.costo * (s.unidades||0);
+        const cogsTotal = cg.costo*_uCogs(s);
         const rentFinal = (n.recibidoNEXUS||0) - cogsTotal;
         const margenFinal = (n.ventaNeta||0) > 0 ? rentFinal / n.ventaNeta : 0;
         if (_sinVta) {
@@ -11839,6 +11903,13 @@ function coberturaEnvio(s) {
 }
 
 // Devuelve el COGS unitario para un item (skuMap entry), match por MLA o SKU
+/* Entrada del template con el costo que efectivamente paga el vendedor (v55.1):
+   para un monotributista se le suma el IVA que no recupera. costoTemplate
+   conserva el valor cargado. */
+function _cogsConFactor(e, via) {
+  const f = fiscalCfg().cogsFactor || 1;
+  return { ...e, costo: (e.costo || 0) * f, costoTemplate: e.costo, match: 'EXACTO', via };
+}
 function getCOGS(s) {
   if (!COGS_DATA.loaded) return null;
   // Intentar por MLA (id_pub_raw o id)
@@ -11846,7 +11917,7 @@ function getCOGS(s) {
   for (const m of mlaCands) {
     const numId = String(m).replace(/^ML[A-Z]+0*/i,'').replace(/\D/g,'');
     if (numId && COGS_DATA.byMLA['MLA'+numId]) {
-      return { ...COGS_DATA.byMLA['MLA'+numId], match: 'EXACTO', via: 'MLA' };
+      return _cogsConFactor(COGS_DATA.byMLA['MLA'+numId], 'MLA');
     }
   }
   // Intentar por SKU
@@ -11854,7 +11925,7 @@ function getCOGS(s) {
   for (const sk of skuCands) {
     const skuKey = String(sk).replace(/\.0+$/,'').trim();
     if (skuKey && COGS_DATA.bySKU[skuKey]) {
-      return { ...COGS_DATA.bySKU[skuKey], match: 'EXACTO', via: 'SKU' };
+      return _cogsConFactor(COGS_DATA.bySKU[skuKey], 'SKU');
     }
   }
   return null;
@@ -12676,6 +12747,12 @@ function calcNEXUS(s) {
   // Devoluciones que le costaron al seller (Total negativo, típicamente el envío
   // de vuelta). Las canceladas no suman (v51.3).
   const devolucionesNeto = (s.costo_devolucion || 0) * netFee;
+  /* Reembolsos parciales y cargos sin columna (v55.1): lo que el Total del
+     reporte descontó y las columnas no explican. Antes no entraban en ningún
+     lado: los reembolsos parciales de ventas válidas (columna Anulaciones) y
+     cargos como los $780 por venta medidos desde el 29/09/2026 quedaban fuera
+     del resultado. Se netean como el resto de lo que factura ML. */
+  const otrosCargosNeto = (s.otros_cargos || 0) * netFee;
 
   /* Envío propio (Flex y despacho sin costo informado). No está en el reporte
      porque se paga fuera de la plataforma: entra desde el template ML | SKU |
@@ -12698,13 +12775,13 @@ function calcNEXUS(s) {
   const flexNetoTotal = flexTotal - bonifFlex;
 
   // Recibido de ML NETO de IVA (costo real de los fees para RI)
-  const recibidoML = ingresos + cargoVentaNeto + costoEnvioNeto + ingEnvioNeto + impuestosNeto + costoFijoNeto + cuotasNeto + descuentosNeto + devolucionesNeto - flexTotal;
+  const recibidoML = ingresos + cargoVentaNeto + costoEnvioNeto + ingEnvioNeto + impuestosNeto + costoFijoNeto + cuotasNeto + descuentosNeto + devolucionesNeto + otrosCargosNeto - flexTotal;
   // Base de los márgenes P&L: lo recibido sin el IVA débito
   const recibidoSinIva = recibidoML - ivaDebito + retBaseMX(_fcN, retencionesACuenta);   // MX con RFC: + retenciones a cuenta
 
-  // TACOS prorrateado al rango filtrado · la inversión Ads también tiene IVA
+  // TACOS prorrateado al rango filtrado · el reporte de Ads informa la inversión SIN IVA
   const adsInversionRaw = ads ? getAdsInversionProrrateada(ads, G._lastFilter && G._lastFilter.from, G._lastFilter && G._lastFilter.to) : 0;
-  const adsInversionPror = adsInversionRaw * netFee;  // costo real de Ads (neto IVA para RI)
+  const adsInversionPror = adsInversionRaw * _fcN.adsFactor;  // costo real (v55.1): AR RI × 1 · AR Monotributo × 1,21
   const tacos = (adsInversionRaw > 0 && ingresos > 0)
     ? adsInversionRaw / ingresos   // TACOS se muestra en bruto (comparable con plataforma)
     : 0;
@@ -12786,7 +12863,7 @@ function calcNEXUS(s) {
   const impuestosUnit = s.unidades > 0 ? Math.abs(impuestosNeto) / s.unidades : 0;
   const cuotasUnit    = s.unidades > 0 ? Math.abs(cuotasNeto)   / s.unidades : 0;
   // Los descuentos ya suman en recibidoML: listarlos acá los mostraría como costo
-  const otrosTotal    = (s.anulaciones || 0);
+  const otrosTotal    = otrosCargosNeto;   // v55.1: reembolsos parciales y cargos sin columna
   const otrosUnit     = s.unidades > 0 ? Math.abs(otrosTotal) / s.unidades : 0;
   const comisionUnit  = s.unidades > 0 ? Math.abs(cargoVentaNeto) / s.unidades : 0;
   
@@ -12817,7 +12894,7 @@ function calcNEXUS(s) {
     // valores totales (sumando todas las unidades)
     recibidoML, recibidoNEXUS, fiscalTotal_total: fiscalTotal,
     recibidoSinIva, recibidoSinIvaUnit: s.unidades > 0 ? recibidoSinIva / s.unidades : 0,
-    envioAbsorbido, devolucionesNeto, retencionesACuenta, iibbTotal,
+    envioAbsorbido, devolucionesNeto, otrosCargosNeto, retencionesACuenta, iibbTotal,
     // MX (v52.1): retenciones separadas de la comisión, negativas como impuestos
     retIva: s.ret_iva || 0, retIsr: s.ret_isr || 0, retIsrSinRfc: s.ret_isr_sinrfc || 0,
     ingresosExentos: s.ingresos_exentos || 0,
@@ -13580,8 +13657,12 @@ let NEXUS_FISCAL = 'RI';  // Condición fiscal: 'RI' (Responsable de IVA / con R
      ivaProdAR  AR · alícuota de IVA de los PRODUCTOS (21% o 10,5%). Sólo mueve el
                 IVA débito: los cargos de ML se facturan siempre al 21%.
      isrCostoMX MX · el ISR retenido es impuesto definitivo (Régimen de Plataformas
-                con pago definitivo) y no pago a cuenta. */
-const FISCAL_PARAMS_DEFAULT = { iibb: 0.04, ivaProdAR: 0.21, isrCostoMX: false };
+                con pago definitivo) y no pago a cuenta.
+     cogsSinIvaMono AR · Monotributo (v55.1): el costo del template COGS está SIN
+                IVA (es lo que pide su columna "Costo del producto (S/ IVA)") y al
+                monotributista el proveedor le cobra el IVA, que no recupera. EVO
+                le suma el IVA de los productos. Con false se toma tal cual. */
+const FISCAL_PARAMS_DEFAULT = { iibb: 0.04, ivaProdAR: 0.21, isrCostoMX: false, cogsSinIvaMono: true };
 let FISCAL_PARAMS = { ...FISCAL_PARAMS_DEFAULT };
 
 /* ═══════════ CONFIGURACIÓN FISCAL POR PAÍS · FUENTE ÚNICA DE VERDAD ═══════════
@@ -13632,8 +13713,22 @@ function fiscalCfg() {
   const retModo    = isAR ? 'IIBB' : (isMX && esRI) ? 'IVA_ISR' : 'COSTO';
   const isrEsCosto = retModo === 'IVA_ISR' && !!FISCAL_PARAMS.isrCostoMX;
   const retencionesACuenta = retModo !== 'COSTO';
+  /* Publicidad (v55.1). El reporte de Ads informa la inversión SIN IVA y ML
+     factura el 21% encima (nota de ML: "el presupuesto e inversión de tus
+     campañas en Product Ads no incluye el IVA"). Validado en AR contra la
+     facturación de Line Up: lo facturado en Product Ads del 01/09 al 12/09
+     es el reporte × 1,2100 exacto, y la factura netea esos cargos y suma el
+     IVA aparte. Por eso el costo es:
+       Responsable  la inversión tal cual: el IVA de encima es crédito
+       Monotributo  inversión × (1 + IVA): el IVA no se recupera
+     Hasta v55.0 se usaba inversión × netFee, como si el reporte trajera el IVA
+     adentro: el RI restaba la pauta un 17,4% más barata y el MONO un 21%.
+     MX y CL no están validados: conservan el criterio anterior. */
+  const adsFactor  = isAR ? (esRI ? 1 : 1 + ivaCargos) : netFee;
+  /* COGS de un monotributista (v55.1): ver FISCAL_PARAMS.cogsSinIvaMono. */
+  const cogsFactor = (isAR && !esRI && FISCAL_PARAMS.cogsSinIvaMono) ? 1 + ivaRate : 1;
   return { isMX, isCL, isAR, esRI, ivaRate, ivaCargos, iibbRate, retencionesACuenta, retModo, isrEsCosto,
-           feesConIva, factorIva, netFee };
+           feesConIva, factorIva, netFee, adsFactor, cogsFactor };
 }
 
 /* IVA débito y venta neta de un registro o de un agregado (skuMap, provincia,
@@ -14561,9 +14656,9 @@ function renderFULLTab(useML, idLabel) {
 
      ACoS (y ROAS, que es su inversa): contra el break-even, que es el margen
      antes de Ads (y después de COGS si lo hay). Llevado a la base del ACoS:
-     el ACoS divide inversión con IVA por ingresos con IVA, así que el margen
-     se mide sobre el bruto y se divide por el factor neto de los cargos
-     (para un Responsable, la pauta cuesta su neto de IVA).
+     el ACoS divide la inversión (sin IVA) por ingresos con IVA, así que el
+     margen se mide sobre el bruto y se divide por adsFactor, lo que cuesta
+     cada peso de inversión (v55.1: Responsable 1, Monotributo 1,21).
        ACoS ≤ BE − 20 → ok2 · BE − 20 a BE − 10 → ok · BE − 10 a BE → warn
        BE a BE + 10 → bad · > BE + 10 → bad2
 
@@ -14586,10 +14681,13 @@ function bandaAcos(acos, be) {
   return d <= -2 * UMBRAL_PASO ? 'ok2' : d <= -UMBRAL_PASO ? 'ok' : d <= 0 ? 'warn' : d <= UMBRAL_PASO ? 'bad' : 'bad2';
 }
 /* COGS total del producto en el período, o null si no tiene costo cargado. */
+/* Unidades que consumen mercadería en el período (v55.1): las vendidas más las
+   de reclamos cerrados con reembolso sin devolución del producto. */
+function _uCogs(s) { return ((s && s.unidades) || 0) + ((s && s.unidades_perdidas) || 0); }
 function _cogsItemTotal(s) {
   if (!s || !COGS_DATA.loaded || typeof getCOGS !== 'function') return null;
   const cg = getCOGS(s);
-  return (cg && cg.costo > 0) ? cg.costo * (s.unidades || 0) : null;
+  return (cg && cg.costo > 0) ? cg.costo*_uCogs(s) : null;
 }
 /* Banda del TACoS de un producto: el margen que le deja la pauta. */
 function bandaPautaItem(s, n) {
@@ -14606,7 +14704,7 @@ function beAcosItem(s, n) {
   const mU = n.margenUnitario !== undefined ? n.margenUnitario : n.margenNEXUS;
   const preAds = (mU || 0) * (n.ventaNeta || 0);
   const cg = _cogsItemTotal(s);
-  const nf = (typeof fiscalNetFactor === 'function') ? fiscalNetFactor() : 1;
+  const nf = fiscalCfg().adsFactor || 1;   // inversión → costo (v55.1)
   return ((preAds - (cg || 0)) / bruto) / (nf > 0 ? nf : 1);
 }
 /* Señal de la cuenta, calculada por renderRentKPIs. */
@@ -14615,7 +14713,7 @@ function semaforoCuenta() {
   if (!S) return null;
   const usaPost = S.mPost !== null && S.cobCogs >= UMBRAL_COB_COGS;
   const margen = usaPost ? S.mPost : S.mPre;
-  const nf = (typeof fiscalNetFactor === 'function') ? fiscalNetFactor() : 1;
+  const nf = fiscalCfg().adsFactor || 1;   // inversión → costo (v55.1)
   const be = S.bruto > 0 ? ((S.preAds - (usaPost ? S.cogs : 0)) / S.bruto) / (nf > 0 ? nf : 1) : null;
   return { banda: bandaMargen(margen, usaPost), margen, usaPost, be };
 }
@@ -14740,6 +14838,7 @@ function _resumenFiscal() {
     const ii = document.getElementById('fp-iibb'), iv = document.getElementById('fp-iva-ar');
     if (ii && ii.value !== '') t += ' · IIBB ' + String(ii.value).replace('.', ',') + ' %';
     if (iv) t += ' · IVA ' + String(Math.round(parseFloat(iv.value) * 1000) / 10).replace('.', ',') + ' %';
+    if (!ri) t += ' · COGS ' + (FISCAL_PARAMS.cogsSinIvaMono ? '+ IVA' : 'tal cual');
   }
   if (c === 'MX' && ri) {
     const is = document.getElementById('fp-isr-mx');
@@ -15161,6 +15260,11 @@ function renderSalud() {
     if (P && P.desalineado) al.push('El reporte de Anuncios no coincide con el período filtrado: el TACoS no se puede calcular');
     if (S && S.mPost !== null && S.cobCogs < UMBRAL_COB_COGS) al.push('El COGS cubre el ' + Math.round(S.cobCogs * 100) + ' % del revenue');
     if ((G._flexSinMedir || 0) > 0) al.push('Envío propio sin costo cargado en ' + G._flexSinMedir + ' publicaciones');
+    // v55.1: datos que el reporte de ventas no trajo
+    const _inc = G.reporteIncompleto;
+    if (_inc && _inc.ventas > 0) al.push('Reporte de ventas incompleto: ' + _inc.ventas + ' ventas sin importes (' + ARS(_inc.bruto) + ') quedaron afuera. Volvé a descargarlo');
+    else if (_inc && _inc.aviso) al.push('Mercado Libre avisa que el reporte de ventas no trae algunos datos. Volvé a descargarlo');
+    if (G.isCostosPromedio && G.country === 'AR') al.push('Reporte de costos promedio: las retenciones de IIBB vienen dentro de la comisión y se cuentan dos veces con el IIBB. Descargá el reporte detallado');
     strip.innerHTML = al.map(t => '<span class="alert-chip">' + esc(t) + '</span>').join('');
   }
 
@@ -15239,7 +15343,7 @@ function renderRentKPIs(skuMap) {
   
   // Agregados sobre todo el skuMap
   let revBruto = 0, cargoVenta = 0, costoEnvio = 0, ingEnvio = 0,
-      impuestos = 0, costoFijo = 0, cuotas = 0, descuentos = 0, devol = 0, recibidoML = 0;
+      impuestos = 0, costoFijo = 0, cuotas = 0, descuentos = 0, devol = 0, otros = 0, recibidoML = 0;
   // MX (v52.1): retenciones separadas de la comisión y ventas sin IVA débito
   let retIva = 0, retIsr = 0, retIsrSinRfc = 0, exentos = 0;
   let flexPropioTot = 0;   // envío propio (Flex), que el reporte no trae
@@ -15256,6 +15360,7 @@ function renderRentKPIs(skuMap) {
     cuotas      += s.cuotas || 0;
     descuentos  += s.descuentos || 0;
     devol       += s.costo_devolucion || 0;
+    otros       += s.otros_cargos || 0;   // v55.1
     retIva      += s.ret_iva || 0;
     retIsr      += s.ret_isr || 0;
     retIsrSinRfc+= s.ret_isr_sinrfc || 0;
@@ -15315,7 +15420,7 @@ function renderRentKPIs(skuMap) {
   const factorIva = revBruto > 0 ? ivaDebito / revBruto : _fcA.factorIva;
 
   // Recibido ML con fees NETOS de IVA (costo real para RI)
-  recibidoML = revBruto + (cargoVenta + costoEnvio + ingEnvio + costoFijo + cuotas + descuentos + devol) * netFee + impuestos - flexPropioTot;
+  recibidoML = revBruto + (cargoVenta + costoEnvio + ingEnvio + costoFijo + cuotas + descuentos + devol + otros) * netFee + impuestos - flexPropioTot;
 
   const iibbTotal = ventaNetaTotal * iibbRate;
   /* Retenciones a cuenta: AR contra IIBB; MX con RFC, IVA contra el débito e ISR
@@ -15327,7 +15432,7 @@ function renderRentKPIs(skuMap) {
   /* Todo el reporte de Ads recortado al rango, incluida la pauta de publicaciones
      sin ventas: misma cifra que resta el informe (adsInversionRango). */
   const inversionAdsRaw = adsInversionRango();
-  const inversionAds = inversionAdsRaw * netFee;  // costo real de Ads (neto IVA para RI)
+  const inversionAds = inversionAdsRaw * _fcA.adsFactor;  // costo real (v55.1): AR RI × 1 · AR Monotributo × 1,21
   
   // Rentabilidad NEXUS = recibidoML - fiscal - inversionAds (neta)
   const rentabilidadNexus = recibidoML - fiscalTotal - inversionAds;
@@ -15576,7 +15681,7 @@ function renderRentKPIs(skuMap) {
       const cg = getCOGS(s);
       if (cg) {
         nMatch++;
-        cogsTotal += cg.costo * (s.unidades || 0);
+        cogsTotal += cg.costo*_uCogs(s);
         nexusMatcheado += n.recibidoNEXUS || 0;
         revMatcheado += s.ingresos_brutos || 0;
         vnetaMatch += n.ventaNeta || 0;
@@ -16376,7 +16481,7 @@ function buildNexusTable(cache, mode) {
       if (COGS_DATA.loaded) {
         const cg = getCOGS(s);
         if (cg) {
-          const cogsTotal = cg.costo * (s.unidades || 0);
+          const cogsTotal = cg.costo*_uCogs(s);
           const rentFinal = n.recibidoNEXUS - cogsTotal;
           // Margen final sobre venta neta del período (v52.8)
           const baseFin = n.ventaNeta || 0;   // venta neta, como el resto (v52.8)
@@ -17014,7 +17119,7 @@ function renderNEXUS(skuMap, useML, idLabel) {
         const nn = s.nexus;
         let mb = nn.recibidoNEXUS_sinAds_total || 0;
         const cgA = (typeof getCOGS === 'function') ? getCOGS(s) : null;
-        if (cgA && cgA.costo > 0) mb -= cgA.costo * (s.unidades || 0);
+        if (cgA && cgA.costo > 0) mb -= cgA.costo*_uCogs(s);
         const vn = nn.ventaNeta || 0;
         if (vn > 0) { _mgAcum += mb; _vnAcum += vn; }
       });
@@ -17046,7 +17151,7 @@ function renderNEXUS(skuMap, useML, idLabel) {
            contribución previo a Ads (descontando COGS si el template está cargado). */
         let margenBase = n.recibidoNEXUS_sinAds_total || 0;
         const cg = (typeof getCOGS === 'function') ? getCOGS(s) : null;
-        if (cg && cg.costo > 0) margenBase -= cg.costo * (s.unidades || 0);
+        if (cg && cg.costo > 0) margenBase -= cg.costo*_uCogs(s);
         const invNeta = n.inversionAds || 0;
         const pesoMg = margenBase > 0 ? invNeta / margenBase : (invNeta > 0 ? Infinity : 0);
         const pesoTxt = margenBase <= 0 ? '—' : (pesoMg >= 10 ? '>1000%' : PCT(pesoMg));
@@ -18607,6 +18712,10 @@ function syncParamsFiscalesUI() {
   const ar = document.getElementById('fp-ar'), mx = document.getElementById('fp-mx');
   if (ar) ar.style.display = fc.isAR ? 'inline-flex' : 'none';
   if (mx) mx.style.display = (fc.isMX && fc.esRI) ? 'inline-flex' : 'none';
+  const am = document.getElementById('fp-ar-mono');
+  if (am) am.style.display = (fc.isAR && !fc.esRI) ? 'inline-flex' : 'none';
+  const cm = document.getElementById('fp-cogs-mono');
+  if (cm) cm.value = FISCAL_PARAMS.cogsSinIvaMono ? '1' : '0';
   const ib = document.getElementById('fp-iibb');
   if (ib && document.activeElement !== ib) ib.value = +((FISCAL_PARAMS.iibb || 0) * 100).toFixed(2);
   const iv = document.getElementById('fp-iva-ar');
@@ -18626,6 +18735,8 @@ function setParamFiscal() {
   if (iv) FISCAL_PARAMS.ivaProdAR = parseFloat(iv.value) || 0.21;
   const is = document.getElementById('fp-isr-mx');
   if (is) FISCAL_PARAMS.isrCostoMX = is.value === '1';
+  const cm = document.getElementById('fp-cogs-mono');
+  if (cm) FISCAL_PARAMS.cogsSinIvaMono = cm.value === '1';
   // Todo el pipeline depende de fiscalCfg: se re-renderiza el dashboard completo
   if (typeof aplicarFiltros === 'function' && G && G.records) aplicarFiltros();
 }
