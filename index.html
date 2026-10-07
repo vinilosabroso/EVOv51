@@ -148,6 +148,17 @@
   /* ══ v54.2 · Salud ══ */
   .alerts-strip{display:flex;flex-wrap:wrap;gap:var(--sp-2);padding:var(--sp-4) var(--gutter) 0;}
   .alerts-strip:empty{display:none;}
+  /* v55.3 · Las advertencias van plegadas detrás de un "!" naranja */
+  .alerts-strip{flex-direction:column;align-items:flex-start;}
+  .alert-btn{position:relative;width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;background:var(--warn);color:var(--bg);
+    font-family:var(--mono);font-size:16px;font-weight:700;line-height:1;display:inline-grid;place-items:center;
+    box-shadow:0 0 0 0 rgba(var(--warn-rgb),.45);transition:box-shadow .15s;}
+  .alert-btn:hover,.alert-btn:focus-visible{box-shadow:0 0 0 4px rgba(var(--warn-rgb),.25);outline:none;}
+  .alert-btn[aria-expanded="true"]{box-shadow:0 0 0 4px rgba(var(--warn-rgb),.35);}
+  .alert-n{position:absolute;top:-5px;right:-7px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--surface);
+    border:1px solid var(--warn);color:var(--warn);font-size:9px;display:grid;place-items:center;}
+  .alert-list{display:flex;flex-wrap:wrap;gap:var(--sp-2);}
+  .alert-list[hidden]{display:none;}
   /* v55.2 · Cobertura parcial del COGS: cartel visible en Rentabilidad */
   .cogs-aviso{margin:var(--sp-3) var(--gutter) 0;padding:var(--sp-3) var(--sp-4);border:1px solid var(--warn);border-left-width:4px;border-radius:8px;
     background:rgba(251,146,60,.10);}
@@ -1357,7 +1368,7 @@ const _GLOSARIO = [
   ['Card Ads','TACoS y ACoS lado a lado','El TACoS se colorea por el margen que le deja la pauta a la cuenta y el ACoS contra el break-even. Debajo, la inversión, el peso de la venta por publicidad y, si existe, la inversión sin retorno (con y sin ventas orgánicas).'],
   ['Card Stock','Críticos de FULL o riesgo del forecast','Con Stock FULL: publicaciones que cubren 14 días o menos y las que están sin stock. Con forecast: revenue en riesgo hoy y fecha del próximo quiebre. Sin ninguno de los dos, la card queda en su lugar mostrando que falta el dato.'],
   ['Luces de las pestañas','Apagadas por defecto, violeta con alerta','Cada pestaña de Chequeo tiene una luz que se prende cuando su card está en naranja o rojo. La pestaña activa se marca sólo con el color del texto.'],
-  ['Franja de advertencias','Sólo aparece si hay algo que advertir','Reporte de Anuncios con otro período que el filtro, COGS que no cubre el 93 % del revenue, publicaciones con envío propio sin costo cargado y, desde v55.1, reporte de ventas incompleto o en formato de costos promedio en Argentina. Desde v55.2 el aviso del COGS aparece con cualquier cobertura menor al 100 % (antes, sólo debajo del 93 %).'],
+  ['Franja de advertencias','Sólo aparece si hay algo que advertir','Reporte de Anuncios con otro período que el filtro, COGS que no cubre el 93 % del revenue, publicaciones con envío propio sin costo cargado y, desde v55.1, reporte de ventas incompleto o en formato de costos promedio en Argentina. Desde v55.2 el aviso del COGS aparece con cualquier cobertura menor al 100 % (antes, sólo debajo del 93 %). Desde v55.3 las advertencias quedan plegadas: se ve sólo un "!" naranja con la cantidad, y la lista se abre al tocarlo.'],
   ['Nombre de la cuenta','Tienda oficial o VENTAS AR / MX / CL','La barra superior, el Informe, la Alerta de stock, el Excel y el Snapshot usan la tienda oficial de mayor facturación o, si no hay, "VENTAS" y el país, con el rango de fechas de los datos. El nombre del archivo queda en el tooltip y el número de cuenta se sigue usando para asociar los inputs del Forecast.'],
  ]],
  ['Monotributo y validación con facturas (v55.1)', [
@@ -1371,7 +1382,7 @@ const _GLOSARIO = [
   ['Cobertura parcial del COGS (v55.2)','Cartel en Rentabilidad y aviso en Salud cuando el template cubre menos del 100 % de las ventas','El resultado final y el margen final se calculan sólo sobre las publicaciones con costo cargado: las que no tienen costo quedan afuera con su venta y su ganancia, así que el número no es el de la cuenta completa. El cartel aparece apenas se carga el template y lista las publicaciones sin costo ordenadas por venta. Ejemplo: con 98,7 % de cobertura, el margen final sobre ventas netas de una cuenta dio −10,6 % en lugar de −10,3 %.'],
   ['Mercadería perdida en reclamos','COGS × unidades de reclamos o mediaciones cerrados con reembolso','Cuando el reclamo se cierra con reembolso y el producto no vuelve, el comprador recupera la plata y el vendedor pierde la mercadería. El Total de esas ventas suele dar 0, así que antes no costaban nada. Las devoluciones finalizadas no entran porque el producto regresó.'],
   ['Reporte de ventas incompleto','Aviso en la franja de Salud','Cuando el Excel sale con faltantes, ML lo avisa arriba de los encabezados ("No pudimos mostrar algunos datos") y algunas ventas llegan sin importes ni Total. EVO no puede calcularlas, así que quedan afuera. Medido: 5 ventas entregadas por $113.940 en un mes. Ahora EVO las cuenta y avisa que hay que volver a descargar el reporte.'],
-  ['Formato de costos promedio en Argentina','Aviso en la franja de Salud','La columna "Cargo por venta e impuestos" junta la comisión con las retenciones de IIBB, y EVO además resta el IIBB completo: las retenciones se cuentan dos veces (medido: 69.435 en un mes). No se pueden separar porque la alícuota depende de la provincia del comprador (entre 1,5% y 5% en la misma cuenta). Hay que usar el reporte detallado.'],
+  ['Formato de costos promedio en Argentina','Aviso en la franja de Salud','La columna "Cargo por venta e impuestos" junta la comisión con las retenciones de IIBB, y EVO además resta el IIBB completo: las retenciones se cuentan dos veces (medido: 69.435 en un mes). No se pueden leer venta por venta porque la alícuota depende de la provincia del comprador (entre 1,5% y 5% en la misma cuenta). Desde v55.3 EVO las separa sola: Mercado Libre elige el formato y el vendedor no lo puede pedir, así que no tiene sentido mandarlo a descargar otro. Verificado con una cuenta descargada el mismo día en los dos formatos: en las 294 ventas el cargo del promedio es al centavo comisión + cargo fijo + cuotas + Impuestos del detallado. Cada venta pasa de su cargo a Impuestos una retención estimada por la provincia del comprador sobre el precio sin IVA: 1,3%, Santa Fe 3,6%, Corrientes 3,9% (medido en 33.000 ventas detalladas de 5 cuentas; NO es la alícuota de IIBB, que daba 4% y subestimaba el costo 2,7 puntos). Se computa a cuenta del IIBB: el IIBB se cuenta una sola vez y la retención deja de llevar un IVA crédito que no tiene. Error medido: ±0,1 punto de la venta neta en tres cuentas, −0,9 en dos con retención casi nula en Buenos Aires y CABA. La tarjeta Retenciones las marca como estimadas.'],
   ['Pendiente: percepciones de la factura','No incluidas en el resultado','Las percepciones de IIBB y de IVA que ML suma en la factura mensual no están en ningún reporte por venta. Para un monotributista son costo: restarlas aparte hasta que EVO tenga ese dato.'],
  ]],
  ['Bases de cálculo y fiscalidad', [
@@ -1788,7 +1799,7 @@ function filtrarInfo(q) {
    fórmulas, sin las notas internas del glosario. Si cambia una fórmula,
    actualizar esto junto con _GLOSARIO.
    ═══════════════════════════════════════════════════════════════════════════ */
-const EVO_VERSION = 'v55.2';
+const EVO_VERSION = 'v55.3';
 const HOJA_METODOLOGIA = 'LEEME_Metodologia_EVO';
 /* Va primero en la hoja y en el JSON. Sin esto la IA cita la metodología en
    el entregable ("según NEXUS − COGS ÷ (1 − IVA)…") y el informe del cliente
@@ -1828,7 +1839,8 @@ function _metodologiaIA() {
        Un lector externo lee "costo de cuotas = $0" y concluye que los márgenes
        están sobreestimados porque falta un costo. No falta: está, sumado. */
     ['Formato del reporte de ventas', (G && G.isCostosPromedio)
-      ? 'COSTOS PROMEDIO — una sola columna "Cargo por venta e impuestos" con la comisión, el cargo fijo, el costo de cuotas y las retenciones juntos. Las columnas Cuotas, Costo fijo e Impuestos NO vienen en el reporte y por eso valen 0 en todas las hojas: ese costo está adentro de Comisión%, no está ausente. Un costo de cuotas en 0 con publicaciones que ofrecen cuotas es el formato del reporte, no un costo que el vendedor no paga'
+      ? 'COSTOS PROMEDIO — una sola columna "Cargo por venta e impuestos" con la comisión, el cargo fijo, el costo de cuotas y las retenciones juntos. Las columnas Cuotas y Costo fijo NO vienen en el reporte y por eso valen 0 en todas las hojas: ese costo está adentro de Comisión%, no está ausente. Un costo de cuotas en 0 con publicaciones que ofrecen cuotas es el formato del reporte, no un costo que el vendedor no paga.'
+        + ((G && G.country === 'AR') ? ' Argentina (v55.3): las retenciones de IIBB se separan del cargo con una tasa por provincia del comprador sobre el precio sin IVA (ingresos ÷ 1,21): 3,6% Santa Fe, 3,9% Corrientes y 1,3% el resto, medidas en reportes detallados; tope, el cargo de la venta. Van a Impuestos, a cuenta del IIBB. Sin esto se contaban dos veces. Son estimadas: el detallado las trae exactas.' : '')
       : 'DETALLADO — comisión, cargo fijo, costo de cuotas e impuestos vienen en columnas separadas y cada uno se imputa a su propia línea'],
     ['País / moneda', ((G && G.country) || '') + ' / ' + (CURRENCY_CODE || '')],
     ['Condición fiscal', fc.esRI ? 'Responsable de IVA' + (fc.isMX ? ' (con RFC)' : '') + ': descuenta IVA débito de la venta y netea el IVA de los cargos'
@@ -1885,7 +1897,7 @@ function _metodologiaIA() {
     ['Cargo fijo / cuotas', '|importe| × netFee', ''],
     ['Descuentos y bonificaciones', 'Descuentos × netFee', 'Reintegros de ML sobre sus cargos. Suman.'],
     ['Envío propio, base del cobro', FLEX_MODO === 'UNIDAD' ? 'Una tarifa por unidad despachada' : 'Una tarifa por ORDEN, repartida entre los ítems del carrito', FLEX_MODO === 'UNIDAD' ? 'Configurado así por el consultor: aplica cuando la logística factura por bulto. Con esta base, una orden de 7 unidades paga 7 tarifas.' : 'El despacho propio se paga una vez por orden, lleve las unidades que lleve, igual que lo bonifica la plataforma. Multiplicar la tarifa por unidades sobreestima el envío en las cuentas donde se compra de a varios y puede dar por deficitario un producto rentable. El Resumen informa las unidades por despacho del período.'],
-    ['Zona de cada despacho propio', 'La declara Mercado Libre; el código postal es el respaldo', 'El importe que ML paga por cada venta de despacho propio ES la tarifa publicada del anillo de destino, así que el monto identifica la zona sin inferir nada. Llega por "Descuentos y bonificaciones" cuando el vendedor ofrece envío gratis y por "Ingresos por envío" cuando lo paga el comprador. Las ventas donde ML no informa ninguno de los dos —producto bajo el umbral con envío gratis ofrecido por el vendedor, donde no hay bonificación— se resuelven por el código postal del comprador, y lo que no resuelve ninguna de las dos vías paga el promedio ponderado de la cuenta. El Resumen declara cuántas unidades resolvió cada vía. Hasta v53.1 TODO el despacho propio se costeaba al promedio ponderado: un envío a zona cercana y uno a zona muy lejana pesaban lo mismo en el margen aunque sus tarifas difieran más del doble.'],
+    ['Zona de cada despacho propio', 'La declara Mercado Libre; el código postal es el respaldo', 'El importe que ML paga por cada venta de despacho propio ES la tarifa publicada del anillo de destino, así que el monto identifica la zona sin inferir nada. Llega por "Descuentos y bonificaciones" cuando el vendedor ofrece envío gratis y por "Ingresos por envío" cuando lo paga el comprador. Las ventas donde ML no informa ninguno de los dos —producto bajo el umbral con envío gratis ofrecido por el vendedor, donde no hay bonificación— se resuelven por el código postal del comprador: desde v55.3, con la zona que Mercado Libre declaró para ese mismo partido en las demás ventas (mayoría de al menos 2 y 60%) y, si no hay, por distancia al código postal de despacho; lo que no resuelve ninguna de las dos vías paga el promedio ponderado de la cuenta. El Resumen declara cuántas unidades resolvió cada vía. Hasta v53.1 TODO el despacho propio se costeaba al promedio ponderado: un envío a zona cercana y uno a zona muy lejana pesaban lo mismo en el margen aunque sus tarifas difieran más del doble.'],
     ['Bonificación de envío propio', 'Σ Descuentos × netFee de las ventas despachadas por canal propio', 'En Argentina, ML le paga al vendedor por despachar él: la tarifa completa del anillo de destino en productos de hasta $33.000, usados y publicaciones gratuitas ($4.990 cercana, $6.990 media, $8.990 lejana, $10.490 muy lejana), y el 10% de esa tarifa en productos nuevos desde $33.000 con envío gratis y reputación verde. Viaja en la columna "Descuentos y bonificaciones", una línea por venta. El costo real del despacho propio es la tarifa del proveedor menos esta bonificación, y así figura en las hojas NEXUS y en el estado de resultados.'],
     ['Retenciones', fc.isMX ? 'Σ IVA retenido + ISR retenido, sin netear' : 'Σ |Impuestos|, sin netear',
       fc.retModo === 'IIBB' ? 'Pago a cuenta de IIBB, no un costo adicional.'
@@ -1914,7 +1926,7 @@ function _metodologiaIA() {
     ['Estado de resultados', 'Ventas netas − costos de plataforma y logística − publicidad − IIBB − COGS', 'Envío neto del período. Las retenciones no figuran donde son pago a cuenta (IIBB en AR; IVA e ISR provisional con RFC en MX); la parte que es costo figura como línea. Cierra exacto contra NEXUS; una diferencia de componentes aparece como Otros ajustes.'],
     ['NEXUS $/u (Break Even)', '(Recibido de ML − carga fiscal) ÷ unidades', 'Sin Ads ni COGS. Un COGS/u mayor implica pérdida por unidad.'],
     ['Margen Unit %', '(Recibido de ML − carga fiscal) ÷ Venta neta', 'Sin Ads ni COGS. Todos los márgenes por publicación usan esta base (v52.8). Sobre venta neta a propósito: sobre recibido sin IVA sólo reflejaría el IIBB.'],
-    ['Costos de canal %', '(Comisión + envío absorbido + envío propio + cargo fijo + cuotas + Ads) ÷ Venta neta', 'No incluye IVA, IIBB ni retenciones. El envío propio entra desde v52.9: se paga fuera de la plataforma pero sale de la misma plata.'],
+    ['Costos de canal %', '(Comisión + envío absorbido + envío propio neto de bonificación + cargo fijo + cuotas + Ads) ÷ Venta neta', 'No incluye IVA, IIBB ni retenciones. El envío propio entra desde v52.9: se paga fuera de la plataforma pero sale de la misma plata.'],
     ['Cambio de base', 'Margen sobre venta neta = resultado ÷ Venta neta', 'El mismo resultado en pesos da porcentajes distintos según la base. Sólo se comparan porcentajes de igual base.'],
    ]],
    ['Publicidad', [
@@ -1936,7 +1948,7 @@ function _metodologiaIA() {
     ['Resumen', 'KPI de cuenta', 'Facturación Neta = venta neta; Depósito de ML = columna Total; Costos de canal % sobre venta neta. El bloque con COGS usa el recibido sin IVA de las publicaciones con costo.'],
     ['Pareto Revenue / Pareto Volumen', 'Venta neta / unidades', 'Top 80% acumulado. Falso héroe: dentro del 80% de unidades y fuera del 80% de facturación.'],
     ['Apagadas fuera del período', 'Tasa mensual en BRUTO, con IVA', 'La cifra es Σ Ingresos por productos de los últimos 30 días activos de cada publicación apagada, o sea precio CON IVA. El Resumen la publica rotulada y con su equivalente en venta neta al lado. Es una TASA MENSUAL, no un acumulado histórico: no se suma al período. EVO ya descartó las publicaciones cuyo producto sigue vivo bajo otro identificador.'],
-    ['Rentabilidad', 'Por publicación, sin Ads ni COGS en Rev Neto', 'Rev Neto = Recibido de ML − carga fiscal; Margen% = Rev Neto ÷ Venta neta. Comisión% incluye el cargo fijo; Envío Neto% = envío absorbido; Impuestos% = retenciones. Todos los % sobre venta neta; Costos de canal % incluye Ads y el envío propio neto de bonificación. Con el reporte de costos promedio, Comisión% incluye ADEMÁS el costo de cuotas y las retenciones, y Cuotas% e Impuestos% dan 0 porque esas columnas no vienen en el reporte. Rev Neto y Margen% los calcula el mismo motor que NEXUS (v53.5): hasta v53.4 esta hoja repetía la fórmula a mano y se había quedado sin el envío propio, así que Σ Rev Neto daba por encima de Σ NEXUS sin Ads en exactamente la tarifa de despacho propio. Las dos columnas ahora cierran contra NEXUS Unit publicación por publicación.'],
+    ['Rentabilidad', 'Por publicación, sin Ads ni COGS en Rev Neto', 'Rev Neto = Recibido de ML − carga fiscal; Margen% = Rev Neto ÷ Venta neta. Comisión% incluye el cargo fijo; Envío Neto% = envío absorbido; Impuestos% = retenciones. Todos los % sobre venta neta; Costos de canal % incluye Ads y el envío propio neto de bonificación. Con el reporte de costos promedio, Comisión% incluye ADEMÁS el cargo fijo y el costo de cuotas, y Cuotas% da 0 porque esa columna no viene en el reporte. En Argentina, desde v55.3, Impuestos% son las retenciones de IIBB estimadas que EVO separa del cargo (tasa por provincia del comprador × precio sin IVA); antes daba 0 y la retención quedaba adentro de Comisión%. Rev Neto y Margen% los calcula el mismo motor que NEXUS (v53.5): hasta v53.4 esta hoja repetía la fórmula a mano y se había quedado sin el envío propio, así que Σ Rev Neto daba por encima de Σ NEXUS sin Ads en exactamente la tarifa de despacho propio. Las dos columnas ahora cierran contra NEXUS Unit publicación por publicación.'],
     ['NEXUS Unit', 'Por unidad, sin Ads', 'Break Even y Margen Unit % sobre venta neta. Con COGS, el margen post COGS va sobre recibido sin IVA por unidad. El despacho propio va en tres columnas: tarifa, bonificación de la plataforma y neto; el costo que entra al margen es el neto.'],
     ['NEXUS P&L', 'Período, con Ads', 'Recibido ML incluye el IVA débito. Margen P&L % = NEXUS ÷ (Recibido ML − Rev. Bruto × factorIVA). Ads a costo: inversión × adsFactor (v55.1); TACOS con la inversión del reporte. Mismas tres columnas de despacho propio que NEXUS Unit, en $ del período.'],
     ['TACOS / Publicidad', 'Inversión bruta del período', 'DOS BASES EN LA MISMA HOJA. Inversión Ads e Ing. atribuidos vienen del reporte de Anuncios en BRUTO (con IVA, atribución a 30 días post-clic). Rev. sesión, Revenue Total y Orgánico salen del reporte de ventas en venta NETA. Para juzgar si un anuncio acredita ventas de otros productos, comparar el atribuido contra Rev. Bruto del ítem —las dos columnas están en la hoja, más la relación ya calculada y la alerta ATRIBUCIÓN INDIRECTA—, nunca contra Revenue Total.'],
@@ -2034,7 +2046,7 @@ function _cifrasControlIA() {
     ...(retBaseMX(fc, M.retACuenta) > 0 ? [['Base de márgenes: Recibido sin IVA + retenciones a cuenta', $(M.recSinIvaBase), 'México con RFC: las retenciones a cuenta vuelven a la base igual que al resultado']] : []),
     ['Margen antes de mercadería', P(M.recSinIvaBase > 0 ? M.nexus / M.recSinIvaBase : 0), fc.retModo === 'IVA_ISR' ? 'NEXUS ÷ (Recibido de ML sin IVA + retenciones a cuenta)' : 'NEXUS ÷ Recibido de ML sin IVA', true],
     ['El mismo resultado sobre venta neta', P(M.ventaNeta > 0 ? M.nexus / M.ventaNeta : 0), 'NEXUS ÷ Venta neta, para comparar con análisis que usan esa base', true],
-    ['Costos de canal %', P(M.ventaNeta > 0 ? M.costosCanal / M.ventaNeta : 0), '(Comisión + envío absorbido + envío propio + cargo fijo + cuotas + Ads) ÷ Venta neta', true],
+    ['Costos de canal %', P(M.ventaNeta > 0 ? M.costosCanal / M.ventaNeta : 0), '(Comisión + envío absorbido + envío propio neto de bonificación + cargo fijo + cuotas + Ads) ÷ Venta neta', true],
     ['Depósito de ML (columna Total)', $(deposito), 'No es base de ningún margen'],
     ...(M.envioComprador > 0 ? [['Envío a cargo del comprador en despacho propio (fuera del resultado)', $(M.envioComprador),
       'Ventas de despacho propio donde ML informa "Ingresos por envío" y ningún costo: el comprador pagó el flete y el vendedor lo gira al transporte. No suma al resultado ni se le aplica tarifa de despacho propio. SÍ está dentro de la columna Total, así que forma parte de la diferencia Recibido − Depósito']] : []),
@@ -2479,7 +2491,7 @@ function _infMetricas(){
      acumulaba nadie: el estado de resultados lo mostraba bajo Retenciones y
      el KPI de costo logístico no lo veía. Se acumula aparte de envio/envioNeto
      porque esos dos comparan lo que informa ML venta por venta. */
-  let flexPropio=0;
+  let flexPropio=0, flexCanal=0;
   /* La bonificación de envío de ML, partida en la que compensa despacho propio
      y la que no. Las dos ya están adentro de bonif (y de recibidoML): esto es
      sólo el corte, para que el estado de resultados pueda poner la que compensa
@@ -2503,6 +2515,7 @@ function _infMetricas(){
     comision += Math.abs((s.cargo_venta||0)*fc.netFee);
     envio    += n.envioAbsorbido||0;   // venta por venta, como el dashboard (v51.3)
     flexPropio += n.flexTotal||0;      // envío propio, fuera de la plataforma
+    flexCanal  += Math.max(0, (n.flexTotal||0) - (n.bonifFlex||0));   // neto de bonificación, para costos de canal (v55.3)
     /* Envío NETO con signo: hay cuentas donde el comprador paga más envío del
        que cuesta y el neto es ingreso. La versión con piso en cero sirve para
        el KPI de costo logístico, pero no cierra una cuenta de resultado. */
@@ -2539,7 +2552,10 @@ function _infMetricas(){
            // Bases de márgenes sobre recibido sin IVA (MX con RFC: + retenciones a cuenta)
            recSinIvaBase: recibidoML - ivaDebito + retBaseMX(fc, retACuenta),
            recSinIvaMatchBase: recibMatch - ivaDebMatch + retBaseMX(fc, retACMatch),
-           costosCanal: comision+envio+flexPropio+fijo+cuotas+ads,
+           /* El envío propio entra neto de la bonificación de ML (v55.3), como en
+              la tabla por publicación. Bruto, la tarjeta de cuenta mostraba un
+              costo de canal más alto que la suma de sus publicaciones. */
+           costosCanal: comision+envio+flexCanal+fijo+cuotas+ads,
            rentReal: nexusMatch - cogsTot,
            nVentas: R.nVentas||0 };
 }
@@ -4267,7 +4283,9 @@ function doExportSnapshot(accountName, sanitized) {
         categoriasML: G.categoriasML || {},
         comboMap: G.comboMap || {},
         liqCarritoV: G.liqCarritoV || 1,
-        pubsImportadas: !!G.pubsImportadas
+        pubsImportadas: !!G.pubsImportadas,
+        isCostosPromedio: !!G.isCostosPromedio,             // v55.3: formato del reporte
+        reporteIncompleto: G.reporteIncompleto || null
       },
       currency_code: CURRENCY_CODE,
       forecast_inputs: FORECAST_INPUTS || {},
@@ -4373,9 +4391,16 @@ function importSnapshotJSON(file) {
         comboMap: snap.G.comboMap || {},
         // Sin sello = snapshot anterior a v51.1 (liquidez de carritos en bruto)
         liqCarritoV: snap.G.liqCarritoV || 1,
-        pubsImportadas: !!snap.G.pubsImportadas
+        pubsImportadas: !!snap.G.pubsImportadas,
+        reporteIncompleto: snap.G.reporteIncompleto || null
       };
-      
+      /* Formato del reporte (v55.3). Los snapshots anteriores no lo guardaban: un
+         reporte argentino sin una sola fila con impuestos, cuotas ni cargo fijo
+         sólo puede ser el de costos promedio, que no trae esas columnas. */
+      G.isCostosPromedio = snap.G.isCostosPromedio !== undefined ? !!snap.G.isCostosPromedio
+        : (G.country === 'AR' && G.records.length > 0
+           && !G.records.some(r => (r.impuestos || 0) !== 0 || (r.cuotas || 0) !== 0 || (r.costo_fijo || 0) !== 0));
+
       // Rehidratar variantes (Set)
       if (snap.G.variantes) {
         for (const k of Object.keys(snap.G.variantes)) {
@@ -8587,6 +8612,9 @@ function aplicarFiltros(){
     const mlaToSKUs = {};    // id_pub → Set<sku>
     // Mapa de títulos (para mostrar nombre en items sin SKU o sin nombre)
     const titulosMap = G.titulos || {};
+    // Formato de costos promedio en AR: retenciones dentro del cargo (v55.3)
+    const _fcFil = fiscalCfg();
+    const _retProm = !!G.isCostosPromedio && G.country === 'AR' && _fcFil.isAR;
 
     for(const r of G.records){
       if(from&&r.fecha&&r.fecha<from) continue;
@@ -8594,9 +8622,11 @@ function aplicarFiltros(){
 
       const id=getID(r)||(useML?'SIN_ID':'SIN_SKU');
       const{liquidez,unidades,esPubli,tienda,prov,localidad,cpComprador,esCarrito,precio_unit,
-            ingresos_brutos,cargo_venta,costo_fijo,cuotas,
-            ing_envio,costo_envio,impuestos,descuentos,anulaciones,
+            ingresos_brutos,costo_fijo,cuotas,
+            ing_envio,costo_envio,descuentos,anulaciones,
             forma_entrega, devoluciones_unidades, esCanceled}=r;
+      let cargo_venta = r.cargo_venta || 0, impuestos = r.impuestos || 0;
+      if (_retProm) { const _est = retencionPromedioAR(r); cargo_venta += _est; impuestos -= _est; }
 
       // Flag: ¿este id es un MLA actuando como SKU? (vista SKU + record sin SKU real)
       const _isMlaFallback = !useML && (!r.sku || r.sku === 'SIN_SKU');
@@ -12876,7 +12906,9 @@ function calcNEXUS(s) {
   
   // Detección PROMEDIO vs DETALLADO:
   // DETALLADO si el reporte trae al menos uno de: impuestos, cuotas, costo_fijo
-  const tieneDetalle = (impuestos !== 0) || (cuotas !== 0) || (costoFijo !== 0);
+  // En AR promedio las retenciones las separa EVO (v55.3): no cuentan como detalle
+  const tieneDetalle = (G && G.isCostosPromedio && G.country === 'AR') ? false
+    : ((impuestos !== 0) || (cuotas !== 0) || (costoFijo !== 0));
   const desgloseTipo = tieneDetalle ? 'DETALLADO' : 'PROMEDIO';
 
   // Por unidad (para columnas de la tabla)
@@ -13082,13 +13114,13 @@ const GEO_AR_CP = [
   [1736,1746,'Moreno',2],
   [1748,1749,'General Rodríguez',3],
   [1751,1754,'La Matanza',1],
-  [1755,1759,'La Matanza',2],
+  [1755,1759,'La Matanza (sur)',2],
   [1761,1761,'Merlo',2],
-  [1763,1766,'La Matanza',2],
+  [1763,1766,'La Matanza (sur)',2],
   [1768,1772,'La Matanza',1],
-  [1774,1774,'La Matanza',2],
+  [1774,1774,'La Matanza (sur)',2],
   [1776,1776,'La Matanza',1],
-  [1778,1778,'La Matanza',2],
+  [1778,1778,'La Matanza (sur)',2],
   [1785,1786,'La Matanza',1],
   [1801,1804,'Ezeiza',2],
   [1805,1807,'Esteban Echeverría',2],
@@ -13127,6 +13159,11 @@ const GEO_AR_CP = [
 const GEO_AR_CENTRO = {
   'CABA':[-34.6037,-58.3816], 'Avellaneda':[-34.6625,-58.3645], 'Lanús':[-34.7069,-58.3925],
   'Lomas de Zamora':[-34.7611,-58.4014], 'La Matanza':[-34.6764,-58.5614], 'Morón':[-34.6534,-58.6198],
+  /* La Matanza mide 325 km²: de Ramos Mejía a Virrey del Pino hay 25 km. Su
+     segundo cordón (Laferrere, González Catán, Virrey del Pino) va aparte
+     desde v55.3, con su propio centroide; si no, un despacho desde Ramos Mejía
+     veía a González Catán como "cercana". */
+  'La Matanza (sur)':[-34.7700,-58.6300],
   'Tres de Febrero':[-34.5997,-58.5656], 'General San Martín':[-34.5725,-58.5361],
   'Vicente López':[-34.5264,-58.4786], 'San Isidro':[-34.4708,-58.5125], 'San Fernando':[-34.4414,-58.5586],
   'Tigre':[-34.4264,-58.5797], 'Malvinas Argentinas':[-34.5011,-58.7003], 'San Miguel':[-34.5433,-58.7119],
@@ -13300,10 +13337,47 @@ function _zonaPropuesta(celda, cordon) {
   return _ZONA_ORDEN[Math.min(cordon, 3)];
 }
 
-/* Anillo efectivo de una celda: lo que dijo el consultor, o la propuesta. */
+/* Anillo efectivo de una celda: lo que dijo el consultor; si no, el que
+   Mercado Libre ya declaró para ese mismo destino en otras ventas; si no, la
+   propuesta por distancia. */
 function zonaDeCelda(celda, cordon) {
   if (celda && ZONA_OVERRIDE[celda]) return ZONA_OVERRIDE[celda];
+  const ap = celda ? _zonaAprendidaML()[celda] : null;
+  if (ap) return ap.zona;
   return _zonaPropuesta(celda, cordon);
+}
+
+/* ═══════════ ZONA APRENDIDA DE MERCADO LIBRE (v55.3) ═══════════
+   ML calcula la zona de Flex por la distancia entre el comprador y la
+   ubicación REAL del vendedor, y la declara en el importe que bonifica. Esa
+   misma declaración sirve para las ventas del mismo partido donde ML no
+   informó importe (envío gratis bajo el umbral): si 9 de 10 ventas a Morón
+   vinieron como "cercana", la décima también lo es, viva donde viva el
+   depósito. Así la vía del código postal deja de depender de un centroide por
+   partido y de que el consultor cargue bien el CP de origen.
+   Mayoría de al menos 2 ventas y 60% del partido; si no, decide la distancia. */
+let _ZONA_APR_CACHE = null;
+function _zonaAprendidaML() {
+  const recs = (G && G.records) || null;
+  if (!recs) return {};
+  if (_ZONA_APR_CACHE && _ZONA_APR_CACHE.recs === recs && _ZONA_APR_CACHE.pais === _geoPais()) return _ZONA_APR_CACHE.map;
+  const cnt = {};
+  recs.forEach(r => {
+    if (!r || r.esCanceled || typeof canalEnvio !== 'function' || canalEnvio(r.forma_entrega) !== 'FLEX') return;
+    const z = _zonaPorTarifaML(r.tarifaML || 0); if (!z) return;
+    const g = geoCelda(r.cpComprador, r.localidad); if (!g) return;
+    const c = cnt[g.celda] || (cnt[g.celda] = {});
+    c[z] = (c[z] || 0) + 1;
+  });
+  const map = {};
+  Object.keys(cnt).forEach(celda => {
+    const c = cnt[celda];
+    let best = null, n = 0, tot = 0;
+    Object.keys(c).forEach(z => { tot += c[z]; if (c[z] > n) { n = c[z]; best = z; } });
+    if (best && n >= 2 && n / tot >= 0.6) map[celda] = { zona: best, n, tot };
+  });
+  _ZONA_APR_CACHE = { recs, pais: _geoPais(), map };
+  return map;
 }
 
 /* ═══════════ LA ZONA QUE DECLARA MERCADO LIBRE (v53.2) ═══════════
@@ -13383,8 +13457,12 @@ function _flexModoCambio(v) {
 /* Cerrar sin aplicar tiene que dejar todo como estaba, incluida la base del
    cobro: se cambia en vivo para poder ver el efecto en el preview, así que si
    no se acepta hay que devolverla. */
+let _ZONA_PREV = null;
 function _flexCancelar() {
   if (_FLEX_MODO_PREV !== null) { FLEX_MODO = _FLEX_MODO_PREV; _FLEX_MODO_PREV = null; }
+  /* El CP de origen y los pisados también se cambian en vivo (v55.3): si no se
+     aplica, vuelven a como estaban. Antes quedaban cambiados igual. */
+  if (_ZONA_PREV) { ZONA_ORIGEN_CP = _ZONA_PREV.cp; ZONA_OVERRIDE = _ZONA_PREV.ov; _ZONA_PREV = null; _invalidarMezcla(); }
   const ov = document.getElementById('flexprom-overlay');
   if (ov) ov.remove();
 }
@@ -13756,6 +13834,37 @@ function retACuentaDe(o, fc) {
   return 0;
 }
 
+/* ═══════════ AR · RETENCIONES DENTRO DEL CARGO, FORMATO PROMEDIO (v55.3) ═══════════
+   Mercado Libre entrega el reporte de ventas en dos formatos y no deja elegir
+   cuál. En el de costos promedio no existe la columna Impuestos: las
+   retenciones de IIBB vienen sumadas en "Cargo por venta e impuestos", junto con
+   la comisión, el cargo fijo y las cuotas. Tomada entera como comisión, la
+   retención se contaba dos veces —en el cargo y en el IIBB completo— y encima
+   se le descontaba un IVA crédito que no tiene (× netFee).
+   Verificado sobre una cuenta descargada el mismo día en los dos formatos: en
+   las 294 ventas, el cargo del promedio es al centavo comisión + cargo fijo +
+   cuotas + Impuestos del detallado.
+   No se puede leer venta por venta, así que se estima con la tasa de retención
+   de la provincia del comprador sobre el precio sin IVA y se mueve del cargo a
+   Impuestos, donde se computa a cuenta del IIBB como en el formato detallado.
+   Las tasas NO son la alícuota de IIBB: medidas sobre 3 cuentas y 33.000
+   ventas detalladas, la retención es 1,2–1,4% en casi todo el país y sube en
+   Santa Fe (3,2–6%) y Corrientes (3,9%). Usar el 4% de IIBB subestimaba el
+   costo 2,7 puntos de la venta neta. El error que queda es el de la tasa de
+   cada vendedor contra la tabla, medido en 5 cuentas: ±0,1 punto en tres y
+   −0,9 en dos que casi no tienen retención en Buenos Aires y CABA. Contar la
+   retención dos veces, como antes, sobreestimaba 0,5–1,6 puntos. Tope: el cargo. */
+const RET_IIBB_AR_PROV = { 'santa fe': 0.036, 'corrientes': 0.039 };
+const RET_IIBB_AR_DEFAULT = 0.013;
+function retencionPromedioAR(r) {
+  if (!r || r.esCanceled) return 0;
+  const cargo = -(r.cargo_venta || 0);
+  if (!(cargo > 0)) return 0;
+  const p = (typeof _geoNorm === 'function') ? _geoNorm(r.prov) : String(r.prov || '').toLowerCase();
+  const tasa = RET_IIBB_AR_PROV[p] !== undefined ? RET_IIBB_AR_PROV[p] : RET_IIBB_AR_DEFAULT;
+  return Math.min(cargo, (r.ingresos_brutos || 0) / 1.21 * tasa);
+}
+
 /* Base "recibido sin IVA" de los márgenes, México con RFC (v52.1). Lo recibido
    de ML ya descontó las retenciones; el resultado las devuelve porque son a
    cuenta (el IVA retenido es parte del débito ya restado y el ISR es pago
@@ -13864,9 +13973,13 @@ function separarRetencionesMX(records) {
 }
 
 // Netea el IVA de un monto de VENTA (revenue). No aplica a cargos: para eso va netFee.
+/* Lo usan bonificaciones y costos de envío, que son cargos de ML: se netean con
+   el IVA de los CARGOS (netFee), no con el del producto (v55.3). Con productos
+   al 10,5% usaba 1/1,105, la bonificación de envío salía un 9,5% más alta que
+   la que entra al resultado (× 1/1,21) y "otras bonificaciones" daba negativa. */
 function fiscalNetFactor() {
   if (NEXUS_FISCAL !== 'RI') return 1;
-  return 1 / (1 + fiscalCfg().ivaRate);
+  return fiscalCfg().netFee;
 }
 // Convierte un monto bruto (con IVA) a neto de IVA si sos Responsable
 function netIVA(monto) { return (monto || 0) * fiscalNetFactor(); }
@@ -15269,10 +15382,30 @@ function renderSalud() {
     if ((G._flexSinMedir || 0) > 0) al.push('Envío propio sin costo cargado en ' + G._flexSinMedir + ' publicaciones');
     // v55.1: datos que el reporte de ventas no trajo
     const _inc = G.reporteIncompleto;
-    if (_inc && _inc.ventas > 0) al.push('Reporte de ventas incompleto: ' + _inc.ventas + ' ventas sin importes (' + ARS(_inc.bruto) + ') quedaron afuera. Volvé a descargarlo');
-    else if (_inc && _inc.aviso) al.push('Mercado Libre avisa que el reporte de ventas no trae algunos datos. Volvé a descargarlo');
-    if (G.isCostosPromedio && G.country === 'AR') al.push('Reporte de costos promedio: las retenciones de IIBB vienen dentro de la comisión y se cuentan dos veces con el IIBB. Descargá el reporte detallado');
-    strip.innerHTML = al.map(t => '<span class="alert-chip">' + esc(t) + '</span>').join('');
+    /* Ventas sin importes (v55.3): son ventas que Mercado Libre todavía no
+       liquidó —pago pendiente, en preparación, en camino—. No se recuperan
+       volviendo a descargar el reporte: aparecen solas cuando se concretan. */
+    if (_inc && _inc.ventas > 0) al.push(_inc.ventas + ' ventas todavía sin importes (' + ARS(_inc.bruto) + ') quedaron afuera: Mercado Libre aún no las liquidó y van a aparecer con sus importes cuando se concreten');
+    else if (_inc && _inc.aviso) al.push('Mercado Libre avisa que el reporte no trae algunos datos: suelen ser ventas que todavía no se concretaron y se completan solas con el tiempo');
+    if (G.isCostosPromedio && G.country === 'AR') al.push('Reporte con costos promedio: las retenciones de IIBB vienen dentro del cargo por venta. EVO las estima por provincia del comprador (1,3% del precio sin IVA; Santa Fe 3,6%, Corrientes 3,9%) y las separa para no contarlas dos veces');
+    /* Desde v55.3 las advertencias quedan plegadas detrás de un "!" naranja: el
+       botón aparece sólo si hay algo que advertir y la lista se abre al tocarlo. */
+    const abierta = !!strip._abierta && al.length > 0;
+    strip.innerHTML = al.length
+      ? '<button type="button" class="alert-btn" aria-expanded="' + abierta + '" title="' + al.length + (al.length === 1 ? ' advertencia' : ' advertencias') + '">!'
+        + '<span class="alert-n">' + al.length + '</span></button>'
+        + '<div class="alert-list"' + (abierta ? '' : ' hidden') + '>' + al.map(t => '<span class="alert-chip">' + esc(t) + '</span>').join('') + '</div>'
+      : '';
+    if (!strip._evo) {
+      strip._evo = true;
+      strip.addEventListener('click', e => {
+        const b = e.target.closest('.alert-btn'); if (!b) return;
+        const l = strip.querySelector('.alert-list'); if (!l) return;
+        strip._abierta = l.hidden;
+        l.hidden = !strip._abierta;
+        b.setAttribute('aria-expanded', String(strip._abierta));
+      });
+    }
   }
 
   // Luces de las pestañas: se prenden con alerta (warn o peor)
@@ -15377,6 +15510,7 @@ function renderRentKPIs(skuMap) {
   let flexPropioTot = 0;   // envío propio (Flex), que el reporte no trae
   let bonifFlexTot = 0;    // lo que ML bonifica de ese envío propio (columna Descuentos)
   let flexUnidadesTot = 0; // unidades despachadas por canal propio, para la tarifa por unidad
+  let flexCanalTot = 0;    // envío propio neto de bonificación (costos de canal y tarjeta Envío)
 
   Object.values(skuMap).forEach(s => {
     revBruto    += s.ingresos_brutos || 0;
@@ -15396,9 +15530,12 @@ function renderRentKPIs(skuMap) {
     /* Envío propio: mismas funciones que usa calcNEXUS, para que la tarjeta y el
        informe no puedan divergir. Sin esto el margen de pantalla salía más alto
        que el impreso en cuanto había una tarifa de despacho propio cargada. */
-    flexPropioTot += (typeof _flexUnitDe === 'function' ? _flexUnitDe(s) * _flexUnidadesDe(s) : 0);
+    const _fxS = (typeof _flexUnitDe === 'function' ? _flexUnitDe(s) * _flexUnidadesDe(s) : 0);
+    const _boS = (typeof _bonifFlexDe === 'function' ? _bonifFlexDe(s) : 0);
+    flexPropioTot += _fxS;
     flexUnidadesTot += (typeof _flexUnidadesDe === 'function' ? _flexUnidadesDe(s) : 0);
-    bonifFlexTot += (typeof _bonifFlexDe === 'function' ? _bonifFlexDe(s) : 0);
+    bonifFlexTot += _boS;
+    flexCanalTot += Math.max(0, _fxS - _boS);   // neto de bonificación, como por publicación (v55.3)
   });
   
   // FIX: Calcular envío REAL recorriendo registros uno por uno (no agregado)
@@ -15484,7 +15621,7 @@ function renderRentKPIs(skuMap) {
   const costoFijoAbs = Math.abs(costoFijo) * netFee;
   /* Costo logístico total: lo que informa ML más el despacho propio, que se
      paga fuera de la plataforma. La tarjeta medía sólo el primero. */
-  const costoEnvioAbs = envioRealSeller * netFee + flexPropioTot;
+  const costoEnvioAbs = envioRealSeller * netFee + flexCanalTot;   // propio neto de bonificación (v55.3)
   const impuestosAbs = Math.abs(impuestos);
   const cuotasAbs = Math.abs(cuotas) * netFee;
   /* Costos totales = Ingresos por productos − NEXUS, así la tarjeta cierra exacto
@@ -15675,13 +15812,18 @@ function renderRentKPIs(skuMap) {
       _retSub = 'IVA ' + _fx(retIva) + ' · ISR ' + _fx(retIsr + retIsrSinRfc) + ' · ' + (retCosto > 0.5 ? _fx(retCosto) + ' es costo' : 'a cuenta');
     } else if (_fcA.retModo === 'IIBB') {
       const saldo = impuestosAbs - iibbTotal;
-      _retTtl = 'Columna Impuestos del reporte: retenciones de Ingresos Brutos que Mercado Libre y Mercado Pago practican en cada venta.\n\n'
+      const _prom = !!(G && G.isCostosPromedio);
+      _retTtl = (_prom
+          ? 'ESTIMADAS. Este reporte vino en el formato de costos promedio, que no trae la columna Impuestos: las retenciones de IIBB están sumadas dentro de "Cargo por venta e impuestos". '
+            + 'EVO las separa con la tasa de retención de la provincia del comprador sobre el precio sin IVA (1,3%; Santa Fe 3,6%; Corrientes 3,9%, medidas en reportes detallados de varias cuentas), para que no se cuenten dos veces (una en el cargo y otra en el IIBB) ni se les descuente un IVA que no tienen. '
+            + 'Con el reporte detallado se leen exactas; con éste el margen puede moverse alrededor de un punto según las tasas de la cuenta.\n\n'
+          : 'Columna Impuestos del reporte: retenciones de Ingresos Brutos que Mercado Libre y Mercado Pago practican en cada venta.\n\n')
         + 'Se computan como pago a cuenta del IIBB (' + pctAlic(iibbRate) + ' de la venta neta = ' + fmtCurrency(iibbTotal) + '): '
         + 'bajan lo recibido, porque es plata que no entró, pero no se restan dos veces del resultado. La alícuota se ajusta en "IIBB" de la barra superior.'
         + (saldo > 0.5 ? '\n\n⚠ Las retenciones superan el IIBB estimado en ' + fmtCurrency(saldo) + '. Ese excedente queda como saldo a favor: EVO lo sigue tomando a cuenta, pero si en la práctica no lo compensás, es costo.' : '')
         + '\n\nEste reporte no trae las percepciones de la factura mensual de ML (IVA RG 5319, IVA régimen general, IIBB de cada provincia). '
         + 'Para un Responsable Inscripto también son pago a cuenta. Para un Monotributista la percepción de IVA no se recupera: es un costo que EVO no ve.';
-      _retSub = (pctImp*100).toFixed(1) + '% de venta neta · a cuenta de IIBB' + (saldo > 0.5 ? ' · ⚠ saldo a favor' : '');
+      _retSub = (pctImp*100).toFixed(1) + '% de venta neta · a cuenta de IIBB' + (_prom ? ' · estimadas' : (saldo > 0.5 ? ' · ⚠ saldo a favor' : ''));
     } else {
       _retTtl = 'Columna Impuestos del reporte: lo que ML retiene en cada venta. No hay un impuesto sobre la venta contra el cual imputarlo, así que se resta como costo.';
       _retSub = (pctImp*100).toFixed(1) + '% de venta neta · costo';
@@ -18866,37 +19008,8 @@ function abrirFlexPromedio() {
     Object.values(m0).forEach(x => { _u += _flexUnidadesDe(x); _n += _flexDespachosDe(x); });
     if (_n > 0) _uPorDespacho = _u / _n;
   } catch (e) {}
-  const etiquetas = GEO_CORDON_LABEL[pais] || GEO_CORDON_LABEL.AR;
   const nombreCelda = pais === 'CL' ? 'comuna' : (pais === 'MX' ? 'municipio' : 'partido');
-
-  /* Asignación celda por celda: agrupada por cordón para que se pueda leer, con
-     un select por fila para corregir lo que la distancia proponga mal. Es la
-     única forma de contemplar una logística que cobra por sus propios anillos. */
-  let detalle = '';
-  if (MZ.celdas.length) {
-    const grupos = {};
-    MZ.celdas.forEach(c => { (grupos[c.cordon] = grupos[c.cordon] || []).push(c); });
-    const orden = Object.keys(grupos).map(Number).sort((a, b) => a - b);
-    detalle = orden.map(cor => {
-      const filas = grupos[cor].map(c => {
-        const opts = _ZONA_ORDEN.map(z =>
-          '<option value="' + z + '"' + (c.zona === z ? ' selected' : '') + '>' + _ZONA_LABEL[z] + '</option>').join('');
-        const pisado = !!ZONA_OVERRIDE[c.celda];
-        return '<tr><td style="padding:3px 8px 3px 0;font-size:11.5px;color:var(--text);">' + c.celda
-          + (pisado ? ' <span style="color:var(--accent2);font-size:9px;">·fijado</span>' : '') + '</td>'
-          + '<td style="padding:3px 8px;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right;">'
-          + NUM(c.u) + ' u · ' + pct1(MZ.ubicadas > 0 ? c.u / MZ.ubicadas * 100 : 0) + '%</td>'
-          + '<td style="padding:3px 0 3px 8px;"><select onchange="_zonaOverrideCambio(this,\'' + String(c.celda).replace(/'/g, "\\'") + '\')" '
-          + 'style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);'
-          + 'font-family:var(--mono);font-size:10.5px;padding:3px 5px;">' + opts + '</select></td></tr>';
-      }).join('');
-      const uGrupo = grupos[cor].reduce((a, b) => a + b.u, 0);
-      return '<div style="margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--muted);'
-        + 'text-transform:uppercase;letter-spacing:1px;">' + (etiquetas[cor] || ('Grupo ' + cor))
-        + ' · ' + pct1(MZ.ubicadas > 0 ? uGrupo / MZ.ubicadas * 100 : 0) + '%</div>'
-        + '<table style="width:100%;border-collapse:collapse;">' + filas + '</table>';
-    }).join('');
-  }
+  const detalle = _flexDetalleHTML(MZ);
 
   const cobertura = MZ.total > 0
     ? (MZ.cobertura >= 0.9995
@@ -18923,8 +19036,9 @@ function abrirFlexPromedio() {
     + '<div style="color:var(--muted);font-size:11.5px;line-height:1.6;margin-bottom:14px;padding:10px 12px;'
     + 'background:rgba(96,165,250,.06);border-left:2px solid var(--accent2);border-radius:0 6px 6px 0;">'
     + 'El reparto entre zonas <b>sale del reporte</b>: trae el ' + nombreCelda + ' del comprador en cada venta. '
-    + 'Vos cargás las cuatro tarifas. El anillo de cada destino se propone por distancia al punto de despacho, '
-    + 'pero la propuesta es sólo eso: si despachás con un tercero o con una logística de tarifas fijas, '
+    + 'Vos cargás las cuatro tarifas. El anillo de cada destino sale, en este orden, de lo que fijes vos, de la zona que '
+    + 'Mercado Libre ya declaró para ese destino en otras ventas (marca <b>según ML</b>) y, si no hay, de la distancia al '
+    + 'código postal de despacho. Es una propuesta: si despachás con un tercero o con una logística de tarifas fijas, '
     + 'lo que se factura no sigue la geografía. Corregí lo que haga falta en la lista de abajo.'
     + '</div>'
     + '<div style="margin-bottom:14px;padding:11px 13px;background:rgba(251,146,60,.06);'
@@ -19004,7 +19118,7 @@ function abrirFlexPromedio() {
         ? '<details style="margin-top:12px;"><summary style="cursor:pointer;font-family:var(--mono);font-size:10px;'
           + 'color:var(--accent2);text-transform:uppercase;letter-spacing:1px;">Asignación por ' + nombreCelda
           + ' (' + MZ.celdas.length + ')</summary>'
-          + '<div style="max-height:260px;overflow:auto;margin-top:6px;">' + detalle + '</div></details>'
+          + '<div id="flexz-detalle" style="max-height:260px;overflow:auto;margin-top:6px;">' + detalle + '</div></details>'
         : '')
     + '<div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">'
     + '<label style="flex:0 0 190px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">Promedio directo (alternativa)</label>'
@@ -19028,6 +19142,8 @@ function abrirFlexPromedio() {
   ov.addEventListener('click', e => { if (e.target === ov) _flexCancelar(); });
   document.body.appendChild(ov);
   _FLEX_MODO_PREV = FLEX_MODO;
+  // Para que Cancelar deshaga también el CP de origen y los pisados (v55.3)
+  _ZONA_PREV = { cp: ZONA_ORIGEN_CP, ov: { ...ZONA_OVERRIDE } };
   _zonaOrigenCambio();
   _flexRecalc();
   const f = document.getElementById('flexz-cercana');
@@ -19046,12 +19162,15 @@ function _zonaOrigenCambio() {
   const eco = document.getElementById('zona-origen-eco');
   if (eco) {
     const g = ZONA_ORIGEN_CP ? geoCelda(ZONA_ORIGEN_CP, '') : null;
+    const nAp = Object.keys(_zonaAprendidaML()).length;
+    const apTxt = nAp ? ' · ' + nAp + (nAp === 1 ? ' destino sigue' : ' destinos siguen') + ' la zona que declaró ML' : '';
     eco.innerHTML = !ZONA_ORIGEN_CP
-      ? 'sin cargar: los anillos se proponen por cordón'
-      : (g ? '<span style="color:var(--ok)">despacha desde ' + g.celda + '</span>'
-           : '<span style="color:var(--warn)">código postal fuera de la tabla: se usa el cordón</span>');
+      ? 'sin cargar: los anillos se proponen por cordón' + apTxt
+      : (g ? '<span style="color:var(--ok)">despacha desde ' + g.celda + '</span>' + apTxt
+           : '<span style="color:var(--warn)">código postal fuera de la tabla: se usa el cordón</span>' + apTxt);
   }
   _invalidarMezcla();
+  _flexDetalleRefrescar();
   _flexRecalc();
 }
 
@@ -19062,7 +19181,58 @@ function _zonaOverrideCambio(sel, celda) {
   if (!sel || !celda) return;
   ZONA_OVERRIDE[celda] = sel.value;
   _invalidarMezcla();
+  _flexDetalleRefrescar();
   _flexRecalc();
+}
+
+/* Asignación celda por celda: agrupada por cordón para que se pueda leer, con
+   un select por fila para corregir lo que la distancia proponga mal. Es la
+   única forma de contemplar una logística que cobra por sus propios anillos.
+   Desde v55.3 se redibuja cada vez que cambia el CP de origen o un pisado:
+   antes se armaba una sola vez al abrir la ventana, así que escribir el CP
+   movía los porcentajes pero la lista seguía mostrando los anillos viejos.
+   Cada fila dice de dónde sale su anillo: fijado, declarado por ML o distancia. */
+function _flexDetalleHTML(MZ) {
+  if (!MZ || !MZ.celdas.length) return '';
+  const pais = _geoPais();
+  const etiquetas = GEO_CORDON_LABEL[pais] || GEO_CORDON_LABEL.AR;
+  const pct1 = v => v.toFixed(1).replace('.', ',');
+  const ap = _zonaAprendidaML();
+  const orig = _geoCentroOrigen();
+  const grupos = {};
+  MZ.celdas.forEach(c => { (grupos[c.cordon] = grupos[c.cordon] || []).push(c); });
+  const orden = Object.keys(grupos).map(Number).sort((a, b) => a - b);
+  return orden.map(cor => {
+    const filas = grupos[cor].map(c => {
+      const zona = zonaDeCelda(c.celda, c.cordon);
+      const opts = _ZONA_ORDEN.map(z =>
+        '<option value="' + z + '"' + (zona === z ? ' selected' : '') + '>' + _ZONA_LABEL[z] + '</option>').join('');
+      let origen;
+      if (ZONA_OVERRIDE[c.celda]) origen = '<span style="color:var(--accent2);font-size:9px;">·fijado</span>';
+      else if (ap[c.celda]) origen = '<span style="color:var(--ok);font-size:9px;" title="Mercado Libre declaró esta zona en '
+        + ap[c.celda].n + ' de ' + ap[c.celda].tot + ' ventas a este destino">·según ML</span>';
+      else {
+        const d = orig ? _geoKm(orig, _geoCentros()[c.celda]) : Infinity;
+        origen = isFinite(d) ? '<span style="color:var(--muted);font-size:9px;">·' + Math.round(d) + ' km</span>'
+                             : '<span style="color:var(--muted);font-size:9px;">·por cordón</span>';
+      }
+      return '<tr><td style="padding:3px 8px 3px 0;font-size:11.5px;color:var(--text);">' + c.celda + ' ' + origen + '</td>'
+        + '<td style="padding:3px 8px;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right;">'
+        + NUM(c.u) + ' u · ' + pct1(MZ.ubicadas > 0 ? c.u / MZ.ubicadas * 100 : 0) + '%</td>'
+        + '<td style="padding:3px 0 3px 8px;"><select onchange="_zonaOverrideCambio(this,\'' + String(c.celda).replace(/'/g, "\\'") + '\')" '
+        + 'style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);'
+        + 'font-family:var(--mono);font-size:10.5px;padding:3px 5px;">' + opts + '</select></td></tr>';
+    }).join('');
+    const uGrupo = grupos[cor].reduce((a, b) => a + b.u, 0);
+    return '<div style="margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--muted);'
+      + 'text-transform:uppercase;letter-spacing:1px;">' + (etiquetas[cor] || ('Grupo ' + cor))
+      + ' · ' + pct1(MZ.ubicadas > 0 ? uGrupo / MZ.ubicadas * 100 : 0) + '%</div>'
+      + '<table style="width:100%;border-collapse:collapse;">' + filas + '</table>';
+  }).join('');
+}
+function _flexDetalleRefrescar() {
+  const el = document.getElementById('flexz-detalle');
+  if (el) el.innerHTML = _flexDetalleHTML(mezclaZonasCalculada(true));
 }
 
 /* Promedio ponderado en vivo: sin verlo, cargar cuatro tarifas y cuatro
@@ -19120,11 +19290,13 @@ function setFlexPromedio(forzar) {
     FLEX_PROMEDIO = 0;
     _ZONA_ORDEN.forEach(k => { FLEX_ZONAS[k] = 0; FLEX_MIX[k] = 0; });
     ZONA_ORIGEN_CP = ''; ZONA_OVERRIDE = {};
+    _ZONA_PREV = null;
     _invalidarMezcla();
   } else {
     FLEX_PROMEDIO = num('flexprom-val');
     _ZONA_ORDEN.forEach(k => { FLEX_ZONAS[k] = num('flexz-' + k); FLEX_MIX[k] = num('flexm-' + k); });
     _FLEX_MODO_PREV = null;   // la base del cobro elegida queda aplicada
+    _ZONA_PREV = null;        // el CP de origen y los pisados también (v55.3)
     const _cpEl = document.getElementById('zona-origen-cp');
     if (_cpEl) ZONA_ORIGEN_CP = String(_cpEl.value || '').trim();
     _invalidarMezcla();
